@@ -174,8 +174,12 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
   const time = Math.max(clock, now.getTime())
 
   const season = skyApi.sky.season
-  const real = useMemo(() => townView(world, season, level), [world, season, level])
-  const view = useMemo(() => (stagePreview === null ? real : previewView(stagePreview, world, season, level)), [stagePreview, real, world, season, level])
+  const gear = shop.gear
+  const real = useMemo(() => townView(world, season, level, gear), [world, season, level, gear])
+  const view = useMemo(
+    () => (stagePreview === null ? real : previewView(stagePreview, world, season, level, gear)),
+    [stagePreview, real, world, season, level, gear],
+  )
   const previewing = stagePreview !== null
 
   const next = TIERS[town.tier + 1]

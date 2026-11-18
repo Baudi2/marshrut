@@ -116,15 +116,15 @@ export function Fire({ x, y, level, size = 1, s = 1 }: At & { level: number; siz
   )
 }
 
-export function Dog(p: At) {
+/** Кот-спутник: сидит, хвост обёрнут вокруг лап. Цвета берутся из прежних переменных спутника. */
+export function Cat(p: At) {
   return (
     <g transform={at(p)}>
-      <path d="M-5 -4 V0 M-2.5 -4 V0 M3 -4 V0 M5.2 -4 V0" stroke="var(--dog-dark)" strokeWidth={1.5} strokeLinecap="round" />
-      <path d="M-5.8 -6.5 q-2.8 -2.6 -1.4 -5.2" stroke="var(--dog)" strokeWidth={1.7} strokeLinecap="round" fill="none" />
-      <ellipse cx={0} cy={-5.6} rx={6.2} ry={3.2} fill="var(--dog)" />
-      <circle cx={6.4} cy={-8.8} r={2.9} fill="var(--dog)" />
-      <path d="M4.5 -10.8 L4.1 -13.8 L6.7 -11.4 Z" fill="var(--dog-dark)" />
-      <path d="M8.7 -8.6 L11 -7.9 L8.7 -7 Z" fill="var(--dog-dark)" />
+      <path d="M2.2 -1.4 q5 0.8 4.6 -3.8" stroke="var(--dog-dark)" strokeWidth={1.6} strokeLinecap="round" fill="none" />
+      <path d="M-4.2 0 q-1.4 -7 2.6 -9.4 q4.6 1.6 4.4 9.4 Z" fill="var(--dog)" />
+      <path d="M-1.6 0 V-4.2 M1 0 V-4.2" stroke="var(--dog-dark)" strokeWidth={1.3} strokeLinecap="round" />
+      <circle cx={-1.4} cy={-11.2} r={3} fill="var(--dog)" />
+      <path d="M-4.1 -12.4 L-4.2 -15.6 L-1.9 -13.7 Z M1.2 -12.4 L1.4 -15.6 L-0.9 -13.7 Z" fill="var(--dog-dark)" />
     </g>
   )
 }
@@ -184,7 +184,7 @@ export function Traveler({ x, y, s = 1, sitting = false, gear = [] }: At & { sit
           <rect x={hand.x - 1.9} y={hand.y - 4.6} width={3.8} height={4.6} rx={0.8} fill="var(--window)" stroke="var(--wood-dark)" strokeWidth={0.8} />
         </>
       )}
-      {has('dog') && <Dog x={sitting ? 19 : -16} y={0} />}
+      {has('cat') && <Cat x={sitting ? 19 : -16} y={0} />}
     </g>
   )
 }

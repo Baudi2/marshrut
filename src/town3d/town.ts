@@ -58,6 +58,8 @@ export interface TownView {
   decor: string[]
   /** Какие из них сломаны после долгого перерыва. */
   brokenDecor: string[]
+  /** Надетая экипировка путника. */
+  gear: string[]
 }
 
 export interface Mark {
@@ -154,7 +156,7 @@ export class TownScene {
   private readonly waterMaterial: THREE.MeshLambertMaterial
   private readonly ring: THREE.Mesh
   private version = 0
-  private people = new People()
+  private readonly people: People
 
   constructor(private readonly scenery: Scenery) {
     this.waterMaterial = worldMaterial(scenery.stage.uniforms)
@@ -167,6 +169,7 @@ export class TownScene {
     this.ring.visible = false
     this.ring.renderOrder = 3
     scenery.stage.scene.add(this.ring)
+    this.people = new People(() => scenery.stage.uniforms.uGlow.value)
     scenery.stage.tickers.push((dt) => this.people.tick(dt))
   }
 
@@ -309,6 +312,7 @@ export class TownScene {
       population: view.population,
       doors: view.buildings.filter((b) => b.level > 0).flatMap((b) => plotOf(b.id) ?? []),
       quiet: view.neglect >= 2,
+      gear: view.gear,
     }
     jobs.push(People.preload(crowd))
 

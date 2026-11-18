@@ -21,9 +21,9 @@ export const SHOP: ShopItem[] = [
   { id: 'jacket-blue', group: 'gear', name: 'Синяя куртка', about: 'Вместо красной.', coins: 150, slot: 'jacket' },
   { id: 'jacket-green', group: 'gear', name: 'Зелёная куртка', about: 'Вместо красной.', coins: 150, slot: 'jacket' },
   { id: 'pack', group: 'gear', name: 'Большой рюкзак', about: 'С притороченным спальником.', coins: 180 },
-  { id: 'lantern', group: 'gear', name: 'Фонарь', about: 'Светит в тёмной теме.', coins: 220 },
+  { id: 'lantern', group: 'gear', name: 'Фонарь', about: 'Висит на поясе; ночью светит вокруг путника.', coins: 220 },
   { id: 'cape', group: 'gear', name: 'Плащ', about: 'За знания, а не за часы.', gems: 3 },
-  { id: 'dog', group: 'gear', name: 'Пёс-спутник', about: 'Идёт рядом по карте и сидит у костра.', gems: 6 },
+  { id: 'cat', group: 'gear', name: 'Кот-спутник', about: 'Сидит у костра, в городе ходит рядом по площади.', gems: 6 },
 
   // Украшения города. Огород, колодец и очаг стали обычными постройками и центром поселения,
   // мост открывается сам вместе с «Лагерем» — поэтому в лавке их больше нет.

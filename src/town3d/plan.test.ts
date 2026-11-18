@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { BUILDINGS, TIERS, maxLevel } from '../game/town'
 import { LookBuilder } from './look'
 import { SHOP } from '../game/shop'
+import { gearParts, hasCat, jacketColors } from './gear'
 import { CENTER, DECOR, LOOKS, constructionLook, levelLook, specialLook, upgradeLook } from './looks'
 import index from './models.gen.json'
 import { BRIDGE_X, PITCH, PLAZA, PLOTS, QUARTER, QUARTER_SLOTS, RIVER, fireSpot, forest, groundHeight, openPlots, plotOf, quarterOpen, quarterSlot, riverCenter } from './plan'
@@ -125,6 +126,30 @@ describe('стоянка', () => {
     // Сломанные фонари стоят, но не светят.
     expect(drawn('dark').lamps).toBe(0)
     expect(drawn('dark').count).toBe(drawn(true).count)
+  })
+})
+
+describe('экипировка путника', () => {
+  it('каждая вещь из лавки видна на путнике: деталью, цветом куртки или котом рядом', () => {
+    const bare = jacketColors([])
+    for (const item of SHOP.filter((entry) => entry.group === 'gear')) {
+      const seen = gearParts([item.id], 2.3).length > 0 || jacketColors([item.id])[0] !== bare[0] || hasCat([item.id])
+      expect(seen, item.id).toBe(true)
+    }
+  })
+
+  it('без покупок на путнике ничего лишнего, куртка красная', () => {
+    expect(gearParts([], 2.3)).toEqual([])
+    expect(jacketColors([])[0]).toBe('#b5432f')
+  })
+
+  it('детали не выше роста путника и не дальше полуметра от него', () => {
+    const all = SHOP.filter((entry) => entry.group === 'gear').map((entry) => entry.id)
+    for (const part of gearParts(all, 2.3)) {
+      expect(part.at[1]).toBeLessThan(2.3)
+      expect(Math.abs(part.at[0])).toBeLessThan(0.5)
+      expect(Math.abs(part.at[2])).toBeLessThan(0.5)
+    }
   })
 })
 

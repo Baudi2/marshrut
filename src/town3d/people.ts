@@ -1,6 +1,7 @@
 // Жители и путник: модели со скелетом, ходят по улицам между постройками и останавливаются.
 import * as THREE from 'three'
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
+import { gearParts, hasCat, jacketColors } from './gear'
 import { loadModel } from './kit'
 import { CAMP_FIRE_AT, PITCH, PLAZA, seeded, type Plot } from './plan'
 
@@ -25,9 +26,12 @@ interface Actor {
   walking: boolean
   /** Круг: дойдя до конца, идёт дальше по кругу, а не обратно. */
   loop: boolean
+  /** Своя походка вместо скелетной анимации: у кота. */
+  pose?: (time: number, walking: boolean) => void
 }
 
-function dress(root: THREE.Object3D, index: number, traveler: boolean) {
+function dress(root: THREE.Object3D, index: number, traveler: boolean, gear: string[] = []) {
+  const [jacket, sleeves] = jacketColors(gear)
   root.traverse((object) => {
     const mesh = object as THREE.Mesh
     if (!mesh.isMesh) return
@@ -37,8 +41,8 @@ function dress(root: THREE.Object3D, index: number, traveler: boolean) {
     const name = source.name
     let color = source.color.clone()
     if (traveler) {
-      if (name === 'Green') color = new THREE.Color('#b5432f')
-      else if (name === 'LightGreen') color = new THREE.Color('#c85a3f')
+      if (name === 'Green') color = new THREE.Color(jacket)
+      else if (name === 'LightGreen') color = new THREE.Color(sleeves)
       else if (name === 'Gold') color = new THREE.Color('#d9b24a')
     } else if (/^(Shirt|Dress|Jacket|LightJacket|Shirt2)$/.test(name)) color = new THREE.Color(CLOTH[index % CLOTH.length])
     else if (name === 'Pants') color = new THREE.Color(TROUSERS[index % TROUSERS.length])
@@ -70,6 +74,8 @@ export interface PeopleInput {
   doors: Plot[]
   /** Запустение второго уровня и выше: жители сидят по домам. */
   quiet: boolean
+  /** Надетая экипировка путника из лавки. */
+  gear: string[]
 }
 
 /** Пятно тени под ногами: одно на всех, дешёвая замена настоящей тени. */
@@ -96,9 +102,139 @@ const blob = (() => {
   }
 })()
 
+/**
+ * Кот-спутник. Готовой модели кота в наборах нет, поэтому он собран из простых фигур:
+ * тёмно-серый с белой грудкой и лапами, чтобы читаться и на земле, и на снегу.
+ * Он чуть крупнее настоящего, как и жители. Возвращает фигуру и её походку.
+ */
+function makeCat(): { root: THREE.Group; pose: (time: number, walking: boolean) => void } {
+  const fur = new THREE.MeshLambertMaterial({ color: '#4f4b47' })
+  const white = new THREE.MeshLambertMaterial({ color: '#e9e4da' })
+  const own = <T extends THREE.Mesh>(mesh: T) => {
+    mesh.userData.own = true
+    return mesh
+  }
+  const piece = (w: number, h: number, d: number, material: THREE.Material, x: number, y: number, z: number) => {
+    const mesh = own(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material))
+    mesh.position.set(x, y, z)
+    return mesh
+  }
+  const root = new THREE.Group()
+  const torso = new THREE.Group()
+  torso.add(piece(0.26, 0.24, 0.62, fur, 0, 0, 0), piece(0.2, 0.17, 0.1, white, 0, -0.03, 0.29))
+  torso.position.set(0, 0.4, 0)
+  const head = new THREE.Group()
+  head.add(piece(0.26, 0.22, 0.22, fur, 0, 0, 0), piece(0.14, 0.09, 0.06, white, 0, -0.05, 0.13))
+  for (const side of [-1, 1]) {
+    const ear = own(new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.13, 4), fur))
+    ear.position.set(side * 0.09, 0.17, 0)
+    head.add(ear)
+  }
+  head.position.set(0, 0.6, 0.36)
+  // Хвост качается вокруг своего основания.
+  const tail = new THREE.Group()
+  tail.add(piece(0.07, 0.07, 0.46, fur, 0, 0, -0.23), piece(0.075, 0.075, 0.1, white, 0, 0, -0.48))
+  tail.position.set(0, 0.46, -0.3)
+  const legs = [
+    [-0.09, 0.2],
+    [0.09, 0.2],
+    [-0.09, -0.22],
+    [0.09, -0.22],
+  ].map(([x, z]) => {
+    const leg = new THREE.Group()
+    leg.add(piece(0.075, 0.2, 0.075, fur, 0, -0.1, 0), piece(0.085, 0.08, 0.095, white, 0, -0.24, 0.01))
+    leg.position.set(x, 0.28, z)
+    root.add(leg)
+    return leg
+  })
+  root.add(torso, head, tail)
+  const shade = blob()
+  shade.scale.setScalar(0.55)
+  root.add(shade)
+
+  const pose = (time: number, walking: boolean) => {
+    if (walking) {
+      // Походка: лапы по диагонали, спина ровная, хвост трубой.
+      const swing = Math.sin(time * 11) * 0.55
+      legs[0].rotation.x = swing
+      legs[3].rotation.x = swing
+      legs[1].rotation.x = -swing
+      legs[2].rotation.x = -swing
+      legs[2].position.set(-0.09, 0.28, -0.22)
+      legs[3].position.set(0.09, 0.28, -0.22)
+      torso.rotation.x = 0
+      torso.position.y = 0.4 + Math.abs(Math.sin(time * 11)) * 0.015
+      head.position.set(0, 0.6, 0.36)
+      tail.rotation.x = 0.95 + Math.sin(time * 5) * 0.12
+    } else {
+      // Сидит: спина наклонена, задние лапы подобраны, хвост лежит и изредка подёргивается.
+      for (const leg of legs) leg.rotation.x = 0
+      legs[2].position.set(-0.11, 0.2, -0.1)
+      legs[3].position.set(0.11, 0.2, -0.1)
+      torso.rotation.x = -0.62
+      torso.position.y = 0.42
+      head.position.set(0, 0.72, 0.24)
+      tail.rotation.x = -0.25 + Math.max(0, Math.sin(time * 1.3)) * 0.18
+    }
+    tail.rotation.y = Math.sin(time * (walking ? 4 : 0.9)) * (walking ? 0.25 : 0.5)
+  }
+  pose(0, false)
+  return { root, pose }
+}
+
+/** Тёплое пятно света от фонаря путника: видно в сумерках и ночью. */
+function warmSpot(): THREE.Mesh {
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = 64
+  const g = canvas.getContext('2d')!
+  const fill = g.createRadialGradient(32, 32, 0, 32, 32, 30)
+  fill.addColorStop(0, 'rgba(255,190,110,0.8)')
+  fill.addColorStop(1, 'rgba(255,160,80,0)')
+  g.fillStyle = fill
+  g.fillRect(0, 0, 64, 64)
+  const material = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 })
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(6, 6).rotateX(-Math.PI / 2), material)
+  mesh.position.y = 0.1
+  mesh.renderOrder = 2
+  mesh.userData.own = true
+  return mesh
+}
+
+/** Надевает на путника купленное: детали стоят на фигуре в метрах, независимо от масштаба модели. */
+function equip(root: THREE.Object3D, gear: string[]): THREE.Mesh | null {
+  const parts = gearParts(gear, TRAVELER_HEIGHT)
+  if (!parts.length) return null
+  const kit = new THREE.Group()
+  kit.scale.setScalar(1 / root.scale.x)
+  root.add(kit)
+  let spot: THREE.Mesh | null = null
+  for (const part of parts) {
+    const [a, b, c] = part.size
+    const geometry = part.shape === 'box' ? new THREE.BoxGeometry(a, b, c) : new THREE.CylinderGeometry(b, a, c, 10)
+    const height = part.shape === 'box' ? b : c
+    geometry.translate(0, height / 2, 0)
+    const material = part.glow ? new THREE.MeshBasicMaterial({ color: part.color }) : new THREE.MeshLambertMaterial({ color: part.color })
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(...part.at)
+    if (part.tilt) mesh.rotation.set(part.tilt[0], 0, part.tilt[1])
+    mesh.userData.own = true
+    kit.add(mesh)
+    if (part.glow && !spot) {
+      spot = warmSpot()
+      kit.add(spot)
+    }
+  }
+  return spot
+}
+
 export class People {
   group = new THREE.Group()
   private actors: Actor[] = []
+  /** Пятно света от фонаря путника: яркость следует за временем суток. */
+  private lanternSpot: THREE.Mesh | null = null
+  private time = 0
+
+  constructor(private readonly glow: () => number = () => 0) {}
 
   /** Модели, которые понадобятся: грузятся заранее вместе с постройками. */
   static async preload(input: PeopleInput) {
@@ -112,13 +248,20 @@ export class People {
     parent.add(this.group)
     const random = seeded(4242 + input.tier * 31 + input.population)
 
-    const traveler = await this.spawn(TRAVELER, 0, true)
+    const traveler = await this.spawn(TRAVELER, 0, true, TRAVELER_HEIGHT, input.gear)
+    this.lanternSpot = equip(traveler.root, input.gear)
+    const cat = hasCat(input.gear) ? this.spawnCat() : null
     if (input.tier === 0) {
       // На стоянке путник стоит у костра.
       // Он стоит за костром лицом к зрителю: огонь освещает его спереди.
       traveler.root.position.set(CAMP_FIRE_AT.x - 1.5, 0, CAMP_FIRE_AT.z - 1.7)
       traveler.root.rotation.y = Math.atan2(1.5, 1.7)
       traveler.path = []
+      if (cat) {
+        // Кот сидит по другую сторону костра и смотрит на огонь.
+        cat.root.position.set(CAMP_FIRE_AT.x + 1.9, 0, CAMP_FIRE_AT.z - 0.6)
+        cat.root.rotation.y = Math.atan2(-1.9, 0.6)
+      }
     } else {
       // В поселении он обходит площадь.
       const w = PLAZA.w / 2 - 1
@@ -126,6 +269,14 @@ export class People {
       traveler.path = [new THREE.Vector3(-w, 0, d), new THREE.Vector3(w, 0, d), new THREE.Vector3(w, 0, -d * 0.2), new THREE.Vector3(-w, 0, -d * 0.2)]
       traveler.loop = true
       traveler.root.position.copy(traveler.path[0])
+      if (cat) {
+        // Кот обходит площадь тем же кругом, на шаг ближе к середине и чуть впереди.
+        cat.path = traveler.path.map((p) => new THREE.Vector3(p.x * 0.86, 0, p.z * 0.86 + 0.6))
+        cat.loop = true
+        cat.leg = 1
+        cat.root.position.copy(cat.path[1])
+        cat.pause = 2.5
+      }
     }
 
     const count = input.quiet ? 0 : Math.min(MAX_WALKERS, input.population)
@@ -143,11 +294,11 @@ export class People {
     }
   }
 
-  private async spawn(key: string, index: number, traveler: boolean): Promise<Actor> {
+  private async spawn(key: string, index: number, traveler: boolean, height = HEIGHT, gear: string[] = []): Promise<Actor> {
     const gltf = await loadModel(key)
     const root = cloneSkinned(gltf.scene)
-    dress(root, index, traveler)
-    root.scale.setScalar((traveler ? TRAVELER_HEIGHT : HEIGHT) / skeletonHeight(root))
+    dress(root, index, traveler, gear)
+    root.scale.setScalar(height / skeletonHeight(root))
     const mixer = new THREE.AnimationMixer(root)
     const walkClip = clip(gltf.animations, /(^|_)Walk$/)
     const idleClip = clip(gltf.animations, /(^|_)Idle$/)
@@ -164,9 +315,20 @@ export class People {
     return actor
   }
 
+  private spawnCat(): Actor {
+    const { root, pose } = makeCat()
+    this.group.add(root)
+    const actor: Actor = { root, mixer: new THREE.AnimationMixer(root), walk: null, idle: null, path: [], leg: 0, pause: 1, walking: false, loop: false, pose }
+    this.actors.push(actor)
+    return actor
+  }
+
   tick(dt: number) {
+    this.time += dt
+    if (this.lanternSpot) (this.lanternSpot.material as THREE.MeshBasicMaterial).opacity = this.glow() * 0.75
     for (const actor of this.actors) {
       actor.mixer.update(dt)
+      actor.pose?.(this.time, actor.walking)
       if (actor.path.length < 2) continue
       if (actor.pause > 0) {
         actor.pause -= dt
@@ -226,10 +388,17 @@ export class People {
         if (mesh.isSkinnedMesh) {
           mesh.skeleton.dispose()
           ;(mesh.material as THREE.Material).dispose()
+        } else if ((object as THREE.Mesh).isMesh && object.userData.own) {
+          // Детали экипировки создаются заново при каждой сборке.
+          const part = object as THREE.Mesh
+          part.geometry.dispose()
+          ;(part.material as THREE.MeshBasicMaterial).map?.dispose()
+          ;(part.material as THREE.Material).dispose()
         }
       })
     }
     this.actors = []
+    this.lanternSpot = null
     this.group.removeFromParent()
   }
 }

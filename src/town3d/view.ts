@@ -21,7 +21,7 @@ export function specialsOf(world: World): TownSpecialView[] {
     .slice(0, QUARTER_SLOTS)
 }
 
-export function townView(world: World, season: Season, neglect: number): TownView {
+export function townView(world: World, season: Season, neglect: number, gear: string[] = []): TownView {
   const { town } = world
   return {
     tier: town.tier,
@@ -33,6 +33,7 @@ export function townView(world: World, season: Season, neglect: number): TownVie
     neglect,
     decor: world.owned.filter((id) => shopItem(id)?.group === 'camp'),
     brokenDecor: world.damage.map((d) => d.item),
+    gear,
   }
 }
 
@@ -40,7 +41,7 @@ export function townView(world: World, season: Season, neglect: number): TownVie
  * Как город может выглядеть на ступени: все постройки, которые она разрешает,
  * на уровнях около предельного. Это только картинка: в журнал ничего не пишется.
  */
-export function previewView(tier: number, world: World, season: Season, neglect: number): TownView {
+export function previewView(tier: number, world: World, season: Season, neglect: number, gear: string[] = []): TownView {
   const top = maxLevel(tier)
   const buildings = BUILDINGS.flatMap((type) =>
     Array.from({ length: type.count[tier] }, (_, i) => ({
@@ -64,5 +65,6 @@ export function previewView(tier: number, world: World, season: Season, neglect:
     // Стоянка в предпросмотре чистая; на следующих ступенях показано всё, что к ним уже можно купить.
     decor: tier === 0 ? [] : SHOP.filter((item) => item.group === 'camp' && (item.tier ?? 0) <= tier).map((item) => item.id),
     brokenDecor: [],
+    gear,
   }
 }

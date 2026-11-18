@@ -186,7 +186,7 @@ export function ItemArt({ id }: { id: string }) {
             <Stream W={48} H={52} />
           </g>
         )
-      case 'dog':
+      case 'cat':
         return <Traveler x={31} y={43} s={1.5} gear={[id]} />
       default:
         return <Traveler x={22} y={44} s={1.7} gear={[id]} />

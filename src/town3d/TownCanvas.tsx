@@ -1,0 +1,149 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { Sky } from '../world/sky'
+import { Scenery } from './fx'
+import { BOUNDS, QUARTER } from './plan'
+import { Stage } from './stage'
+import { TownScene, type Mark, type TownView } from './town'
+
+/** «45 мин», «3 ч 12 мин», «23 ч» — как в design/DESIGN.md. */
+export function fmtLeft(ms: number): string {
+  const minutes = Math.max(1, Math.ceil(ms / 60000))
+  if (minutes < 60) return `${minutes} мин`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest && hours < 12 ? `${hours} ч ${rest} мин` : `${hours} ч`
+}
+
+interface Props {
+  view: TownView
+  sky: Sky
+  selected: string | null
+  onSelect: (id: string | null) => void
+  /** Текущее время: по нему считаются таймеры. */
+  now: number
+}
+
+/** Окно в город: карта двигается и приближается, постройки выбираются нажатием. */
+export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
+  const host = useRef<HTMLDivElement>(null)
+  const overlay = useRef<HTMLDivElement>(null)
+  const stage = useRef<Stage | null>(null)
+  const scenery = useRef<Scenery | null>(null)
+  const town = useRef<TownScene | null>(null)
+  const marksRef = useRef<Mark[]>([])
+  const select = useRef(onSelect)
+  select.current = onSelect
+  const [marks, setMarks] = useState<Mark[]>([])
+  const [status, setStatus] = useState('Загружаю город…')
+  const [motion, setMotion] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+
+  const shown = useMemo(() => marks.filter((mark) => mark.readyAt || mark.id === selected), [marks, selected])
+  const shownRef = useRef<Mark[]>([])
+  shownRef.current = shown
+
+  useEffect(() => {
+    if (!host.current) return
+    const point = { x: 0, y: 0 }
+    const narrow = host.current.clientWidth < 620
+    const created = new Stage(host.current, {
+      bounds: BOUNDS,
+      center: [1, 0],
+      span: narrow ? 46 : 78,
+      minSpan: 16,
+      maxSpan: 118,
+      onTap: (id) => select.current(id),
+      onFrame: () => {
+        const box = overlay.current
+        if (!box) return
+        shownRef.current.forEach((mark, i) => {
+          const el = box.children[i] as HTMLElement | undefined
+          if (!el) return
+          created.project(mark.at, point)
+          el.style.transform = `translate(${Math.round(point.x)}px, ${Math.round(point.y)}px) translate(-50%, -100%)`
+        })
+      },
+    })
+    stage.current = created
+    scenery.current = new Scenery(created)
+    town.current = new TownScene(scenery.current)
+    ;(window as unknown as { town3d?: unknown }).town3d = created
+    return () => {
+      town.current?.dispose()
+      created.dispose()
+      stage.current = null
+      scenery.current = null
+      town.current = null
+    }
+  }, [])
+
+  // Сцена пересобирается только когда меняется сам город, сезон или запустение.
+  const key = JSON.stringify(view)
+  useEffect(() => {
+    const scene = town.current
+    if (!scene) return
+    let stale = false
+    scene
+      .build(view)
+      .then(() => {
+        if (stale) return
+        marksRef.current = scene.marks
+        setMarks(scene.marks)
+        setStatus('')
+        scene.select(selected)
+      })
+      .catch((error) => setStatus('Город не загрузился: ' + String(error?.message ?? error)))
+    return () => {
+      stale = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+
+  useEffect(() => {
+    if (!stage.current || !scenery.current) return
+    stage.current.setSky(sky, view.neglect)
+    scenery.current.idle = view.neglect >= 2
+    scenery.current.refreshLight()
+  }, [sky, view.neglect])
+
+  useEffect(() => {
+    town.current?.select(selected)
+  }, [selected, marks])
+
+  useEffect(() => {
+    if (stage.current) stage.current.motion = motion
+    stage.current?.invalidate()
+  }, [motion])
+
+  // Метки переставляются при каждом кадре; после смены их набора нужен новый кадр.
+  useEffect(() => {
+    stage.current?.invalidate()
+  }, [shown])
+
+  return (
+    <div className="town3d" ref={host}>
+      <div className="town3d-overlay" ref={overlay}>
+        {shown.map((mark) => (
+          <span className={`town3d-tag${mark.readyAt ? ' is-timer' : ''}`} key={mark.id}>
+            <b>{mark.title}</b>
+            {mark.readyAt && mark.readyAt > now && <small>осталось {fmtLeft(mark.readyAt - now)}</small>}
+          </span>
+        ))}
+      </div>
+      <div className="town3d-buttons">
+        <button onClick={() => stage.current?.zoomBy(0.8)} aria-label="Приблизить">
+          +
+        </button>
+        <button onClick={() => stage.current?.zoomBy(1.25)} aria-label="Отдалить">
+          −
+        </button>
+        <button onClick={() => stage.current?.lookAt(1, 0)}>Центр</button>
+        <button onClick={() => stage.current?.lookAt(0, QUARTER.z + 4)}>Слобода</button>
+        <button onClick={() => setMotion(!motion)} aria-pressed={motion}>
+          {motion ? 'Движение' : 'Без движения'}
+        </button>
+      </div>
+      <p className="town3d-hint">Карту двигает палец или мышь. Масштаб — щипок, кнопки или Ctrl + колесо.</p>
+      {status && <p className="town3d-status">{status}</p>}
+    </div>
+  )
+}

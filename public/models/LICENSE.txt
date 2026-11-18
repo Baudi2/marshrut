@@ -1,0 +1,3 @@
+Модели в этой папке — работы Quaternius (https://quaternius.com), лицензия CC0 1.0 (общественное достояние).
+Наборы: Ultimate Fantasy RTS, Medieval Village, Farm Buildings, Ships, Animated Animals, Animated Characters.
+Файлы сжаты и очищены от неиспользуемых анимаций скриптом scripts/build-models.mjs.

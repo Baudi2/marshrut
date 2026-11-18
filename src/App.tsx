@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { offplan, rawCycles, repoPurchases, repoRepairs, repoTownActions } from './data/load'
 import type { Purchase } from './data/types'
+import { blockers, type TownAction } from './game/town'
+import type { TownApi } from './tabs/TownTab'
 import { buildWorld } from './game/engine'
-import { damageFor } from './game/repair'
 import { toISO, type ConditionLevel } from './game/rules'
 import { SHOP, canAfford, shopItem } from './game/shop'
 import type { ShopApi } from './tabs/Shop'
 import type { SkyApi } from './tabs/SkyCard'
 import { CoinIcon, GemIcon } from './world/extras'
 import { computeSky, fetchWeather, type Place, type SkyOverride, type Weather } from './world/sky'
-import { CampTab } from './tabs/CampTab'
 import { Growth } from './tabs/Growth'
 import { PathTab } from './tabs/PathTab'
 import { Problems } from './tabs/Problems'
@@ -17,19 +17,26 @@ import { Skills } from './tabs/Skills'
 import { Today } from './tabs/Today'
 import { Meter } from './ui/bits'
 
+// Каталог построек тянет за собой three.js, поэтому грузится отдельно и только по запросу.
+const TownLab = lazy(() => import('./tabs/TownLab'))
+const TownTab = lazy(() => import('./tabs/TownTab'))
+
 const TABS = [
   { id: 'today', label: 'Сегодня' },
   { id: 'path', label: 'Путь' },
-  { id: 'camp', label: 'Лагерь' },
+  { id: 'town', label: 'Город' },
   { id: 'problems', label: 'Задачи' },
   { id: 'growth', label: 'Прирост' },
   { id: 'skills', label: 'Навыки' },
 ] as const
 
-type TabId = (typeof TABS)[number]['id']
+type TabId = (typeof TABS)[number]['id'] | 'lab'
 
 function readTab(): TabId {
   const hash = location.hash.replace(/^#\/?/, '')
+  if (hash === 'lab') return 'lab'
+  // Прежний адрес лагеря ведёт в город.
+  if (hash === 'camp') return 'town'
   return TABS.find((t) => t.id === hash)?.id ?? 'today'
 }
 
@@ -51,6 +58,7 @@ function writeJSON(key: string, value: unknown) {
 }
 
 const sameRecord = (a: Purchase, b: Purchase) => a.item === b.item && a.date === b.date
+const sameAction = (a: TownAction, b: TownAction) => a.at === b.at && a.do === b.do && a.type === b.type && a.id === b.id
 
 function currentTheme(): 'light' | 'dark' {
   const stamped = document.documentElement.dataset.theme
@@ -67,6 +75,8 @@ export function App() {
   const [localBuys, setLocalBuys] = useState<Purchase[]>(() => readJSON('purchases', []))
   const [localRepairs, setLocalRepairs] = useState<Purchase[]>(() => readJSON('repairs', []))
   const [unequipped, setUnequipped] = useState<string[]>(() => readJSON('unequipped', []))
+  // Действия в городе: сразу в браузер, позже Claude Code переносит их в data/town.json.
+  const [localTown, setLocalTown] = useState<TownAction[]>(() => readJSON('town-actions', []))
 
   // Небо: место для погоды хранится в браузере, погода обновляется раз в полчаса.
   const [place, setPlaceState] = useState<Place | null>(() => readJSON('place', null))
@@ -126,10 +136,9 @@ export function App() {
     () => ({
       purchases: [...repoPurchases, ...localBuys.filter((p) => !repoPurchases.some((r) => r.item === p.item))],
       repairs: [...repoRepairs, ...localRepairs.filter((p) => !repoRepairs.some((r) => sameRecord(r, p)))],
-      // Интерфейса города пока нет, поэтому в журнале только записанное в репозиторий.
-      town: repoTownActions,
+      town: [...repoTownActions, ...localTown.filter((action) => !repoTownActions.some((r) => sameAction(r, action)))],
     }),
-    [localBuys, localRepairs],
+    [localBuys, localRepairs, localTown],
   )
   const world = useMemo(() => buildWorld(rawCycles, offplan, today, ledger, now), [today, ledger, now])
   const [cycleId, setCycleId] = useState(world.active.id)
@@ -137,11 +146,6 @@ export function App() {
   const level = preview ?? world.condition.level
 
   const gear = world.owned.filter((id) => shopItem(id)?.group === 'gear' && !unequipped.includes(id))
-  // В предпросмотре постройки ломаются так, как сломались бы при таком перерыве.
-  const broken = (
-    preview === null ? world.damage : damageFor(world.sessionDates, ledger.purchases, ledger.repairs, today, preview)
-  ).map((d) => d.item)
-
   const saveUnequipped = (next: string[]) => {
     const unique = [...new Set(next)]
     setUnequipped(unique)
@@ -182,6 +186,36 @@ export function App() {
       writeJSON('repairs', next)
     },
   }
+
+  const unsyncedTown = localTown.filter((action) => !repoTownActions.some((r) => sameAction(r, action)))
+  const saveTown = (next: TownAction[]) => {
+    setLocalTown(next)
+    writeJSON('town-actions', next)
+    // Город пересчитывается на текущую минуту, а не на последнюю пятиминутную отметку.
+    setNow(new Date())
+  }
+  const townApi: TownApi = {
+    unsynced: unsyncedTown,
+    act: (action) => {
+      if (blockers(world.town, action, world.means).length) return
+      saveTown([...localTown, { at: new Date().toISOString(), ...action }])
+    },
+    undo: () => {
+      const last = unsyncedTown[unsyncedTown.length - 1]
+      if (last) saveTown(localTown.filter((action) => action !== last))
+    },
+  }
+
+  // Когда достраивается ближайшая стройка, город пересчитывается сам.
+  const nextReady = Math.min(
+    ...world.town.buildings.map((b) => b.pending?.readyAt ?? Infinity),
+    world.town.tierPending?.readyAt ?? Infinity,
+  )
+  useEffect(() => {
+    if (!Number.isFinite(nextReady)) return
+    const timer = setTimeout(() => setNow(new Date()), Math.max(1000, nextReady - Date.now() + 1000))
+    return () => clearTimeout(timer)
+  }, [nextReady])
 
   useEffect(() => {
     const onHash = () => {
@@ -236,7 +270,7 @@ export function App() {
             {world.totalXp} / {world.level.next} XP
           </span>
         </div>
-        <a className="wallet" href="#/camp" aria-label={`Монет: ${world.wallet.coins}, камней: ${world.wallet.gems}. Открыть лавку`}>
+        <a className="wallet" href="#/town" aria-label={`Монет: ${world.wallet.coins}, камней: ${world.wallet.gems}. Открыть город`}>
           <span>
             <CoinIcon /> {world.wallet.coins}
           </span>
@@ -272,21 +306,29 @@ export function App() {
             skyApi={skyApi}
           />
         )}
-        {tab === 'camp' && (
-          <CampTab
-            world={world}
-            cycle={cycle}
-            level={level}
-            preview={preview}
-            onPreview={setPreview}
-            shop={shop}
-            broken={broken}
-            sky={skyApi.sky}
-          />
+        {tab === 'town' && (
+          <Suspense fallback={<p className="muted">Загружаю город…</p>}>
+            <TownTab
+              world={world}
+              cycle={cycle}
+              level={level}
+              preview={preview}
+              onPreview={setPreview}
+              shop={shop}
+              skyApi={skyApi}
+              town={townApi}
+              now={now}
+            />
+          </Suspense>
         )}
         {tab === 'problems' && <Problems cycle={cycle} />}
         {tab === 'growth' && <Growth world={world} cycle={cycle} />}
         {tab === 'skills' && <Skills world={world} />}
+        {tab === 'lab' && (
+          <Suspense fallback={<p className="muted">Загружаю каталог…</p>}>
+            <TownLab />
+          </Suspense>
+        )}
       </main>
 
       <footer className="foot">

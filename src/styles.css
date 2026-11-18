@@ -1977,3 +1977,364 @@ pre.prompt {
 .rank .meter {
   display: none;
 }
+
+/* ——— Город в 3D ——— */
+
+.town3d {
+  position: relative;
+  height: min(64vh, 520px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #8f9c74;
+}
+
+@media (min-width: 960px) {
+  .town3d {
+    height: 600px;
+  }
+}
+
+.town3d-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+  outline-offset: -3px;
+}
+
+.town3d-canvas:active {
+  cursor: grabbing;
+}
+
+.town3d-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.town3d-tag {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(251, 250, 246, 0.92);
+  color: #1f2420;
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.town3d-tag small {
+  font-size: 11px;
+  color: #4d544d;
+}
+
+.town3d-status {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(251, 250, 246, 0.92);
+  color: #1f2420;
+  font-size: 13px;
+}
+
+.lab-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.lab-controls label {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.lab-scene {
+  height: min(78vh, 760px);
+}
+
+.town3d-tag.is-timer {
+  background: rgba(244, 232, 205, 0.95);
+}
+
+.town3d-buttons {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 70%;
+}
+
+.town3d-buttons button {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid rgba(60, 60, 50, 0.25);
+  border-radius: 10px;
+  background: rgba(251, 250, 246, 0.92);
+  color: #1f2420;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.town3d-hint {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  margin: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(251, 250, 246, 0.8);
+  color: #2c322d;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.town3d-status {
+  bottom: 34px;
+}
+
+/* Панель ресурсов: значок и число, подпись — по нажатию. */
+
+:root {
+  --warm: #8f5c0e;
+  --warm-soft: #f4e8cd;
+  --rust: #9e432c;
+  --rust-soft: #f5e1d8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --warm: #e2ad55;
+    --warm-soft: #382c15;
+    --rust: #e58d6f;
+    --rust-soft: #3b231b;
+  }
+}
+
+:root[data-theme='dark'] {
+  --warm: #e2ad55;
+  --warm-soft: #382c15;
+  --rust: #e58d6f;
+  --rust-soft: #3b231b;
+}
+
+.hud {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.hud button {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 5px 0 4px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.hud button.is-on,
+.hud button:hover {
+  background: var(--surface-2);
+}
+
+.hud svg {
+  width: 20px;
+  height: 20px;
+}
+
+.hud-hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--warm-soft);
+  color: var(--ink);
+}
+
+.act-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.cost {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cost-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cost-chip svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cost-chip.is-short {
+  background: var(--rust-soft);
+  color: var(--rust);
+}
+
+.cost-chip small {
+  font-size: 12px;
+}
+
+.reasons,
+.needs {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.reasons li,
+.why {
+  color: var(--rust);
+}
+
+.reasons li::before {
+  content: '— ';
+}
+
+.needs li {
+  color: var(--ink-2);
+}
+
+.needs li.is-done {
+  color: var(--accent-ink);
+}
+
+.levels {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0 10px;
+}
+
+.levels span {
+  width: 26px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+
+.levels span.is-on {
+  background: var(--accent);
+}
+
+.levels span.is-next {
+  background: var(--warm);
+}
+
+.levels small {
+  margin-left: 6px;
+  color: var(--muted);
+}
+
+.building-bar {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--warm-soft);
+  display: grid;
+  gap: 8px;
+}
+
+.building-bar > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.building-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warm) 22%, transparent);
+  overflow: hidden;
+}
+
+.building-track span {
+  display: block;
+  height: 100%;
+  background: var(--warm);
+}
+
+.build-menu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+
+.build-menu li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.build-menu li:first-child {
+  border-top: 0;
+}
+
+.build-menu li > div:first-child {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.build-menu li.is-locked {
+  opacity: 0.62;
+}

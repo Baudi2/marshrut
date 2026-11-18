@@ -26,7 +26,7 @@ const GROUPS = [
 
 const SESSIONS: [string, string, string] = ['занятие', 'занятия', 'занятий']
 
-export function Shop({ shop }: { shop: ShopApi }) {
+export function Shop({ shop, groups }: { shop: ShopApi; groups?: ('gear' | 'camp')[] }) {
   const { wallet, damage, unsynced } = shop
   const repairTotal = damage.reduce((sum, d) => sum + d.cost, 0)
   const pending = unsynced.purchases.length + unsynced.repairs.length
@@ -83,7 +83,7 @@ export function Shop({ shop }: { shop: ShopApi }) {
         </div>
       )}
 
-      {GROUPS.map((group) => (
+      {GROUPS.filter((group) => !groups || groups.includes(group.id)).map((group) => (
         <section key={group.id} className="shop-group">
           <h4>{group.title}</h4>
           <p className="muted small">{group.note}</p>

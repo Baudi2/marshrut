@@ -1,7 +1,8 @@
 import { TRADE_COINS, tradeYield } from './town'
 import { describe, expect, it } from 'vitest'
 import { toISO } from './rules'
-import { BUILDINGS, TIERS, blockers, buildCost, buildingType, maxLevel, replayTown, type Means, type Town, type TownAction } from './town'
+import { SHOP } from './shop'
+import { BUILDINGS, COMFORT, TIERS, arrivalPace, blockers, buildCost, buildingType, comfortRoom, maxLevel, moodOf, replayTown, type Means, type Town, type TownAction } from './town'
 
 const day = (n: number) => toISO(new Date(2026, 10, 18 + n))
 /** Действие в 18:00 дня n. */
@@ -34,17 +35,18 @@ describe('правила города', () => {
     expect(replayTown(actions, [], new Date(2026, 10, 18, 18, 5))).toMatchObject({ tier: 1, spent: { coins: 60, gems: 0 } })
   })
 
-  it('ход: путник вскапывает огород, еда появляется, приходит житель', () => {
+  it('ход: путник вскапывает огород, еда появляется, приходят жители', () => {
     const actions = [
       evening(0, { do: 'tier' }),
       evening(0, { do: 'build', type: 'house' }),
       { at: `${day(0)}T18:10:00`, do: 'build' as const, type: 'garden' },
     ]
     const town = replayTown(actions, [day(1)], noon(1))
-    expect(town).toMatchObject({ turns: 1, population: 1, food: 3, housing: 2 })
-    expect(town.perTurn).toMatchObject({ food: 3, eaten: 1 })
-    // второй ход: приходит второй житель, одна порция за ход остаётся в запас
-    expect(replayTown(actions, [day(1), day(2)], noon(2))).toMatchObject({ population: 2, food: 5 })
+    // в пустом лагере уюта хватает с запасом: в первый же ход приходят двое
+    expect(town).toMatchObject({ turns: 1, population: 2, food: 3, housing: 2 })
+    expect(town.perTurn).toMatchObject({ food: 3, eaten: 2 })
+    // второй ход: мест больше нет, одна порция за ход остаётся в запас
+    expect(replayTown(actions, [day(1), day(2)], noon(2))).toMatchObject({ population: 2, food: 4 })
   })
 
   it('без занятий ходов нет: простой ничего не даёт и ничего не отнимает', () => {
@@ -107,6 +109,73 @@ describe('правила города', () => {
   })
 })
 
+describe('довольство', () => {
+  // Журнал правила не проверяет, поэтому жилища и огороды можно поставить прямо на стоянке:
+  // так уют от ступени самый маленький и видно его действие.
+  const crowded = [
+    evening(0, { do: 'build', type: 'house' }),
+    { at: `${day(0)}T18:01:00`, do: 'build' as const, type: 'house' },
+    { at: `${day(0)}T18:02:00`, do: 'build' as const, type: 'garden' },
+    { at: `${day(0)}T18:03:00`, do: 'build' as const, type: 'garden' },
+  ]
+
+  it('уют складывается из ступени, колодцев, таверны и украшений', () => {
+    expect(replayTown([], [], noon(0)).comfort).toEqual({ total: 1, center: 1, wells: 0, tavern: 0, decor: 0 })
+    const camp = replayTown([evening(0, { do: 'tier' })], [], noon(1))
+    expect(camp.comfort.total).toBe(COMFORT.base + COMFORT.tier)
+    const built = replayTown(
+      [evening(0, { do: 'build', type: 'well' }), evening(1, { do: 'upgrade', id: 'well-1' }), evening(0, { do: 'build', type: 'tavern' })],
+      [],
+      noon(3),
+      [
+        { item: 'bench', date: day(0) },
+        { item: 'lamps', date: day(1) },
+        { item: 'bench', date: day(2) },
+        { item: 'hat', date: day(0) },
+      ],
+    )
+    // колодец второго уровня — 4, таверна — 4, скамьи (один раз) и фонари — 6; шляпа уюта не даёт
+    expect(built.comfort).toEqual({ total: 15, center: 1, wells: 4, tavern: 4, decor: 6 })
+  })
+
+  it('довольство — уют на одного жителя; без жителей оно полное', () => {
+    expect(moodOf({ comfort: { total: 1, center: 1, wells: 0, tavern: 0, decor: 0 }, population: 0 })).toBe(100)
+    const at = (total: number, population: number) => ({ comfort: { total, center: total, wells: 0, tavern: 0, decor: 0 }, population })
+    expect(moodOf(at(5, 8))).toBe(63)
+    expect(moodOf(at(9, 4))).toBe(100)
+    expect([arrivalPace(at(5, 4)), arrivalPace(at(5, 5)), arrivalPace(at(5, 9)), arrivalPace(at(5, 10))]).toEqual(['fast', 'normal', 'normal', 'stopped'])
+    expect(comfortRoom(at(5, 0))).toBe(10)
+  })
+
+  it('когда уюта мало, новые жители не приходят, хотя место и еда есть', () => {
+    const town = replayTown(crowded, days(20), noon(20))
+    expect(town.housing).toBe(4)
+    expect(town.perTurn.food).toBeGreaterThanOrEqual(town.population + 2)
+    expect(town.population).toBe(2)
+    expect(arrivalPace(town)).toBe('stopped')
+    expect(moodOf(town)).toBe(50)
+  })
+
+  it('украшения добавляют уют — и жители приходят снова, со следующего хода после покупки', () => {
+    const decor = [
+      { item: 'pot', date: day(10) },
+      { item: 'signpost', date: day(10) },
+    ]
+    // ход десятого дня прошёл до покупки
+    expect(replayTown(crowded, days(11), noon(10), decor)).toMatchObject({ population: 2, comfort: { total: 3, decor: 2 } })
+    // уют 3 на двоих — с запасом: на одиннадцатый день приходят сразу двое
+    expect(replayTown(crowded, days(12), noon(11), decor).population).toBe(4)
+  })
+
+  it('пока уюта хватает с запасом, за ход приходит на одного жителя больше', () => {
+    const two = [day(1), day(2)]
+    // после первого хода жителей двое. Котелок: уют 2 на двоих, без запаса — приходит один.
+    expect(replayTown(crowded, two, noon(2), [{ item: 'pot', date: day(0) }]).population).toBe(3)
+    // Фонари: уют 5, с запасом — приходят двое.
+    expect(replayTown(crowded, two, noon(2), [{ item: 'lamps', date: day(0) }]).population).toBe(4)
+  })
+})
+
 // --- Симуляция темпа: насколько долго хватает развития ---
 
 /** Доход за учебный день в цикле 1: около 2250 монет на 30 дней. */
@@ -125,14 +194,17 @@ const specialsBy = (d: number) => 2 + Math.floor(d * 0.66)
 
 function simulate(studyDays: number) {
   const actions: TownAction[] = []
+  // Украшения из лавки: модель берёт их за монеты, когда уюта не хватает, а колодец и таверну улучшить нечем.
+  const decor: { item: string; date: string }[] = []
+  let decorCoins = 0
   const reached: Record<number, number> = {}
   let town: Town = replayTown([], [], noon(0))
   for (let d = 1; d <= studyDays; d++) {
     const dates = days(d + 1).slice(1)
     for (let slot = 0; slot < 3; slot++) {
       const time = new Date(2026, 10, 18 + d, 18, slot)
-      town = replayTown(actions, dates, time)
-      const means: Means = { coins: COINS_PER_DAY * d - town.spent.coins, gems: gemsBy(d) - town.spent.gems, specials: specialsBy(d) }
+      town = replayTown(actions, dates, time, decor)
+      const means: Means = { coins: COINS_PER_DAY * d - town.spent.coins - decorCoins, gems: gemsBy(d) - town.spent.gems, specials: specialsBy(d) }
       const can = (a: Omit<TownAction, 'at'>) => blockers(town, a, means).length === 0
       const lowest = (type: string) =>
         town.buildings.filter((b) => b.type === type && !b.pending).sort((a, b) => a.level - b.level)[0]
@@ -144,9 +216,22 @@ function simulate(studyDays: number) {
       const next = TIERS[town.tier + 1]
       // Игрок копит на ступень, когда остальные её условия уже выполнены.
       const saving = !!next && !town.tierPending && town.population >= next.residents && means.specials >= next.specials
+      // Уют нужен, только пока жителей не хватает для следующей ступени.
+      const cramped = arrivalPace(town) === 'stopped' && town.population < town.housing && (!next || town.population < next.residents)
+      if (cramped && !can({ do: 'tier' }) && !grow('well') && !grow('tavern')) {
+        const item = SHOP.find(
+          (i) => i.comfort && i.coins && (i.tier ?? 0) <= town.tier && means.coins >= i.coins && !decor.some((x) => x.item === i.id),
+        )
+        if (item) {
+          decor.push({ item: item.id, date: day(d) })
+          decorCoins += item.coins!
+          continue
+        }
+      }
       const wants: (Omit<TownAction, 'at'> | null)[] = [
         can({ do: 'tier' }) ? { do: 'tier' } : null,
         town.population >= 5 && !town.buildings.some((b) => b.type === 'well') ? grow('well') : null,
+        cramped ? (grow('well') ?? grow('tavern')) : null,
         town.population >= town.housing - 1 ? grow('house') : null,
         town.perTurn.food <= town.population + 2 ? (grow('garden') ?? grow('pier') ?? grow('bakery')) : null,
         town.food >= town.foodCap - 2 || (!!next && town.foodCap < next.food) ? grow('barn') : null,
@@ -159,18 +244,18 @@ function simulate(studyDays: number) {
       if (!pick) break
       actions.push({ at: time.toISOString(), ...pick })
     }
-    town = replayTown(actions, dates, new Date(2026, 10, 18 + d, 23))
+    town = replayTown(actions, dates, new Date(2026, 10, 18 + d, 23), decor)
     const tierNow = town.tierPending?.n ?? town.tier
     if (reached[tierNow] === undefined) reached[tierNow] = d
   }
   const levels = town.buildings.reduce((sum, b) => sum + b.level, 0)
   const possible = BUILDINGS.reduce((sum, t) => sum + t.count[5] * 5, 0)
   const purse: Means = {
-    coins: COINS_PER_DAY * studyDays - town.spent.coins,
+    coins: COINS_PER_DAY * studyDays - town.spent.coins - decorCoins,
     gems: gemsBy(studyDays) - town.spent.gems,
     specials: specialsBy(studyDays),
   }
-  return { reached, town, levels, possible, actions: actions.length, purse, stuck: blockers(town, { do: 'tier' }, purse) }
+  return { reached, town, levels, possible, actions: actions.length, purse, decor, stuck: blockers(town, { do: 'tier' }, purse) }
 }
 
 describe('темп развития', () => {
@@ -179,7 +264,8 @@ describe('темп развития', () => {
   console.log(
     'ступени по учебным дням:', run.reached,
     '| уровней построено:', run.levels, 'из', run.possible,
-    '| жителей:', run.town.population,
+    '| жителей:', run.town.population, 'уют:', run.town.comfort.total,
+    '| украшения:', run.decor.map((x) => `${x.item} ${x.date}`).join(', '),
     '| осталось монет:', run.purse.coins, 'камней:', run.purse.gems,
     '| еда:', run.town.food, '/', run.town.foodCap,
     '| что мешает следующей ступени:', run.stuck,

@@ -2,6 +2,7 @@
 // Состояние города нигде не хранится: оно считается заново из журнала действий и дат занятий.
 // Один день с занятием — один ход (еда, материалы, жители). По настоящим часам идёт только стройка.
 import { parseISO } from './rules'
+import { shopItem } from './shop'
 
 export interface Tier {
   n: number
@@ -33,6 +34,12 @@ export const LEVEL_HOURS = [5 / 60, 1, 4, 12, 24]
 export const LEVEL_COST = [1, 1.8, 3.2, 5.8, 10.5]
 /** Без колодца жителей не больше стольких. */
 export const NO_WELL_LIMIT = 6
+/**
+ * Уют: сколько даёт сама стоянка, каждая ступень, уровень колодца и уровень таверны.
+ * Украшения из лавки добавляют своё — поле comfort в src/game/shop.ts.
+ * Довольство — это уют, делённый на число жителей.
+ */
+export const COMFORT = { base: 1, tier: 2, well: 2, tavern: 4 }
 const BASE_FOOD_CAP = 20
 const BASE_MATERIAL_CAP = 30
 /** Мастерская ускоряет стройку на столько за уровень. */
@@ -166,6 +173,8 @@ export interface Town {
   perTurn: { food: number; eaten: number; wood: number; brick: number }
   /** Рабочих дней защиты от запустения. */
   firewood: number
+  /** Уют и из чего он складывается. decor — украшения из лавки. */
+  comfort: { total: number; center: number; wells: number; tavern: number; decor: number }
 }
 
 const staffFor = (level: number) => (level >= 5 ? 3 : level >= 3 ? 2 : 1)
@@ -180,6 +189,11 @@ function refresh(town: Town) {
   town.foodCap = BASE_FOOD_CAP + sum((t) => t.foodCap)
   town.materialCap = BASE_MATERIAL_CAP + sum((t) => t.materialCap)
   town.firewood = sum((t) => t.firewood)
+  const center = COMFORT.base + COMFORT.tier * town.tier
+  const wells = levelsOf(town, 'well').reduce((total, b) => total + b.level * COMFORT.well, 0)
+  const tavern = topLevel(town, 'tavern') * COMFORT.tavern
+  const decor = town.comfort.decor
+  town.comfort = { center, wells, tavern, decor, total: center + wells + tavern + decor }
   town.builders = {
     total: 1 + (topLevel(town, 'workshop') > 0 ? 1 : 0) + (town.tier >= 4 ? 1 : 0),
     busy: town.buildings.filter((b) => b.pending).length + (town.tierPending ? 1 : 0),
@@ -226,6 +240,8 @@ function settle(town: Town, time: number) {
  * Новый житель приходит, если есть место и еды за ход хватит на всех вместе с ним и ещё останется порция:
  * так излишек копится всегда, и ступень не упирается в пустой амбар.
  * Голода нет: если еды не хватает, новые жители просто не приходят.
+ * Довольство: новичок приходит, только если и с ним уюта останется больше половины от числа жителей;
+ * пока уюта хватает всем с запасом, за ход приходит на одного больше.
  */
 function turn(town: Town) {
   const made = yields(town)
@@ -233,12 +249,29 @@ function turn(town: Town) {
   town.wood = Math.min(town.materialCap, town.wood + made.wood)
   town.brick = Math.min(town.materialCap, town.brick + made.brick)
   const room = Math.min(town.housing, topLevel(town, 'well') > 0 ? Infinity : NO_WELL_LIMIT)
-  const arrivals = topLevel(town, 'tavern') > 0 ? 2 : 1
+  const arrivals = (topLevel(town, 'tavern') > 0 ? 2 : 1) + (arrivalPace(town) === 'fast' ? 1 : 0)
   for (let i = 0; i < arrivals; i++) {
-    if (town.population < room && made.food >= town.population + 2) town.population++
+    if (town.population < room && made.food >= town.population + 2 && arrivalPace(town) !== 'stopped') town.population++
   }
   town.turns++
 }
+
+/** Довольство в процентах: уют на одного жителя, не больше 100. */
+export const moodOf = (town: Pick<Town, 'comfort' | 'population'>): number =>
+  town.population <= 0 ? 100 : Math.min(100, Math.round((100 * town.comfort.total) / town.population))
+
+/**
+ * Как довольство влияет на приход жителей:
+ * fast — уюта хватит всем и вместе с новичком, за ход приходит на одного больше;
+ * stopped — с новичком уюта стало бы меньше половины от числа жителей, никто не приходит.
+ */
+export function arrivalPace(town: Pick<Town, 'comfort' | 'population'>): 'fast' | 'normal' | 'stopped' {
+  if (town.comfort.total > town.population) return 'fast'
+  return town.comfort.total * 2 > town.population ? 'normal' : 'stopped'
+}
+
+/** Скольким жителям хватает нынешнего уюта: дальше новые не приходят. */
+export const comfortRoom = (town: Pick<Town, 'comfort'>): number => town.comfort.total * 2
 
 export function buildHours(town: Town, level: number): number {
   return LEVEL_HOURS[level - 1] * (1 - WORKSHOP_SPEEDUP * topLevel(town, 'workshop'))
@@ -289,8 +322,9 @@ function act(town: Town, action: TownAction, time: number) {
 /**
  * Состояние города на момент now.
  * studyDays — даты занятий: каждая даёт один ход в начале дня, чтобы ресурсы были доступны в тот же день.
+ * decor — покупки из лавки: украшение даёт уют со дня покупки, но ход того же дня уже прошёл.
  */
-export function replayTown(actions: TownAction[], studyDays: string[], now: Date): Town {
+export function replayTown(actions: TownAction[], studyDays: string[], now: Date, decor: { item: string; date: string }[] = []): Town {
   const town: Town = {
     tier: 0,
     tierPending: null,
@@ -307,7 +341,16 @@ export function replayTown(actions: TownAction[], studyDays: string[], now: Date
     turns: 0,
     perTurn: { food: 0, eaten: 0, wood: 0, brick: 0 },
     firewood: 0,
+    comfort: { total: COMFORT.base, center: COMFORT.base, wells: 0, tavern: 0, decor: 0 },
   }
+  // Каждое украшение считается один раз, с самой ранней покупки.
+  const bought = new Map<string, number>()
+  for (const purchase of decor) {
+    const time = parseISO(purchase.date).getTime()
+    if (shopItem(purchase.item)?.comfort && time < (bought.get(purchase.item) ?? Infinity)) bought.set(purchase.item, time)
+  }
+  const decorAt = (time: number) =>
+    [...bought].reduce((total, [item, since]) => total + (since < time ? (shopItem(item)?.comfort ?? 0) : 0), 0)
   const limit = now.getTime()
   const events = [
     ...actions.map((action) => ({ time: Date.parse(action.at), action, day: null as string | null })),
@@ -317,10 +360,12 @@ export function replayTown(actions: TownAction[], studyDays: string[], now: Date
     .sort((a, b) => a.time - b.time || (a.day ? -1 : 1))
 
   for (const event of events) {
+    town.comfort.decor = decorAt(event.time)
     settle(town, event.time)
     if (event.action) act(town, event.action, event.time)
     else turn(town)
   }
+  town.comfort.decor = decorAt(limit)
   settle(town, limit)
   town.perTurn = { ...yields(town), eaten: town.population }
   return town

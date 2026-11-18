@@ -656,7 +656,7 @@ export function buildWorld(
     }
   }
 
-  const town = replayTown(ledger.town ?? [], sessionDates, now)
+  const town = replayTown(ledger.town ?? [], sessionDates, now, ledger.purchases)
   const wallet = walletFor(coinsEarned, gemsEarned, owned, {
     coins: repairsSpent(ledger.repairs) + town.spent.coins,
     gems: town.spent.gems,

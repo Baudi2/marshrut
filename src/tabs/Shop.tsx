@@ -125,7 +125,10 @@ function ItemRow({ item, shop }: { item: ShopItem; shop: ShopApi }) {
       <ItemArt id={item.id} />
       <div className="shop-info">
         <b>{item.name}</b>
-        <span className="muted small">{item.about}</span>
+        <span className="muted small">
+          {item.about}
+          {item.comfort ? ` Уют +${item.comfort}.` : ''}
+        </span>
       </div>
       <div className="shop-act">
         {!owned && (

@@ -3,16 +3,20 @@ import { STAGE_LABEL, type BuildingView, type CycleView, type World } from '../g
 import type { ConditionLevel } from '../game/rules'
 import {
   BUILDINGS,
+  COMFORT,
   GOODS,
   LEVEL_HOURS,
   NO_WELL_LIMIT,
   TIERS,
   TRADE_COINS,
+  arrivalPace,
   blockers,
   buildCost,
   buildHours,
   buildingType,
+  comfortRoom,
   maxLevel,
+  moodOf,
   tierCost,
   tradeYield,
   type BuildingType,
@@ -83,6 +87,14 @@ const PeopleIcon = () => (
     <path d="M10.800 16c.2-2.400 1.400-4 3.200-4 2 0 3.400 1.700 3.500 4Z" fill="#9a7b6a" />
   </Glyph>
 )
+const MoodIcon = () => (
+  <Glyph>
+    <circle cx="10" cy="10" r="7" fill="#d9a441" />
+    <circle cx="7.600" cy="8.400" r="1" fill="#5c4424" />
+    <circle cx="12.400" cy="8.400" r="1" fill="#5c4424" />
+    <path d="M6.800 11.600c.8 1.500 1.900 2.200 3.200 2.200s2.400-.7 3.200-2.200" stroke="#5c4424" strokeWidth="1.300" fill="none" strokeLinecap="round" />
+  </Glyph>
+)
 const HammerIcon = () => (
   <Glyph>
     <path d="M11 3.500 16.500 9l-2 2-1.300-1.300-7.400 7.500c-.6.6-1.600.6-2.200 0-.6-.6-.6-1.600 0-2.200l7.500-7.400L9.800 6.200Z" fill="#7a6352" />
@@ -103,10 +115,10 @@ function gives(type: BuildingType, level: number): string {
   if (type.foodCap) return `запас еды: +${at(type.foodCap)}`
   if (type.materialCap) return `запас дерева и кирпича: +${at(type.materialCap)}`
   if (type.firewood) return `запас дров: прикрывает ${at(type.firewood)} ${plural(at(type.firewood), ['рабочий день', 'рабочих дня', 'рабочих дней'])} пропуска — город не зарастает и ничего не ломается`
-  if (type.id === 'well') return `без колодца жителей не больше ${NO_WELL_LIMIT}`
+  if (type.id === 'well') return `уют +${COMFORT.well * level}; без колодца жителей не больше ${NO_WELL_LIMIT}`
   if (type.id === 'workshop') return `стройка быстрее на ${6 * level}%, второй строитель`
   if (type.id === 'mill') return `еда огородов +${10 * level}%`
-  if (type.id === 'tavern') return 'жители приходят по двое за ход'
+  if (type.id === 'tavern') return `уют +${COMFORT.tavern * level}; за ход приходит на одного жителя больше`
   if (type.id === 'market') return `обмен: за ${TRADE_COINS} монет — еды ${tradeYield(level, 'food')}, дерева ${tradeYield(level, 'wood')} или кирпича ${tradeYield(level, 'brick')}`
   if (type.id === 'tower') return 'после долгого перерыва ломается не больше одного украшения'
   return ''
@@ -161,6 +173,20 @@ function fileAdvice(b: BuildingView, cycle: CycleView | undefined): string {
   }
 }
 
+/** Довольство одной подсказкой: из чего сложился уют и как он влияет на приход жителей. */
+function moodText(town: World['town']): string {
+  const c = town.comfort
+  const parts = [`ступень ${c.center}`, c.wells ? `колодцы ${c.wells}` : '', c.tavern ? `таверна ${c.tavern}` : '', c.decor ? `украшения ${c.decor}` : ''].filter(Boolean)
+  const pace = arrivalPace(town)
+  const effect =
+    pace === 'fast'
+      ? 'Уюта хватает всем с запасом: за ход приходит на одного жителя больше.'
+      : pace === 'normal'
+        ? 'Жители приходят как обычно; при довольстве 100% с запасом приходили бы быстрее.'
+        : 'Уюта не больше половины от числа жителей: новые не приходят.'
+  return `Довольство: ${moodOf(town)}%. Уют ${c.total} (${parts.join(', ')}) на ${town.population} ${plural(town.population, RESIDENTS)}; его хватает на ${comfortRoom(town)}. ${effect} Уют дают колодцы, таверна, украшения из лавки и новая ступень.`
+}
+
 const TIER_PREVIEW = ['Стоянка', 'Лагерь', 'Хутор', 'Деревня', 'Городок', 'Город']
 
 export default function TownTab({ world, cycle, level, preview, onPreview, shop, skyApi, town: api, now }: Props) {
@@ -195,7 +221,8 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
     { key: 'food', icon: <FoodIcon />, value: `${Math.floor(town.food)}`, text: `Запас еды: ${Math.floor(town.food)} из ${town.foodCap}. За ход: +${town.perTurn.food}, жители съедают ${town.perTurn.eaten}.` },
     { key: 'wood', icon: <WoodIcon />, value: `${Math.floor(town.wood)}`, text: `Дерево: ${Math.floor(town.wood)} из ${town.materialCap}. За ход: +${town.perTurn.wood}.` },
     { key: 'brick', icon: <BrickIcon />, value: `${Math.floor(town.brick)}`, text: `Кирпич: ${Math.floor(town.brick)} из ${town.materialCap}. За ход: +${town.perTurn.brick}.` },
-    { key: 'people', icon: <PeopleIcon />, value: `${town.population}/${town.housing}`, text: `Жители: ${town.population}, мест ${town.housing}. Новый житель приходит за ход, если есть место и еды хватает с запасом.` },
+    { key: 'people', icon: <PeopleIcon />, value: `${town.population}/${town.housing}`, text: `Жители: ${town.population}, мест ${town.housing}. Новый житель приходит за ход, если есть место, еды хватает с запасом и уюта достаточно.` },
+    { key: 'mood', icon: <MoodIcon />, value: `${moodOf(town)}%`, text: moodText(town) },
     { key: 'builders', icon: <HammerIcon />, value: `${town.builders.total - town.builders.busy}/${town.builders.total}`, text: `Свободных строителей: ${town.builders.total - town.builders.busy} из ${town.builders.total}.` },
   ]
 

@@ -13,6 +13,8 @@ export interface ShopItem {
   slot?: 'jacket'
   /** С какой ступени города можно купить. Без поля — с самой стоянки. */
   tier?: number
+  /** Сколько уюта украшение даёт городу: от уюта зависит довольство жителей. */
+  comfort?: number
 }
 
 export const SHOP: ShopItem[] = [
@@ -27,11 +29,11 @@ export const SHOP: ShopItem[] = [
 
   // Украшения города. Огород, колодец и очаг стали обычными постройками и центром поселения,
   // мост открывается сам вместе с «Лагерем» — поэтому в лавке их больше нет.
-  { id: 'pot', group: 'camp', name: 'Котелок', about: 'Тренога с котелком над костром.', coins: 80 },
-  { id: 'signpost', group: 'camp', name: 'Указатель', about: 'Столб со стрелками у тропы.', coins: 100 },
-  { id: 'bench', group: 'camp', name: 'Скамьи', about: 'Места у костра; в городе — у костровища на площади.', coins: 120 },
-  { id: 'lamps', group: 'camp', name: 'Фонари', about: 'У домов, на площади и на мосту. Без них ночью светят только костры и окна.', coins: 320, tier: 1 },
-  { id: 'flagpole', group: 'camp', name: 'Флагшток', about: 'Высокий флаг на площади.', gems: 2, tier: 1 },
+  { id: 'pot', group: 'camp', name: 'Котелок', about: 'Тренога с котелком над костром.', coins: 80, comfort: 1 },
+  { id: 'signpost', group: 'camp', name: 'Указатель', about: 'Столб со стрелками у тропы.', coins: 100, comfort: 1 },
+  { id: 'bench', group: 'camp', name: 'Скамьи', about: 'Места у костра; в городе — у костровища на площади.', coins: 120, comfort: 2 },
+  { id: 'lamps', group: 'camp', name: 'Фонари', about: 'У домов, на площади и на мосту. Без них ночью светят только костры и окна.', coins: 320, tier: 1, comfort: 4 },
+  { id: 'flagpole', group: 'camp', name: 'Флагшток', about: 'Высокий флаг на площади.', gems: 2, tier: 1, comfort: 3 },
 ]
 
 export const shopItem = (id: string): ShopItem | undefined => SHOP.find((item) => item.id === id)

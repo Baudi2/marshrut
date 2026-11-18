@@ -2071,30 +2071,6 @@ pre.prompt {
   background: rgba(244, 232, 205, 0.95);
 }
 
-.town3d-buttons {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-  max-width: 70%;
-}
-
-.town3d-buttons button {
-  min-width: 36px;
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid rgba(60, 60, 50, 0.25);
-  border-radius: 10px;
-  background: rgba(251, 250, 246, 0.92);
-  color: #1f2420;
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-
 .town3d-hint {
   position: absolute;
   left: 10px;

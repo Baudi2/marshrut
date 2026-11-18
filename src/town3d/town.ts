@@ -10,7 +10,22 @@ import { CENTER, constructionLook, lantern, levelLook, levelName, specialLook, t
 import { KIND } from './kit'
 import { worldMaterial } from './material'
 import { People, type PeopleInput } from './people'
-import { BRIDGE_X, CAMP_FIRE_AT, CAMP_TENT_AT, CENTER_AT, FIRE_AT, PLAZA, RIVER, forest, openPlots, plotOf, quarterSlot, riverCenter } from './plan'
+import {
+  BRIDGE_X,
+  CAMP_FIRE_AT,
+  CAMP_TENT_AT,
+  CENTER_AT,
+  FIRE_AT,
+  PLAZA,
+  RIVER,
+  forest,
+  lampsOpen,
+  openPlots,
+  plotOf,
+  quarterOpen,
+  quarterSlot,
+  riverCenter,
+} from './plan'
 
 export const TRACK_ACCENT: Record<string, string> = { A: '#2f6db5', B: '#b65a2c', C1: '#2b7d5c', C2: '#9a7012', E: '#b0507a' }
 export const NEUTRAL_ACCENT = '#8c8672'
@@ -171,7 +186,10 @@ export class TownScene {
   async build(view: TownView): Promise<void> {
     const version = ++this.version
     const { scenery } = this
-    const ctx: LookContext = { season: view.season }
+    const ctx: LookContext = { season: view.season, lamps: lampsOpen(view.tier) }
+    // На стоянке нет ни моста, ни слободы: постройки-файлы появятся на карте вместе с лагерем.
+    const quarter = quarterOpen(view.tier)
+    const specials = quarter ? view.specials : []
     const open = openPlots(view.tier)
     const marks: Mark[] = []
     const pickables: { id: string; box: THREE.Box3 }[] = []
@@ -232,7 +250,7 @@ export class TownScene {
     for (const plot of open) if (plot.type === 'park') put(parkLook, plot.x, plot.z, 0)
 
     // Слобода особых построек.
-    view.specials.forEach((special, i) => {
+    specials.forEach((special, i) => {
       const slot = quarterSlot(i)
       const accent = special.track ? (TRACK_ACCENT[special.track] ?? NEUTRAL_ACCENT) : NEUTRAL_ACCENT
       put(
@@ -250,7 +268,7 @@ export class TownScene {
       )
     })
 
-    put(bridgeLook, BRIDGE_X, riverCenter(BRIDGE_X), 0)
+    if (quarter) put(bridgeLook, BRIDGE_X, riverCenter(BRIDGE_X), 0)
 
     // Горы на севере: край карты.
     const peaks: [string, number, number, number, number][] = [
@@ -272,7 +290,7 @@ export class TownScene {
     jobs.push(People.preload(crowd))
 
     // Лес: по куску карты на каждую породу, чтобы невидимые куски не рисовались.
-    const trees = forest(view.tier, view.specials.length)
+    const trees = forest(view.tier, specials.length)
     const treeLooks = TREE_MODELS.map((key, kind) => buildLook((b) => b.model(key, { center: true }), ctx, kind))
     jobs.push(...treeLooks)
 
@@ -287,7 +305,9 @@ export class TownScene {
       season: view.season,
       tier: view.tier,
       open,
-      specials: view.specials.length,
+      pads: view.tier === 0 ? view.buildings.flatMap((b) => plotOf(b.id) ?? []) : open,
+      specials: specials.length,
+      quarter,
       neglect: view.neglect,
     })
     scenery.root.add(this.ground.land, this.ground.water)

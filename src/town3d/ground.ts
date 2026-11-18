@@ -18,8 +18,12 @@ export interface GroundInput {
   season: Season
   tier: number
   open: Plot[]
-  /** Сколько мест слободы занято. */
+  /** Под какими участками рисовать площадки. На стоянке — только под уже поставленным жилищем. */
+  pads: Plot[]
+  /** Сколько мест слободы занято. Ноль, пока слобода не открыта. */
   specials: number
+  /** Мост и слобода уже есть: тогда к ним ведёт тропа. */
+  quarter: boolean
   /** Запустение 0–3: улицы зарастают. */
   neglect: number
 }
@@ -128,7 +132,7 @@ function paintMap(input: GroundInput): HTMLCanvasElement {
 
   // Тропа к мосту и аллея слободы.
   soft(colors.dirt, 8)
-  g.globalAlpha = 0.9
+  g.globalAlpha = input.quarter ? 0.9 : 0
   const rows = Math.max(1, Math.ceil(input.specials / QUARTER.columns))
   line([[BRIDGE_X, PLAZA.d / 2], [BRIDGE_X, QUARTER.z + (rows - 1) * QUARTER.pitch + 5]], 2.8)
   for (let i = 0; i < input.specials; i++) {
@@ -140,7 +144,7 @@ function paintMap(input: GroundInput): HTMLCanvasElement {
   // Участки: земля под постройками чуть светлее травы.
   soft(colors.pad, 6)
   g.globalAlpha = 0.55
-  for (const plot of input.open) if (!plot.water) rect(plot.x, plot.z, PLOT, PLOT, 1.4)
+  for (const plot of input.pads) if (!plot.water) rect(plot.x, plot.z, PLOT, PLOT, 1.4)
   for (let i = 0; i < input.specials; i++) {
     const slot = quarterSlot(i)
     rect(slot.x, slot.z, QUARTER.plot, QUARTER.plot, 1.2)

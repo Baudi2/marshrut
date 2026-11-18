@@ -18,6 +18,7 @@ import {
 } from '../game/town'
 import { TownCanvas, fmtLeft } from '../town3d/TownCanvas'
 import { CENTER, LOOKS, levelName } from '../town3d/looks'
+import { quarterOpen } from '../town3d/plan'
 import { previewView, townView } from '../town3d/view'
 import { ConditionPreview, CopyButton, TrackBadge, plural } from '../ui/bits'
 import { CoinIcon, GemIcon } from '../world/extras'
@@ -335,7 +336,7 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
                     {gives(type, 1)}
                     {!locked && ` · построено ${have} из ${limit}`}
                   </div>
-                  {why.length > 0 && <div className="why small">{why.join('; ')}</div>}
+                  {why.length > 0 && <div className="why small">{locked ? why[0] : why.join('; ')}</div>}
                 </div>
                 <div className="act-row">
                   <Price cost={buildCost(type, 1)} town={town} world={world} />
@@ -393,7 +394,10 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
       <div className="card">
         <h3>Постройки-файлы</h3>
         <p className="muted">
-          Слобода за мостом. Каждая постройка — файл из твоих репозиториев: построено {cycle.buildings.filter((b) => b.stage >= 2).length}, строится{' '}
+          {quarterOpen(town.tier)
+            ? 'Слобода за мостом.'
+            : 'На стоянке их ещё не видно: мост и слобода появятся на карте, когда стоянка станет лагерем.'}{' '}
+          Каждая постройка — файл из твоих репозиториев: построено {cycle.buildings.filter((b) => b.stage >= 2).length}, строится{' '}
           {cycle.buildings.filter((b) => b.stage === 1).length}, участков {cycle.buildings.filter((b) => b.stage === 0).length}. Сейчас в городе{' '}
           {town.population} {plural(town.population, RESIDENTS)}.
         </p>

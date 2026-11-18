@@ -3,7 +3,7 @@ import { BUILDINGS, TIERS, maxLevel } from '../game/town'
 import { LookBuilder } from './look'
 import { CENTER, LOOKS, constructionLook, levelLook, specialLook, upgradeLook } from './looks'
 import index from './models.gen.json'
-import { PITCH, PLAZA, PLOTS, QUARTER_SLOTS, RIVER, forest, groundHeight, openPlots, plotOf, quarterSlot, riverCenter } from './plan'
+import { BRIDGE_X, PITCH, PLAZA, PLOTS, QUARTER_SLOTS, RIVER, forest, groundHeight, lampsOpen, openPlots, plotOf, quarterOpen, quarterSlot, riverCenter } from './plan'
 
 const models = index as unknown as Record<string, unknown>
 
@@ -74,6 +74,37 @@ describe('план города', () => {
     }
     // Чем выше ступень, тем меньше леса: город его расчищает.
     expect(forest(5, 22).length).toBeLessThan(forest(0, 22).length)
+  })
+})
+
+describe('стоянка', () => {
+  it('на первой ступени нет ни моста, ни слободы, ни фонарей: они открываются позже', () => {
+    expect(quarterOpen(0)).toBe(false)
+    expect(quarterOpen(1)).toBe(true)
+    expect(lampsOpen(0)).toBe(false)
+    expect(lampsOpen(1)).toBe(false)
+    expect(lampsOpen(2)).toBe(true)
+  })
+
+  it('пока моста нет, тропа к нему и места слободы под лесом', () => {
+    const onPath = (trees: { x: number; z: number }[]) => trees.filter((t) => Math.abs(t.x - BRIDGE_X) < 3 && t.z > PLAZA.d / 2 && t.z < riverCenter(0) - RIVER.half - 4).length
+    const slot = quarterSlot(0)
+    const onSlot = (trees: { x: number; z: number }[]) => trees.filter((t) => Math.abs(t.x - slot.x) < 4 && Math.abs(t.z - slot.z) < 4).length
+    expect(onPath(forest(0, 0))).toBeGreaterThan(0)
+    expect(onPath(forest(1, 22))).toBe(0)
+    expect(onSlot(forest(0, 0))).toBeGreaterThan(0)
+    expect(onSlot(forest(1, 22))).toBe(0)
+  })
+
+  it('фонарь не рисуется, пока фонари не открыты', () => {
+    const drawn = (lamps: boolean) => {
+      const builder = new LookBuilder(new Map(), { season: 'summer', lamps })
+      specialLook('cabin', 2)(builder)
+      return { count: builder.body.geometry().getAttribute('position').count, lamps: builder.lamps.length }
+    }
+    expect(drawn(false).lamps).toBe(0)
+    expect(drawn(true).lamps).toBe(1)
+    expect(drawn(true).count).toBeGreaterThan(drawn(false).count)
   })
 })
 

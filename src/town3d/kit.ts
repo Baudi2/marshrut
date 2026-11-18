@@ -20,7 +20,14 @@ export const modelUrl = (key: string) => `${import.meta.env.BASE_URL}models/${ke
 export function loadModel(key: string): Promise<GLTF> {
   let pending = files.get(key)
   if (!pending) {
-    pending = loader.loadAsync(modelUrl(key))
+    // Сеть может сорваться на одном файле из десятков: пробуем ещё дважды и не запоминаем неудачу.
+    const attempt = (left: number): Promise<GLTF> =>
+      loader.loadAsync(modelUrl(key)).catch((error) => {
+        if (left <= 0) throw error
+        return new Promise<GLTF>((resolve, reject) => setTimeout(() => attempt(left - 1).then(resolve, reject), 700))
+      })
+    pending = attempt(2)
+    pending.catch(() => files.delete(key))
     files.set(key, pending)
   }
   return pending

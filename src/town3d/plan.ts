@@ -100,6 +100,11 @@ export function quarterSlot(index: number): { x: number; z: number } {
 
 export const QUARTER_SLOTS = QUARTER.columns * QUARTER.rows
 
+/** На стоянке есть только костёр и палатка: мост и слобода появляются, когда она становится лагерем. */
+export const quarterOpen = (tier: number) => tier >= 1
+/** Фонари появляются со ступени «Хутор». */
+export const lampsOpen = (tier: number) => tier >= 2
+
 /** Границы, в которых двигается камера. */
 export const BOUNDS = { minX: -62, maxX: 62, minZ: -62, maxZ: QUARTER.z + QUARTER.rows * QUARTER.pitch }
 /** Размер земли: с запасом на лес и горы вокруг. */
@@ -140,13 +145,14 @@ export interface Tree {
 }
 
 /** Точка занята: участок, площадь, река, слобода, улица. */
-function taken(x: number, z: number, open: Plot[], specials: number): boolean {
+function taken(x: number, z: number, open: Plot[], specials: number, quarter: boolean): boolean {
   if (Math.abs(x - PLAZA.x) < PLAZA.w / 2 + 3 && Math.abs(z - PLAZA.z) < PLAZA.d / 2 + 3) return true
   if (Math.abs(z - riverCenter(x)) < RIVER.half + 3.2) return true
   for (const plot of open) {
     if (Math.abs(x - plot.x) < PITCH / 2 + 0.6 && Math.abs(z - plot.z) < PITCH / 2 + 0.6) return true
   }
   // Тропа от площади к мосту и аллея слободы.
+  if (!quarter) return false
   if (Math.abs(x - BRIDGE_X) < 3 && z > PLAZA.d / 2 && z < QUARTER.z + 34) return true
   for (let i = 0; i < specials; i++) {
     const slot = quarterSlot(i)
@@ -172,7 +178,7 @@ export function forest(tier: number, specials: number): Tree[] {
       // Вдали от города лес гуще, у самой площади — редкий.
       const far = Math.hypot(jx, jz - 4) / 90
       if (density > 0.34 + Math.min(0.5, far * 0.55)) continue
-      if (taken(jx, jz, open, specials)) continue
+      if (taken(jx, jz, open, specials, quarterOpen(tier))) continue
       // Сосны держатся севера и опушек у гор.
       const pine = kindRoll < (jz < -50 ? 0.7 : 0.22)
       trees.push({ x: jx, z: jz, kind: pine ? 3 : Math.floor(kindRoll * 97) % 3, scale, turn })

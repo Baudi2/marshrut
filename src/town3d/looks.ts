@@ -84,6 +84,7 @@ function fenceAround(b: LookBuilder, w: number, d: number, gap = 2) {
 
 /** Фонарь на столбе: ночью светится и кладёт тёплое пятно. */
 function lantern(b: LookBuilder, x: number, z: number, h = 2.6) {
+  if (b.ctx.lamps === false) return
   b.beam([x, 0, z], [x, h, z], 0.12, C.woodDark)
   b.beam([x, h, z], [x + 0.5, h, z], 0.08, C.woodDark)
   b.box(x + 0.5, h - 0.55, z, 0.26, 0.36, 0.26, '#d9c7a0', KIND.lamp)

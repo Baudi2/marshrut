@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Sky } from '../world/sky'
 import { Scenery } from './fx'
-import { BOUNDS, QUARTER } from './plan'
+import { BOUNDS } from './plan'
 import { Stage } from './stage'
 import { TownScene, type Mark, type TownView } from './town'
 
@@ -35,7 +35,8 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
   select.current = onSelect
   const [marks, setMarks] = useState<Mark[]>([])
   const [status, setStatus] = useState('Загружаю город…')
-  const [motion, setMotion] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  // Кнопок на карте нет: движение выключается только настройкой системы «уменьшить движение».
+  const [motion] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 
   const shown = useMemo(() => marks.filter((mark) => mark.readyAt || mark.id === selected), [marks, selected])
   const shownRef = useRef<Mark[]>([])
@@ -129,20 +130,7 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
           </span>
         ))}
       </div>
-      <div className="town3d-buttons">
-        <button onClick={() => stage.current?.zoomBy(0.8)} aria-label="Приблизить">
-          +
-        </button>
-        <button onClick={() => stage.current?.zoomBy(1.25)} aria-label="Отдалить">
-          −
-        </button>
-        <button onClick={() => stage.current?.lookAt(1, 0)}>Центр</button>
-        <button onClick={() => stage.current?.lookAt(0, QUARTER.z + 4)}>Слобода</button>
-        <button onClick={() => setMotion(!motion)} aria-pressed={motion}>
-          {motion ? 'Движение' : 'Без движения'}
-        </button>
-      </div>
-      <p className="town3d-hint">Карту двигает палец или мышь. Масштаб — щипок, кнопки или Ctrl + колесо.</p>
+      <p className="town3d-hint">Карту двигает палец или мышь. Масштаб — щипок или Ctrl + колесо.</p>
       {status && <p className="town3d-status">{status}</p>}
     </div>
   )

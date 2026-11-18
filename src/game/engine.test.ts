@@ -444,6 +444,23 @@ describe('починка', () => {
   })
 })
 
+describe('сторожевая башня', () => {
+  const purchases = [
+    { item: 'pot', date: '2026-11-18' },
+    { item: 'signpost', date: '2026-11-18' },
+    { item: 'bench', date: '2026-11-18' },
+  ]
+  const tower = [{ at: '2026-11-18T10:00:00', do: 'build' as const, type: 'tower' }]
+
+  it('под её присмотром долгий перерыв ломает одно украшение, а не два', () => {
+    const open = buildWorld([raw], [], '2026-12-07', { purchases, repairs: [] })
+    const guarded = buildWorld([raw], [], '2026-12-07', { purchases, repairs: [], town: tower })
+    expect(open.damage).toHaveLength(2)
+    expect(guarded.damage).toHaveLength(1)
+    expect(open.damage.map((d) => d.item)).toContain(guarded.damage[0].item)
+  })
+})
+
 describe('плановый перерыв', () => {
   const purchases = [
     { item: 'pot', date: '2026-11-18' },

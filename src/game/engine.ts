@@ -681,7 +681,8 @@ export function buildWorld(
     means: { coins: wallet.coins, gems: wallet.gems, specials },
     gemLog,
     side,
-    damage: damageFor(sessionDates, ledger.purchases, ledger.repairs, todayISO, neglect, paused),
+    // Сторожевая башня: под её присмотром за один перерыв ломается не больше одного украшения.
+    damage: damageFor(sessionDates, ledger.purchases, ledger.repairs, todayISO, neglect, paused, town.buildings.some((b) => b.type === 'tower' && b.level > 0) ? 1 : 2),
     sessionDates,
     lastActivity,
     missedWorkdays: missed,

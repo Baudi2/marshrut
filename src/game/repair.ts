@@ -50,6 +50,8 @@ export function damageFor(
   forcedLevel: ConditionLevel | null = null,
   /** Дни плановых перерывов: пропуском не считаются. */
   paused?: Set<string>,
+  /** Сколько вещей самое большее ломает один перерыв: сторожевая башня снижает до одной. */
+  maxBreaks = 2,
 ): Damage[] {
   const dates = [...new Set(sessionDates)].sort()
   if (!dates.length) return []
@@ -69,7 +71,7 @@ export function damageFor(
       .filter((id) => shopItem(id)?.group === 'camp')
       // Порядок зависит только от перерыва и вещи: пока перерыв длится, список не перетасовывается.
       .sort((a, b) => hash(storm.from + a) - hash(storm.from + b))
-    for (const id of standing.slice(0, BREAKS_BY_LEVEL[storm.level])) {
+    for (const id of standing.slice(0, Math.min(BREAKS_BY_LEVEL[storm.level], maxBreaks))) {
       const repaired = repairs.some((r) => r.item === id && r.date >= storm.from)
       const sessionsBack = storm.back ? dates.filter((d) => d >= storm.back!).length : 0
       if (repaired || (storm.back && sessionsBack >= HEAL_SESSIONS)) continue

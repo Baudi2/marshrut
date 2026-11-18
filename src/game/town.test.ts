@@ -1,3 +1,4 @@
+import { TRADE_COINS, tradeYield } from './town'
 import { describe, expect, it } from 'vitest'
 import { toISO } from './rules'
 import { BUILDINGS, TIERS, blockers, buildCost, buildingType, maxLevel, replayTown, type Means, type Town, type TownAction } from './town'
@@ -204,5 +205,53 @@ describe('темп развития', () => {
   it('за 280 учебных дней город построен, но улучшать ещё есть что', () => {
     expect(run.reached[5]).toBeLessThanOrEqual(280)
     expect(run.levels).toBeLessThan(run.possible)
+  })
+})
+
+describe('рынок', () => {
+  const start = '2026-01-05T09:00:00'
+  // Город с рынком первого уровня: ступень и стройка поставлены задним числом, журнал правила не проверяет.
+  const withMarket = (extra: { at: string; do: 'trade'; type: string }[] = []) =>
+    replayTown([{ at: start, do: 'build' as const, type: 'market' }, ...extra], [], new Date('2026-01-06T12:00:00'))
+  const rich = { coins: 500, gems: 0, specials: 0 }
+
+  it('партия товара стоит двадцать монет и растёт с уровнем рынка', () => {
+    expect(TRADE_COINS).toBe(20)
+    expect([1, 3, 5].map((level) => tradeYield(level, 'food'))).toEqual([10, 14, 18])
+    expect([1, 3, 5].map((level) => tradeYield(level, 'wood'))).toEqual([5, 7, 9])
+    expect([1, 3, 5].map((level) => tradeYield(level, 'brick'))).toEqual([3, 5, 7])
+    expect(tradeYield(0, 'food')).toBe(0)
+  })
+
+  it('обмен списывает монеты и кладёт товар на склад', () => {
+    const before = withMarket()
+    const after = withMarket([
+      { at: '2026-01-06T10:00:00', do: 'trade', type: 'food' },
+      { at: '2026-01-06T10:01:00', do: 'trade', type: 'wood' },
+    ])
+    expect(after.food - before.food).toBe(10)
+    expect(after.wood - before.wood).toBe(5)
+    expect(after.spent.coins - before.spent.coins).toBe(TRADE_COINS * 2)
+  })
+
+  it('без рынка торговать нельзя; полный склад и пустой кошелёк тоже не дают', () => {
+    const empty = replayTown([], [], new Date('2026-01-06T12:00:00'))
+    expect(blockers(empty, { do: 'trade', type: 'food' }, rich)).toEqual(['нужен рынок'])
+    const town = withMarket()
+    expect(blockers(town, { do: 'trade', type: 'food' }, rich)).toEqual([])
+    expect(blockers(town, { do: 'trade', type: 'food' }, { ...rich, coins: 5 })).toEqual(['не хватает монет: 15'])
+    // склад еды без амбара — 20: две партии по десять помещаются, третья уже нет
+    const full = withMarket([
+      { at: '2026-01-06T10:00:00', do: 'trade', type: 'food' },
+      { at: '2026-01-06T10:01:00', do: 'trade', type: 'food' },
+    ])
+    expect(full.food).toBe(20)
+    expect(blockers(full, { do: 'trade', type: 'food' }, rich)[0]).toMatch(/не поместится/)
+  })
+
+  it('строители торговле не нужны', () => {
+    const busy = withMarket([])
+    busy.builders = { total: 1, busy: 1 }
+    expect(blockers(busy, { do: 'trade', type: 'wood' }, rich)).toEqual([])
   })
 })

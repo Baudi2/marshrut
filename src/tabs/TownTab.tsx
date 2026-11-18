@@ -3,15 +3,18 @@ import { STAGE_LABEL, type BuildingView, type CycleView, type World } from '../g
 import type { ConditionLevel } from '../game/rules'
 import {
   BUILDINGS,
+  GOODS,
   LEVEL_HOURS,
   NO_WELL_LIMIT,
   TIERS,
+  TRADE_COINS,
   blockers,
   buildCost,
   buildHours,
   buildingType,
   maxLevel,
   tierCost,
+  tradeYield,
   type BuildingType,
   type Cost,
   type TownAction,
@@ -104,8 +107,8 @@ function gives(type: BuildingType, level: number): string {
   if (type.id === 'workshop') return `стройка быстрее на ${6 * level}%, второй строитель`
   if (type.id === 'mill') return `еда огородов +${10 * level}%`
   if (type.id === 'tavern') return 'жители приходят по двое за ход'
-  if (type.id === 'market') return 'пока украшает площадь: обмен появится позже'
-  if (type.id === 'tower') return 'пока украшает город: защита от поломок появится позже'
+  if (type.id === 'market') return `обмен: за ${TRADE_COINS} монет — еды ${tradeYield(level, 'food')}, дерева ${tradeYield(level, 'wood')} или кирпича ${tradeYield(level, 'brick')}`
+  if (type.id === 'tower') return 'после долгого перерыва ломается не больше одного украшения'
   return ''
 }
 
@@ -297,6 +300,35 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
             </>
           ) : (
             <p className="muted">Это высший уровень.</p>
+          )}
+          {building.type === 'market' && building.level > 0 && (
+            <div className="trade">
+              <h4>Обмен на рынке</h4>
+              <p className="muted small">Партия стоит {TRADE_COINS} монет. Чем выше уровень рынка, тем больше товара в партии.</p>
+              <ul className="build-menu">
+                {GOODS.map((goods) => {
+                  const why = blockers(town, { do: 'trade', type: goods.id }, world.means)
+                  return (
+                    <li key={goods.id}>
+                      <div>
+                        <b>
+                          {goods.name}: +{tradeYield(building.level, goods.id)}
+                        </b>
+                        {why.length > 0 && <div className="why small">{why.join('; ')}</div>}
+                      </div>
+                      <div className="act-row">
+                        <span className="cost-chip">
+                          <CoinIcon /> {TRADE_COINS}
+                        </span>
+                        <button className="btn" disabled={why.length > 0} onClick={() => api.act({ do: 'trade', type: goods.id })} aria-label={`Купить: ${goods.name}`}>
+                          Купить
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           )}
         </div>
       )}

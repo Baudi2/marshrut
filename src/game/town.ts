@@ -81,6 +81,23 @@ export const BUILDINGS: BuildingType[] = [
 
 export const buildingType = (id: string): BuildingType | undefined => BUILDINGS.find((b) => b.id === id)
 
+/** Рынок: одна партия товара стоит столько монет. */
+export const TRADE_COINS = 20
+export type Goods = 'food' | 'wood' | 'brick'
+export const GOODS: { id: Goods; name: string }[] = [
+  { id: 'food', name: 'еда' },
+  { id: 'wood', name: 'дерево' },
+  { id: 'brick', name: 'кирпич' },
+]
+/**
+ * Сколько товара в партии: чем выше уровень рынка, тем выгоднее.
+ * Обмен нарочно невыгодный: огород первого уровня даёт столько же еды за три хода бесплатно.
+ */
+export function tradeYield(level: number, goods: Goods): number {
+  if (level <= 0) return 0
+  return goods === 'food' ? 8 + 2 * level : goods === 'wood' ? 4 + level : 2 + level
+}
+
 /** Максимальный уровень постройки на ступени. */
 export const maxLevel = (tier: number) => Math.min(5, tier + 1)
 
@@ -111,11 +128,12 @@ export const tierCost = (n: number): Cost => ({ coins: TIERS[n].coins, gems: TIE
 /**
  * Действие игрока. at — момент по часам, от него идёт время стройки.
  * tier — перейти на следующую ступень; build — поставить постройку типа type;
- * upgrade — улучшить постройку с номером id.
+ * upgrade — улучшить постройку с номером id;
+ * trade — купить на рынке партию товара type: food, wood или brick.
  */
 export interface TownAction {
   at: string
-  do: 'tier' | 'build' | 'upgrade'
+  do: 'tier' | 'build' | 'upgrade' | 'trade'
   type?: string
   id?: string
 }
@@ -237,6 +255,16 @@ function pay(town: Town, cost: Cost) {
 const HOUR = 3600_000
 
 function act(town: Town, action: TownAction, time: number) {
+  if (action.do === 'trade') {
+    const goods = action.type as Goods
+    const amount = tradeYield(topLevel(town, 'market'), goods)
+    if (!amount || !GOODS.some((g) => g.id === goods)) return
+    town.spent.coins += TRADE_COINS
+    // Купленное сверх склада пропадает: интерфейс такую сделку не даёт начать.
+    if (goods === 'food') town.food = Math.min(town.foodCap, town.food + amount)
+    else town[goods] = Math.min(town.materialCap, town[goods] + amount)
+    return
+  }
   if (action.do === 'tier') {
     const next = TIERS[town.tier + 1]
     if (!next || town.tierPending) return
@@ -309,6 +337,17 @@ export interface Means {
 /** Почему действие сейчас нельзя сделать. Пустой список — можно. */
 export function blockers(town: Town, action: Pick<TownAction, 'do' | 'type' | 'id'>, means: Means): string[] {
   const why: string[] = []
+  if (action.do === 'trade') {
+    // Торговле строители не нужны.
+    const goods = action.type as Goods
+    const amount = tradeYield(topLevel(town, 'market'), goods)
+    if (!amount) return ['нужен рынок']
+    const have = goods === 'food' ? town.food : town[goods]
+    const cap = goods === 'food' ? town.foodCap : town.materialCap
+    if (have + amount > cap) why.push(`не поместится: на складе ${Math.floor(have)} из ${cap}`)
+    if (means.coins < TRADE_COINS) why.push(`не хватает монет: ${TRADE_COINS - means.coins}`)
+    return why
+  }
   if (town.builders.busy >= town.builders.total) why.push('все строители заняты')
   let cost: Cost
   if (action.do === 'tier') {

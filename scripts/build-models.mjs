@@ -42,6 +42,54 @@ const io = new NodeIO()
   .registerExtensions(ALL_EXTENSIONS)
   .registerDependencies({ 'meshopt.encoder': MeshoptEncoder, 'meshopt.decoder': MeshoptDecoder })
 
+/** Грядки с овощами: 35 тысяч треугольников на один огород — самая тяжёлая модель города. */
+const THIN = /^Farm_Dirt_Level_3\./
+
+/**
+ * Прореживание: у каждого материала, кроме земли, остаётся каждый every-й отдельный кусок (растение).
+ * Обычное упрощение сетки тут не помогает: растения — отдельные мелкие тела с плоскими гранями.
+ */
+function thin(every) {
+  return (doc) => {
+    for (const mesh of doc.getRoot().listMeshes()) {
+      for (const prim of mesh.listPrimitives()) {
+        const indices = prim.getIndices()
+        if (!indices || prim.getMaterial()?.getName() === 'Dirt') continue
+        const position = prim.getAttribute('POSITION')
+        const index = indices.getArray()
+        // Вершины с одинаковыми координатами считаются одной: так грани одного растения связаны.
+        const first = new Map()
+        const same = new Int32Array(position.getCount())
+        const p = [0, 0, 0]
+        for (let v = 0; v < same.length; v++) {
+          position.getElement(v, p)
+          const key = `${Math.round(p[0] * 2000)},${Math.round(p[1] * 2000)},${Math.round(p[2] * 2000)}`
+          if (!first.has(key)) first.set(key, v)
+          same[v] = first.get(key)
+        }
+        const parent = Int32Array.from(same, (_, i) => i)
+        const find = (a) => {
+          while (parent[a] !== a) a = parent[a] = parent[parent[a]]
+          return a
+        }
+        for (let i = 0; i < index.length; i += 3) {
+          const a = find(same[index[i]])
+          parent[find(same[index[i + 1]])] = a
+          parent[find(same[index[i + 2]])] = a
+        }
+        const order = new Map()
+        const kept = []
+        for (let i = 0; i < index.length; i += 3) {
+          const root = find(same[index[i]])
+          if (!order.has(root)) order.set(root, order.size)
+          if (order.get(root) % every === 0) kept.push(index[i], index[i + 1], index[i + 2])
+        }
+        prim.setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint32Array(kept)).setBuffer(indices.getBuffer()))
+      }
+    }
+  }
+}
+
 const keyOf = (prefix, file) => `${prefix}/${file.replace(/\.glb$/, '').toLowerCase()}`
 
 await rm(OUT, { recursive: true, force: true })
@@ -86,12 +134,14 @@ for (const pack of PACKS) {
     }
 
     const skinned = root.listSkins().length > 0
+    const thinned = THIN.test(file)
     await doc.transform(
       dedup(),
       // Текстур нет, цвет задан материалами: текстурные координаты не нужны.
       prune({ keepAttributes: false, keepLeaves: false }),
       ...(root.listAnimations().length ? [resample()] : []),
       weld(),
+      ...(thinned ? [thin(2)] : []),
       // У моделей со скелетом основной вес — анимация: ей нужен уровень сжатия выше.
       meshopt({ encoder: MeshoptEncoder, level: skinned ? 'high' : 'medium' }),
     )

@@ -134,6 +134,41 @@ export function groundHeight(x: number, z: number): number {
   return -RIVER.depth * Math.min(1, t * 1.9) ** 1.4
 }
 
+/** Лесная поляна к западу от поселения: здесь пасутся олени. Участков и улиц тут нет на любой ступени. */
+export const GLADE = { x: -67, z: -8, r: 7.5 }
+
+export interface AnimalSpot {
+  /** Модель: «a/cow», «a/deer»… */
+  key: string
+  x: number
+  z: number
+  /** Куда смотрит, градусы. */
+  turn: number
+  /** Рост до макушки, метры. */
+  height: number
+  /** Пасётся (голова опущена) или просто стоит. */
+  grazing: boolean
+}
+
+/**
+ * Животные: олени на поляне есть всегда, домашние появляются вместе с постройками —
+ * корова у амбара с третьего уровня, осёл у мельницы со второго, лошадь у таверны с четвёртого.
+ */
+export function animalSpots(buildings: { id: string; type: string; level: number }[]): AnimalSpot[] {
+  const spots: AnimalSpot[] = [
+    { key: 'a/deer', x: GLADE.x - 1.6, z: GLADE.z + 1.2, turn: 40, height: 1.9, grazing: true },
+    { key: 'a/deer', x: GLADE.x + 2.4, z: GLADE.z - 1.8, turn: -110, height: 1.8, grazing: false },
+  ]
+  for (const building of buildings) {
+    const plot = plotOf(building.id)
+    if (!plot) continue
+    if (building.type === 'barn' && building.level >= 3) spots.push({ key: 'a/cow', x: plot.x - 4.6, z: plot.z + 5.4, turn: 75, height: 1.75, grazing: true })
+    if (building.type === 'mill' && building.level >= 2) spots.push({ key: 'a/donkey', x: plot.x + 4.4, z: plot.z + 5.3, turn: -70, height: 1.6, grazing: false })
+    if (building.type === 'tavern' && building.level >= 4) spots.push({ key: 'a/horse', x: plot.x + 4.6, z: plot.z + 5.4, turn: 200, height: 2.2, grazing: false })
+  }
+  return spots
+}
+
 /** Простой повторяемый случай: одно и то же зерно даёт один и тот же лес. */
 export function seeded(seed: number) {
   let state = seed >>> 0
@@ -162,6 +197,7 @@ function taken(x: number, z: number, open: Plot[], specials: number, quarter: bo
   for (const plot of open) {
     if (Math.abs(x - plot.x) < PITCH / 2 + 0.6 && Math.abs(z - plot.z) < PITCH / 2 + 0.6) return true
   }
+  if (Math.hypot(x - GLADE.x, z - GLADE.z) < GLADE.r) return true
   // Тропа от площади к мосту и аллея слободы.
   if (!quarter) return false
   if (Math.abs(x - BRIDGE_X) < 3 && z > PLAZA.d / 2 && z < QUARTER.z + 34) return true

@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import { gearParts, hasCat, jacketColors } from './gear'
 import { loadModel } from './kit'
-import { CAMP_FIRE_AT, PITCH, PLAZA, seeded, type Plot } from './plan'
+import { CAMP_FIRE_AT, PITCH, PLAZA, seeded, type AnimalSpot, type Plot } from './plan'
 
 const RESIDENTS = ['c/male_casual', 'c/female_casual', 'c/male_long_sleeve', 'c/female_dress', 'c/male_shirt', 'c/female_tank_top', 'c/female_alternative']
 const TRAVELER = 'c/male_adventurer'
@@ -76,6 +76,8 @@ export interface PeopleInput {
   quiet: boolean
   /** Надетая экипировка путника из лавки. */
   gear: string[]
+  /** Животные: где стоят и что делают. */
+  animals: AnimalSpot[]
 }
 
 /** Пятно тени под ногами: одно на всех, дешёвая замена настоящей тени. */
@@ -239,7 +241,8 @@ export class People {
   /** Модели, которые понадобятся: грузятся заранее вместе с постройками. */
   static async preload(input: PeopleInput) {
     const count = input.quiet ? 0 : Math.min(MAX_WALKERS, input.population)
-    await Promise.all([TRAVELER, ...RESIDENTS.slice(0, Math.min(count, RESIDENTS.length))].map(loadModel))
+    const animals = input.quiet ? [] : input.animals.map((spot) => spot.key)
+    await Promise.all([...new Set([TRAVELER, ...animals, ...RESIDENTS.slice(0, Math.min(count, RESIDENTS.length))])].map(loadModel))
   }
 
   async populate(parent: THREE.Object3D, input: PeopleInput) {
@@ -279,6 +282,15 @@ export class People {
       }
     }
 
+    // Животные стоят на месте: пасутся или просто смотрят. При запустении их уводят.
+    if (!input.quiet) {
+      for (const [i, spot] of input.animals.entries()) {
+        const animal = await this.spawn(spot.key, i, false, spot.height, [], spot.grazing ? /(^|_)Eating$/ : /(^|_)Idle$/, 1.8)
+        animal.root.position.set(spot.x, 0, spot.z)
+        animal.root.rotation.y = THREE.MathUtils.degToRad(spot.turn)
+      }
+    }
+
     const count = input.quiet ? 0 : Math.min(MAX_WALKERS, input.population)
     const doors = input.doors.filter((plot) => !plot.water)
     if (doors.length < 2) return
@@ -294,20 +306,28 @@ export class People {
     }
   }
 
-  private async spawn(key: string, index: number, traveler: boolean, height = HEIGHT, gear: string[] = []): Promise<Actor> {
+  private async spawn(
+    key: string,
+    index: number,
+    traveler: boolean,
+    height = HEIGHT,
+    gear: string[] = [],
+    idlePattern = /(^|_)Idle$/,
+    shadeSize = 1,
+  ): Promise<Actor> {
     const gltf = await loadModel(key)
     const root = cloneSkinned(gltf.scene)
     dress(root, index, traveler, gear)
     root.scale.setScalar(height / skeletonHeight(root))
     const mixer = new THREE.AnimationMixer(root)
     const walkClip = clip(gltf.animations, /(^|_)Walk$/)
-    const idleClip = clip(gltf.animations, /(^|_)Idle$/)
+    const idleClip = clip(gltf.animations, idlePattern) ?? clip(gltf.animations, /(^|_)Idle$/)
     const walk = walkClip ? mixer.clipAction(walkClip) : null
     const idle = idleClip ? mixer.clipAction(idleClip) : null
     idle?.play()
     // Пятно тени не должно растягиваться вместе с моделью: возвращаем ему настоящий размер.
     const shade = blob()
-    shade.scale.setScalar(1 / root.scale.x)
+    shade.scale.setScalar(shadeSize / root.scale.x)
     root.add(shade)
     this.group.add(root)
     const actor: Actor = { root, mixer, walk, idle, path: [], leg: 0, pause: 1 + index * 0.7, walking: false, loop: false }

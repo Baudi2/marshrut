@@ -68,11 +68,12 @@ export function basePainter(ctx: LookContext, variant = 0): Painter {
     if (material === 'Wheat') return { color: ctx.season === 'spring' ? '#9fb86a' : ctx.season === 'winter' ? '#b9b39a' : '#c9ad55' }
     if (key.startsWith('f/')) {
       // Ферма нарисована красной с белым: перекрашиваем в дерево и дранку.
-      // Отделка красится в тон стен: на воротах амбаров она набита крест-накрест, а крестов в игре нет.
       if (material === 'DarkRed') return { color: '#87653f' }
       if (material === 'LightRed') return { color: '#8f6b44' }
       if (material === 'RoofBlack') return { color: '#6f6259' }
-      if (material === 'White') return { color: key === 'f/well' || key === 'f/tower_windmill' ? '#d9d0b8' : '#8b6841' }
+      // У амбаров и курятника отделка набита на ворота крест-накрест: её убираем совсем — перекрашенная в тон стен,
+      // она всё равно читалась крестом по рельефу.
+      if (material === 'White') return key === 'f/well' || key === 'f/tower_windmill' ? { color: '#d9d0b8' } : { drop: true }
       if (material === 'Brown' || material === 'DarkBrown') return { color: '#876a44' }
       if (material === 'LightBrown') return { color: '#b39a6c' }
       if (material === 'Grey') return { color: '#a9aaa4' }

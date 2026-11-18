@@ -16,6 +16,7 @@ import {
   CAMP_TENT_AT,
   CENTER_AT,
   FIRE_AT,
+  animalSpots,
   PLAZA,
   RIVER,
   fireSpot,
@@ -313,6 +314,7 @@ export class TownScene {
       doors: view.buildings.filter((b) => b.level > 0).flatMap((b) => plotOf(b.id) ?? []),
       quiet: view.neglect >= 2,
       gear: view.gear,
+      animals: animalSpots(view.buildings),
     }
     jobs.push(People.preload(crowd))
 

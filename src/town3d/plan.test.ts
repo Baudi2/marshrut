@@ -5,7 +5,7 @@ import { SHOP } from '../game/shop'
 import { gearParts, hasCat, jacketColors } from './gear'
 import { CENTER, DECOR, LOOKS, constructionLook, levelLook, specialLook, upgradeLook } from './looks'
 import index from './models.gen.json'
-import { BRIDGE_X, PITCH, PLAZA, PLOTS, QUARTER, QUARTER_SLOTS, RIVER, fireSpot, forest, groundHeight, openPlots, plotOf, quarterOpen, quarterSlot, riverCenter } from './plan'
+import { BRIDGE_X, GLADE, PITCH, PLAZA, PLOTS, QUARTER, QUARTER_SLOTS, RIVER, animalSpots, fireSpot, forest, groundHeight, openPlots, plotOf, quarterOpen, quarterSlot, riverCenter } from './plan'
 
 const models = index as unknown as Record<string, unknown>
 
@@ -126,6 +126,24 @@ describe('стоянка', () => {
     // Сломанные фонари стоят, но не светят.
     expect(drawn('dark').lamps).toBe(0)
     expect(drawn('dark').count).toBe(drawn(true).count)
+  })
+})
+
+describe('животные', () => {
+  it('олени есть всегда и пасутся на поляне, где нет ни деревьев, ни участков', () => {
+    const wild = animalSpots([])
+    expect(wild.map((spot) => spot.key)).toEqual(['a/deer', 'a/deer'])
+    for (const spot of wild) expect(Math.hypot(spot.x - GLADE.x, spot.z - GLADE.z)).toBeLessThan(GLADE.r - 2)
+    for (const tree of forest(5, 22)) expect(Math.hypot(tree.x - GLADE.x, tree.z - GLADE.z)).toBeGreaterThanOrEqual(GLADE.r)
+    for (const plot of PLOTS) expect(Math.hypot(plot.x - GLADE.x, plot.z - GLADE.z), plot.id).toBeGreaterThan(GLADE.r + PITCH / 2)
+  })
+
+  it('домашние животные приходят вместе с постройками нужного уровня', () => {
+    const keys = (buildings: { id: string; type: string; level: number }[]) => animalSpots(buildings).map((spot) => spot.key).filter((key) => key !== 'a/deer')
+    expect(keys([{ id: 'barn-1', type: 'barn', level: 2 }])).toEqual([])
+    expect(keys([{ id: 'barn-1', type: 'barn', level: 3 }])).toEqual(['a/cow'])
+    expect(keys([{ id: 'mill-1', type: 'mill', level: 2 }, { id: 'tavern-1', type: 'tavern', level: 4 }])).toEqual(['a/donkey', 'a/horse'])
+    for (const key of ['a/cow', 'a/deer', 'a/donkey', 'a/horse']) expect(models[key], key).toBeDefined()
   })
 })
 

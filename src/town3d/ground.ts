@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import type { Season } from '../world/sky'
 import { KIND } from './kit'
 import { worldMaterial, type WorldUniforms } from './material'
-import { BRIDGE_X, LAND, PITCH, PLAZA, PLOT, QUARTER, RIVER, groundHeight, quarterSlot, riverCenter, seeded, type Plot } from './plan'
+import { BRIDGE_X, GLADE, LAND, PITCH, PLAZA, PLOT, QUARTER, RIVER, groundHeight, quarterSlot, riverCenter, seeded, type Plot } from './plan'
 
 const EARTH: Record<Season, { grass: string; light: string; dark: string; dirt: string; pad: string; sand: string; water: string; stone: string }> = {
   spring: { grass: '#a7bd7a', light: '#b6c98a', dark: '#93ab6b', dirt: '#c9b88c', pad: '#bcb184', sand: '#d6c79c', water: '#77afbf', stone: '#c5bfae' },
@@ -79,6 +79,14 @@ function paintMap(input: GroundInput): HTMLCanvasElement {
     points.forEach(([x, z], i) => (i ? g.lineTo(px(x), pz(z)) : g.moveTo(px(x), pz(z))))
     g.stroke()
   }
+
+  // Поляна оленей: трава светлее, чем под лесом.
+  soft(colors.light, 16)
+  g.globalAlpha = 0.7
+  g.beginPath()
+  g.ellipse(px(GLADE.x), pz(GLADE.z), GLADE.r * sx, GLADE.r * 0.85 * sz, 0, 0, Math.PI * 2)
+  g.fill()
+  g.globalAlpha = 1
 
   // Берега и дно реки.
   const course: [number, number][] = []

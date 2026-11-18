@@ -389,7 +389,7 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
 
       <SkyCard api={skyApi} />
       <ConditionPreview real={world.condition.level} missed={world.missedWorkdays} value={preview} onChange={onPreview} />
-      <Shop shop={shop} groups={['gear']} />
+      <Shop shop={shop} />
 
       <div className="card">
         <h3>Постройки-файлы</h3>

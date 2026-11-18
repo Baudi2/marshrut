@@ -1,7 +1,7 @@
 // Каталог обликов: что показать на доске «Постройки по уровням».
 import { BUILDINGS } from '../game/town'
 import type { BoardCell } from './board'
-import { CENTER, LOOKS, constructionLook, specialLook } from './looks'
+import { CENTER, DECOR, LOOKS, constructionLook, specialLook } from './looks'
 
 /** Цвета и фигуры треков — как в интерфейсе: design/DESIGN.md, раздел 3. */
 export const TRACK_ACCENT: Record<string, string> = { A: '#2f6db5', B: '#b65a2c', C1: '#2b7d5c', C2: '#9a7012', E: '#b0507a' }
@@ -36,6 +36,13 @@ export function catalogRows(): BoardCell[][] {
       })),
     )
   }
+  rows.push([
+    { title: 'Котелок', note: 'украшение · 80 монет', look: DECOR.pot(0) },
+    { title: 'Скамьи', note: 'украшение · 120 монет', look: DECOR.bench(2) },
+    { title: 'Указатель', note: 'украшение · 100 монет', look: DECOR.signpost(0) },
+    { title: 'Флагшток', note: 'украшение · 2 камня', look: DECOR.flagpole(1) },
+    { title: 'Фонари не горят', note: 'сломаны после перерыва', look: LOOKS.house.levels[3].look(0), ctx: { lamps: 'dark' } },
+  ])
   rows.push([
     { title: 'Стройка', note: 'новая постройка', look: constructionLook },
     { title: 'Сломано', note: 'после долгого перерыва', look: LOOKS.house.levels[2].look(0), broken: true },

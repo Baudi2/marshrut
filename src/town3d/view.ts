@@ -1,5 +1,6 @@
 // Что показывает сцена города: настоящее состояние из журнала или предпросмотр будущей ступени.
 import type { World } from '../game/engine'
+import { SHOP, shopItem } from '../game/shop'
 import { BUILDINGS, TIERS, maxLevel } from '../game/town'
 import type { Season } from '../world/sky'
 import { QUARTER_SLOTS } from './plan'
@@ -30,6 +31,8 @@ export function townView(world: World, season: Season, neglect: number): TownVie
     population: town.population,
     season,
     neglect,
+    decor: world.owned.filter((id) => shopItem(id)?.group === 'camp'),
+    brokenDecor: world.damage.map((d) => d.item),
   }
 }
 
@@ -58,5 +61,8 @@ export function previewView(tier: number, world: World, season: Season, neglect:
     population: Math.max(TIERS[tier].residents, tier * 3),
     season,
     neglect,
+    // Стоянка в предпросмотре чистая; на следующих ступенях показано всё, что к ним уже можно купить.
+    decor: tier === 0 ? [] : SHOP.filter((item) => item.group === 'camp' && (item.tier ?? 0) <= tier).map((item) => item.id),
+    brokenDecor: [],
   }
 }

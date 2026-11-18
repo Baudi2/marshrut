@@ -85,11 +85,12 @@ function fenceAround(b: LookBuilder, w: number, d: number, gap = 2) {
 /** Фонарь на столбе: ночью светится и кладёт тёплое пятно. */
 function lantern(b: LookBuilder, x: number, z: number, h = 2.6) {
   if (b.ctx.lamps === false) return
+  const dark = b.ctx.lamps === 'dark'
   b.beam([x, 0, z], [x, h, z], 0.12, C.woodDark)
   b.beam([x, h, z], [x + 0.5, h, z], 0.08, C.woodDark)
-  b.box(x + 0.5, h - 0.55, z, 0.26, 0.36, 0.26, '#d9c7a0', KIND.lamp)
+  b.box(x + 0.5, h - 0.55, z, 0.26, 0.36, 0.26, dark ? '#6f6a60' : '#d9c7a0', dark ? KIND.plain : KIND.lamp)
   b.box(x + 0.5, h - 0.2, z, 0.34, 0.06, 0.34, C.iron)
-  b.lampAt(x + 0.5, 0, z)
+  if (!dark) b.lampAt(x + 0.5, 0, z)
 }
 
 /** Вывеска на столбе. */
@@ -1092,9 +1093,6 @@ export const CENTER: { name: string; look: LookFn }[] = [
     look: (b) => {
       b.model('v/bonfire_lit', { center: true, s: 2.3 })
       b.fireAt(0, 0.5, 0)
-      b.model('v/bench_2', { at: [-2.6, 0, 0.6], rot: 70, s: 1.4 })
-      b.model('v/bench_2', { at: [0.4, 0, -2.6], rot: 5, s: 1.4 })
-      b.model('r/logs', { at: [3, 0, -1.6], s: 0.28, rot: 40 })
     },
   },
   {
@@ -1104,12 +1102,7 @@ export const CENTER: { name: string; look: LookFn }[] = [
       b.model('v/gazebo', { center: true, s: 2.1 })
       stoneRing(b, 0, 0, 0.9, 0.5, C.stone)
       b.model('v/bonfire_lit', { center: true, at: [0, 0.3, 0], s: 1.7 })
-      b.model('v/cauldron', { center: true, at: [0, 1.25, 0], s: 1.3 })
-      b.beam([0, 1.9, 0], [0, 4, 0], 0.05, C.iron)
       b.fireAt(0, 0.9, 0)
-      b.model('v/bench_1', { at: [-4.4, 0, 0], rot: 90 })
-      b.model('v/bench_1', { at: [4.4, 0, 0], rot: -90 })
-      b.model('v/bench_1', { at: [0, 0, 4.4], rot: 180 })
       b.model('r/logs', { at: [4.2, 0, -3.6], s: 0.3, rot: 30 })
     },
   },
@@ -1117,8 +1110,6 @@ export const CENTER: { name: string; look: LookFn }[] = [
     name: 'Дом собраний',
     look: (b) => {
       b.model('r/barracks_first_age_level_2', { center: true, s: 1.3, painter: peaceful })
-      b.model('v/bench_1', { at: [-4.4, 0, 5.6], rot: 180 })
-      b.model('v/bench_1', { at: [4.4, 0, 5.6], rot: 180 })
       lantern(b, -2.4, 5.4, 2.8)
       lantern(b, 2.4, 5.4, 2.8)
     },
@@ -1159,6 +1150,47 @@ export const CENTER: { name: string; look: LookFn }[] = [
     },
   },
 ]
+
+// ——— Украшения: покупаются в лавке ———
+
+/** Облик украшения по ступени. Ставится у общего костра или на своём месте: см. town.ts. */
+export const DECOR: Record<string, (tier: number) => LookFn> = {
+  pot: (tier) => (b) => {
+    if (tier === 1) {
+      // В лагере котелок висит под навесом очага.
+      b.model('v/cauldron', { center: true, at: [0, 1.25, 0], s: 1.3 })
+      b.beam([0, 1.9, 0], [0, 4, 0], 0.05, C.iron)
+      return
+    }
+    for (const a of [0.4, 2.5, 4.6]) b.beam([Math.sin(a) * 1.25, 0, Math.cos(a) * 1.25], [0, 2.5, 0], 0.09, C.woodDark)
+    b.beam([0, 1.45, 0], [0, 2.45, 0], 0.04, C.iron)
+    b.model('v/cauldron', { center: true, at: [0, 0.85, 0], s: 1.25 })
+  },
+  bench: (tier) => (b) => {
+    if (tier === 0) {
+      b.model('v/bench_2', { at: [-2.6, 0, 0.6], rot: 70, s: 1.4 })
+      b.model('v/bench_2', { at: [0.4, 0, -2.6], rot: 5, s: 1.4 })
+      return
+    }
+    const r = tier === 1 ? 4.4 : 2.9
+    b.model('v/bench_1', { at: [-r, 0, 0.2], rot: 90 })
+    b.model('v/bench_1', { at: [r, 0, 0.2], rot: -90 })
+    b.model('v/bench_1', { at: [0, 0, r], rot: 180 })
+  },
+  signpost: () => (b) => {
+    b.cylinder(0, 0, 0, 0.42, 0.34, 0.22, 7, C.stone)
+    b.beam([0, 0, 0], [0, 2.9, 0], 0.16, C.woodDark)
+    // Стрелки смотрят в разные стороны и висят на разной высоте, друг друга не пересекая.
+    b.group([0, 2.35, 0], 20, () => b.box(0.62, 0, 0.1, 1.2, 0.3, 0.07, C.woodLight))
+    b.group([0, 1.9, 0], 200, () => b.box(0.58, 0, 0.1, 1.1, 0.28, 0.07, C.plaster))
+    b.group([0, 1.47, 0], 110, () => b.box(0.52, 0, 0.1, 1, 0.26, 0.07, C.woodLight))
+  },
+  flagpole: () => (b) => {
+    b.cylinder(0, 0, 0, 0.7, 0.6, 0.35, 8, C.stoneLight)
+    b.cylinder(0, 0.35, 0, 0.11, 0.07, 8.2, 6, C.woodDark)
+    b.flagAt(0.06, 6.6, 0, C.tile, 2.2, 1.4)
+  },
+}
 
 // ——— Особые постройки: файлы ———
 

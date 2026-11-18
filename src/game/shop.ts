@@ -3,7 +3,7 @@
 
 export interface ShopItem {
   id: string
-  /** gear — экипировка путника, camp — обустройство лагеря. */
+  /** gear — экипировка путника, camp — украшения города (название группы осталось от лагеря). */
   group: 'gear' | 'camp'
   name: string
   about: string
@@ -11,6 +11,8 @@ export interface ShopItem {
   gems?: number
   /** Предметы одного слота носятся по одному. */
   slot?: 'jacket'
+  /** С какой ступени города можно купить. Без поля — с самой стоянки. */
+  tier?: number
 }
 
 export const SHOP: ShopItem[] = [
@@ -23,15 +25,13 @@ export const SHOP: ShopItem[] = [
   { id: 'cape', group: 'gear', name: 'Плащ', about: 'За знания, а не за часы.', gems: 3 },
   { id: 'dog', group: 'gear', name: 'Пёс-спутник', about: 'Идёт рядом по карте и сидит у костра.', gems: 6 },
 
+  // Украшения города. Огород, колодец и очаг стали обычными постройками и центром поселения,
+  // мост открывается сам вместе с «Лагерем» — поэтому в лавке их больше нет.
   { id: 'pot', group: 'camp', name: 'Котелок', about: 'Тренога с котелком над костром.', coins: 80 },
-  { id: 'signpost', group: 'camp', name: 'Указатель', about: 'Столб со стрелками у входа в лагерь.', coins: 100 },
-  { id: 'bench', group: 'camp', name: 'Скамья', about: 'Бревно у костра.', coins: 120 },
-  { id: 'hearth', group: 'camp', name: 'Каменный очаг', about: 'Кольцо камней вокруг костра.', coins: 200 },
-  { id: 'garden', group: 'camp', name: 'Огород', about: 'Грядки с краю поляны.', coins: 260 },
-  { id: 'lamps', group: 'camp', name: 'Фонари', about: 'Два фонаря на столбах. Гаснут, когда лагерь заброшен.', coins: 320 },
-  { id: 'well', group: 'camp', name: 'Колодец', about: 'Каменный, с навесом.', coins: 400 },
-  { id: 'flagpole', group: 'camp', name: 'Флагшток', about: 'Высокий флаг над поляной.', gems: 2 },
-  { id: 'bridge', group: 'camp', name: 'Ручей с мостиком', about: 'Ручей вдоль края поляны и мостик через него.', gems: 5 },
+  { id: 'signpost', group: 'camp', name: 'Указатель', about: 'Столб со стрелками у тропы.', coins: 100 },
+  { id: 'bench', group: 'camp', name: 'Скамьи', about: 'Места у костра; в городе — у костровища на площади.', coins: 120 },
+  { id: 'lamps', group: 'camp', name: 'Фонари', about: 'У домов, на площади и на мосту. Без них ночью светят только костры и окна.', coins: 320, tier: 1 },
+  { id: 'flagpole', group: 'camp', name: 'Флагшток', about: 'Высокий флаг на площади.', gems: 2, tier: 1 },
 ]
 
 export const shopItem = (id: string): ShopItem | undefined => SHOP.find((item) => item.id === id)

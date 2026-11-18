@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { BUILDINGS, TIERS, maxLevel } from '../game/town'
 import { LookBuilder } from './look'
-import { CENTER, LOOKS, constructionLook, levelLook, specialLook, upgradeLook } from './looks'
+import { SHOP } from '../game/shop'
+import { CENTER, DECOR, LOOKS, constructionLook, levelLook, specialLook, upgradeLook } from './looks'
 import index from './models.gen.json'
-import { BRIDGE_X, PITCH, PLAZA, PLOTS, QUARTER, QUARTER_SLOTS, RIVER, forest, groundHeight, lampsOpen, openPlots, plotOf, quarterOpen, quarterSlot, riverCenter } from './plan'
+import { BRIDGE_X, PITCH, PLAZA, PLOTS, QUARTER, QUARTER_SLOTS, RIVER, fireSpot, forest, groundHeight, openPlots, plotOf, quarterOpen, quarterSlot, riverCenter } from './plan'
 
 const models = index as unknown as Record<string, unknown>
 
@@ -78,12 +79,27 @@ describe('план города', () => {
 })
 
 describe('стоянка', () => {
-  it('на первой ступени нет ни моста, ни слободы, ни фонарей: они открываются позже', () => {
+  it('на первой ступени нет ни моста, ни слободы: они открываются вместе с лагерем', () => {
     expect(quarterOpen(0)).toBe(false)
     expect(quarterOpen(1)).toBe(true)
-    expect(lampsOpen(0)).toBe(false)
-    expect(lampsOpen(1)).toBe(false)
-    expect(lampsOpen(2)).toBe(true)
+  })
+
+  it('костёр на стоянке — только костёр: скамьи и котелок докупаются', () => {
+    expect(needs(CENTER[0].look)).toEqual(['v/bonfire_lit'])
+  })
+
+  it('у каждого украшения из лавки есть облик; фонари и флагшток продаются с лагеря', () => {
+    const decor = SHOP.filter((item) => item.group === 'camp')
+    expect(decor.map((item) => item.id).sort()).toEqual(['bench', 'flagpole', 'lamps', 'pot', 'signpost'])
+    for (const item of decor) if (item.id !== 'lamps') expect(DECOR[item.id], item.id).toBeDefined()
+    expect(decor.filter((item) => (item.tier ?? 0) === 0).map((item) => item.id).sort()).toEqual(['bench', 'pot', 'signpost'])
+  })
+
+  it('общий костёр на каждой ступени стоит на площади, а не на участке', () => {
+    for (let tier = 0; tier <= 5; tier++) {
+      const fire = fireSpot(tier)
+      expect(Math.abs(fire.x) < PLAZA.w / 2 && Math.abs(fire.z) < PLAZA.d / 2, String(tier)).toBe(true)
+    }
   })
 
   it('пока моста нет, тропа к нему и места слободы под лесом', () => {
@@ -98,7 +114,7 @@ describe('стоянка', () => {
   })
 
   it('фонарь не рисуется, пока фонари не открыты', () => {
-    const drawn = (lamps: boolean) => {
+    const drawn = (lamps: boolean | 'dark') => {
       const builder = new LookBuilder(new Map(), { season: 'summer', lamps })
       specialLook('cabin', 2)(builder)
       return { count: builder.body.geometry().getAttribute('position').count, lamps: builder.lamps.length }
@@ -106,6 +122,9 @@ describe('стоянка', () => {
     expect(drawn(false).lamps).toBe(0)
     expect(drawn(true).lamps).toBe(1)
     expect(drawn(true).count).toBeGreaterThan(drawn(false).count)
+    // Сломанные фонари стоят, но не светят.
+    expect(drawn('dark').lamps).toBe(0)
+    expect(drawn('dark').count).toBe(drawn(true).count)
   })
 })
 

@@ -2,6 +2,7 @@ import type { Purchase } from '../data/types'
 import type { Damage } from '../game/repair'
 import { HEAL_SESSIONS } from '../game/repair'
 import { SHOP, canAfford, shopItem, type ShopItem, type Wallet } from '../game/shop'
+import { TIERS } from '../game/town'
 import { CopyButton, plural } from '../ui/bits'
 import { CoinIcon, GemIcon, ItemArt } from '../world/extras'
 
@@ -12,6 +13,8 @@ export interface ShopApi {
   gear: string[]
   /** Что сломано на самом деле, без предпросмотра. */
   damage: Damage[]
+  /** Ступень города: часть украшений открывается не сразу. */
+  tier: number
   /** Покупки и ремонты, которые есть только в этом браузере. */
   unsynced: { purchases: Purchase[]; repairs: Purchase[] }
   buy: (id: string) => void
@@ -21,7 +24,7 @@ export interface ShopApi {
 
 const GROUPS = [
   { id: 'gear', title: 'Экипировка путника', note: 'Видна на карте и у костра. Надетое можно снять.' },
-  { id: 'camp', title: 'Обустройство лагеря', note: 'Появляется на поляне. После долгого перерыва может сломаться.' },
+  { id: 'camp', title: 'Украшения города', note: 'Появляются на карте города. После долгого перерыва могут сломаться; чинятся сами за три занятия.' },
 ] as const
 
 const SESSIONS: [string, string, string] = ['занятие', 'занятия', 'занятий']
@@ -114,7 +117,8 @@ function ItemRow({ item, shop }: { item: ShopItem; shop: ShopApi }) {
   const owned = shop.owned.includes(item.id)
   const worn = shop.gear.includes(item.id)
   const broken = shop.damage.some((d) => d.item === item.id)
-  const can = canAfford(item, shop.wallet)
+  const locked = (item.tier ?? 0) > shop.tier
+  const can = canAfford(item, shop.wallet) && !locked
   const missing = item.coins ? item.coins - shop.wallet.coins : (item.gems ?? 0) - shop.wallet.gems
   return (
     <li className={`shop-item${owned ? ' is-owned' : ''}`}>
@@ -134,14 +138,15 @@ function ItemRow({ item, shop }: { item: ShopItem; shop: ShopApi }) {
             Купить
           </button>
         )}
-        {!owned && !can && <span className="muted small">не хватает {missing}</span>}
+        {!owned && locked && <span className="muted small">со ступени «{TIERS[item.tier ?? 0].name}»</span>}
+        {!owned && !locked && !can && <span className="muted small">не хватает {missing}</span>}
         {owned && item.group === 'gear' && (
           <button className="btn" aria-pressed={worn} onClick={() => shop.toggle(item.id)}>
             {worn ? 'Снять' : 'Надеть'}
           </button>
         )}
         {owned && item.group === 'camp' && (
-          <span className={broken ? 'pill pill-current' : 'pill pill-core'}>{broken ? 'сломано' : 'в лагере'}</span>
+          <span className={broken ? 'pill pill-current' : 'pill pill-core'}>{broken ? 'сломано' : 'в городе'}</span>
         )}
       </div>
     </li>

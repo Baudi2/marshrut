@@ -6,7 +6,7 @@ import type { Season } from '../world/sky'
 import type { Scenery } from './fx'
 import { makeGround, type Ground } from './ground'
 import { buildLook, type LookContext, type LookFn } from './look'
-import { CENTER, constructionLook, lantern, levelLook, levelName, specialLook, tent, upgradeLook } from './looks'
+import { CENTER, DECOR, constructionLook, lantern, levelLook, levelName, specialLook, tent, upgradeLook } from './looks'
 import { KIND } from './kit'
 import { worldMaterial } from './material'
 import { People, type PeopleInput } from './people'
@@ -18,8 +18,8 @@ import {
   FIRE_AT,
   PLAZA,
   RIVER,
+  fireSpot,
   forest,
-  lampsOpen,
   openPlots,
   plotOf,
   quarterOpen,
@@ -54,6 +54,10 @@ export interface TownView {
   population: number
   season: Season
   neglect: number
+  /** Купленные украшения: котелок, скамьи, указатель, фонари, флагшток. */
+  decor: string[]
+  /** Какие из них сломаны после долгого перерыва. */
+  brokenDecor: string[]
 }
 
 export interface Mark {
@@ -99,9 +103,6 @@ const campLook: LookFn = (b) => {
 const firepitLook: LookFn = (b) => {
   b.model('v/bonfire_lit', { center: true, s: 2.3 })
   b.fireAt(0, 0.5, 0)
-  b.model('v/bench_1', { at: [-2.9, 0, 0.4], rot: 80 })
-  b.model('v/bench_1', { at: [2.9, 0, 0.4], rot: -80 })
-  b.model('v/bench_1', { at: [0, 0, 3], rot: 180 })
 }
 
 /**
@@ -133,8 +134,6 @@ const fountainLook = (tier: number): LookFn => (b) => {
       b.cylinder(Math.sin(a) * 5.4, 0.6, Math.cos(a) * 5.4, 0.62, 0.2, 0.75, 7, '#5f8f4c')
     }
   }
-  b.model('v/bench_1', { at: [-6.2, 0, 0], rot: 90 })
-  b.model('v/bench_1', { at: [6.2, 0, 0], rot: -90 })
   lantern(b, -5.6, 5.2, 3)
   lantern(b, 5.2, 5.2, 3)
 }
@@ -186,7 +185,9 @@ export class TownScene {
   async build(view: TownView): Promise<void> {
     const version = ++this.version
     const { scenery } = this
-    const ctx: LookContext = { season: view.season, lamps: lampsOpen(view.tier) }
+    // Фонари покупаются в лавке; сломанные стоят, но не горят.
+    const lamps = !view.decor.includes('lamps') ? false : view.brokenDecor.includes('lamps') ? 'dark' : true
+    const ctx: LookContext = { season: view.season, lamps }
     // На стоянке нет ни моста, ни слободы: постройки-файлы появятся на карте вместе с лагерем.
     const quarter = quarterOpen(view.tier)
     const specials = quarter ? view.specials : []
@@ -196,11 +197,21 @@ export class TownScene {
     const jobs: Promise<unknown>[] = []
     const queue: (() => void)[] = []
     /** Собрать облик сейчас, поставить потом: сцена меняется разом, без мигания. */
-    const put = (look: LookFn, x: number, z: number, rot: number, after?: (top: number, box: THREE.Box3) => void, context: LookContext = ctx, variant = 0, emblem?: string) => {
+    const put = (
+      look: LookFn,
+      x: number,
+      z: number,
+      rot: number,
+      after?: (top: number, box: THREE.Box3) => void,
+      context: LookContext = ctx,
+      variant = 0,
+      emblem?: string,
+      broken = false,
+    ) => {
       jobs.push(
         buildLook(look, context, variant).then((built) => {
           queue.push(() => {
-            const placed = scenery.place(built, x, z, rot, { emblem })
+            const placed = scenery.place(built, x, z, rot, { emblem, broken })
             after?.(placed.top, placed.box)
           })
         }),
@@ -215,7 +226,19 @@ export class TownScene {
       pickables.push({ id: 'center', box: box.clone().expandByScalar(0.6) })
     })
     if (view.tier === 0) put(campLook, CAMP_TENT_AT.x, CAMP_TENT_AT.z, 0)
-    if (view.tier === 2) put(firepitLook, FIRE_AT.x, FIRE_AT.z, 0)
+    // С «Хутора» общий костёр — отдельное костровище: сначала перед домом собраний, потом в углу площади.
+    const fire = fireSpot(view.tier)
+    if (view.tier >= 2) put(firepitLook, fire.x, fire.z, 0)
+
+    // Купленные украшения. Сломанное стоит покосившимся и серым, пока не починят.
+    const decor = (id: string, x: number, z: number) => {
+      if (view.decor.includes(id)) put(DECOR[id](view.tier), x, z, 0, undefined, ctx, 0, undefined, view.brokenDecor.includes(id))
+    }
+    decor('pot', fire.x, fire.z)
+    decor('bench', fire.x, fire.z)
+    if (view.tier === 0) decor('signpost', fire.x + 6.5, fire.z + 3.5)
+    else decor('signpost', BRIDGE_X + 2.8, PLAZA.d / 2 + 2.6)
+    if (view.tier >= 1) decor('flagpole', PLAZA.w / 2 - 1.4, PLAZA.d / 2 - 1.4)
     if (view.tier >= 3) put(fountainLook(view.tier), FIRE_AT.x, FIRE_AT.z + 1, 0)
     if (view.tierPending) put(constructionLook, view.tier <= 1 ? CENTER_AT.x + 0.5 : CENTER_AT.x + 9.5, view.tier <= 1 ? CENTER_AT.z - 3.4 : CENTER_AT.z - 1, 0)
 

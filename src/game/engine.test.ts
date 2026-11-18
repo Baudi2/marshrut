@@ -386,7 +386,7 @@ describe('починка', () => {
   const purchases = [
     { item: 'pot', date: '2026-11-18' },
     { item: 'signpost', date: '2026-11-18' },
-    { item: 'well', date: '2026-11-18' },
+    { item: 'bench', date: '2026-11-18' },
     { item: 'hat', date: '2026-11-18' },
   ]
   const session = (date: string) => ({ date, from: null, to: null, day: 3, topics: [] })
@@ -397,7 +397,7 @@ describe('починка', () => {
 
   it('ремонт стоит пятую часть цены, вещь за камни — 50 монет', () => {
     const cost = (id: string) => repairCost(shopItem(id)!)
-    expect(['pot', 'signpost', 'bench', 'hearth', 'garden', 'lamps', 'well'].map(cost)).toEqual([20, 20, 20, 40, 50, 60, 80])
+    expect(['pot', 'signpost', 'bench', 'lamps'].map(cost)).toEqual([20, 20, 20, 60])
     expect(cost('flagpole')).toBe(50)
   })
 

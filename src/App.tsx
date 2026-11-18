@@ -162,13 +162,14 @@ export function App() {
     owned: world.owned,
     gear,
     damage: world.damage,
+    tier: world.town.tier,
     unsynced: {
       purchases: localBuys.filter((p) => !repoPurchases.some((r) => r.item === p.item)),
       repairs: localRepairs.filter((p) => !repoRepairs.some((r) => sameRecord(r, p))),
     },
     buy: (id) => {
       const item = shopItem(id)
-      if (!item || world.owned.includes(id) || !canAfford(item, world.wallet)) return
+      if (!item || world.owned.includes(id) || !canAfford(item, world.wallet) || (item.tier ?? 0) > world.town.tier) return
       const next = [...localBuys, { item: id, date: today }]
       setLocalBuys(next)
       writeJSON('purchases', next)

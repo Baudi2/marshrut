@@ -102,8 +102,17 @@ export const QUARTER_SLOTS = QUARTER.columns * QUARTER.rows
 
 /** На стоянке есть только костёр и палатка: мост и слобода появляются, когда она становится лагерем. */
 export const quarterOpen = (tier: number) => tier >= 1
-/** Фонари появляются со ступени «Хутор». */
-export const lampsOpen = (tier: number) => tier >= 2
+/**
+ * Где горит общий костёр: на стоянке — посреди поляны, в лагере — под навесом в середине площади,
+ * на хуторе — перед домом собраний, дальше — в углу площади, потому что середину занимает фонтан.
+ * Вокруг него встают купленные скамьи и котелок.
+ */
+export function fireSpot(tier: number): { x: number; z: number } {
+  if (tier === 0) return CAMP_FIRE_AT
+  if (tier === 1) return { x: PLAZA.x, z: PLAZA.z }
+  if (tier === 2) return FIRE_AT
+  return { x: -8, z: 7.5 }
+}
 
 /** Границы, в которых двигается камера. */
 export const BOUNDS = { minX: -62, maxX: 62, minZ: -62, maxZ: QUARTER.z + QUARTER.rows * QUARTER.pitch }

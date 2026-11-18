@@ -31,7 +31,7 @@ function dress(root: THREE.Object3D, index: number, traveler: boolean) {
   root.traverse((object) => {
     const mesh = object as THREE.Mesh
     if (!mesh.isMesh) return
-    mesh.castShadow = true
+    mesh.castShadow = false
     mesh.frustumCulled = false
     const source = mesh.material as THREE.MeshStandardMaterial
     const name = source.name
@@ -71,6 +71,30 @@ export interface PeopleInput {
   /** Запустение второго уровня и выше: жители сидят по домам. */
   quiet: boolean
 }
+
+/** Пятно тени под ногами: одно на всех, дешёвая замена настоящей тени. */
+const blob = (() => {
+  let material: THREE.MeshBasicMaterial | null = null
+  let geometry: THREE.BufferGeometry | null = null
+  return () => {
+    if (!material || !geometry) {
+      const canvas = document.createElement('canvas')
+      canvas.width = canvas.height = 64
+      const g = canvas.getContext('2d')!
+      const fill = g.createRadialGradient(32, 32, 0, 32, 32, 30)
+      fill.addColorStop(0, 'rgba(20,24,20,0.5)')
+      fill.addColorStop(1, 'rgba(20,24,20,0)')
+      g.fillStyle = fill
+      g.fillRect(0, 0, 64, 64)
+      material = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, depthWrite: false })
+      geometry = new THREE.PlaneGeometry(1.5, 1.5).rotateX(-Math.PI / 2)
+    }
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.y = 0.07
+    mesh.renderOrder = 1
+    return mesh
+  }
+})()
 
 export class People {
   group = new THREE.Group()
@@ -130,6 +154,10 @@ export class People {
     const walk = walkClip ? mixer.clipAction(walkClip) : null
     const idle = idleClip ? mixer.clipAction(idleClip) : null
     idle?.play()
+    // Пятно тени не должно растягиваться вместе с моделью: возвращаем ему настоящий размер.
+    const shade = blob()
+    shade.scale.setScalar(1 / root.scale.x)
+    root.add(shade)
     this.group.add(root)
     const actor: Actor = { root, mixer, walk, idle, path: [], leg: 0, pause: 1 + index * 0.7, walking: false, loop: false }
     this.actors.push(actor)
@@ -190,7 +218,17 @@ export class People {
   }
 
   dispose() {
-    for (const actor of this.actors) actor.mixer.stopAllAction()
+    for (const actor of this.actors) {
+      actor.mixer.stopAllAction()
+      // У каждой копии свой скелет со своей текстурой костей и свои материалы: их нужно отдать.
+      actor.root.traverse((object) => {
+        const mesh = object as THREE.SkinnedMesh
+        if (mesh.isSkinnedMesh) {
+          mesh.skeleton.dispose()
+          ;(mesh.material as THREE.Material).dispose()
+        }
+      })
+    }
     this.actors = []
     this.group.removeFromParent()
   }

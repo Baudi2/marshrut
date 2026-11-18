@@ -51,7 +51,7 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
       center: [1, 0],
       span: narrow ? 46 : 78,
       minSpan: 16,
-      maxSpan: 118,
+      maxSpan: 96,
       onTap: (id) => select.current(id),
       onFrame: () => {
         const box = overlay.current

@@ -107,6 +107,8 @@ export const lampsOpen = (tier: number) => tier >= 2
 
 /** Границы, в которых двигается камера. */
 export const BOUNDS = { minX: -62, maxX: 62, minZ: -62, maxZ: QUARTER.z + QUARTER.rows * QUARTER.pitch }
+/** Где растёт лес: видимая камерой часть карты. */
+export const FOREST = { minX: -112, maxX: 112, minZ: -128, maxZ: 122 }
 /** Размер земли: с запасом на лес и горы вокруг. */
 export const LAND = { minX: -150, maxX: 150, minZ: -170, maxZ: 130 }
 
@@ -166,9 +168,10 @@ export function forest(tier: number, specials: number): Tree[] {
   const open = openPlots(tier)
   const random = seeded(20261118)
   const trees: Tree[] = []
-  const step = 4.6
-  for (let z = LAND.minZ + 30; z < LAND.maxZ - 6; z += step) {
-    for (let x = LAND.minX + 20; x < LAND.maxX - 20; x += step) {
+  // Шаг и границы подобраны под скорость: лес — самая тяжёлая часть сцены. Дальше ±112 м камера не видит.
+  const step = 5.6
+  for (let z = FOREST.minZ; z < FOREST.maxZ; z += step) {
+    for (let x = FOREST.minX; x < FOREST.maxX; x += step) {
       const jx = x + (random() - 0.5) * step * 0.9
       const jz = z + (random() - 0.5) * step * 0.9
       const density = random()

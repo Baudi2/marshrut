@@ -41,16 +41,23 @@ function paintMap(input: GroundInput): HTMLCanvasElement {
 
   g.fillStyle = colors.grass
   g.fillRect(0, 0, SIZE, SIZE)
-  // Пятна травы: без них земля выглядит залитой одним цветом.
-  g.filter = 'blur(6px)'
+  // Пятна травы: без них земля выглядит залитой одним цветом. Они рисуются на маленьком холсте
+  // и растягиваются — края выходят мягкими сами. Размытие через filter на большом холсте
+  // подвешивало страницу на несколько секунд при каждой сборке города.
+  const blotches = document.createElement('canvas')
+  blotches.width = blotches.height = 256
+  const small = blotches.getContext('2d')!
+  const shrink = 256 / SIZE
   for (let i = 0; i < 2600; i++) {
-    g.globalAlpha = 0.05 + random() * 0.08
-    g.fillStyle = random() < 0.5 ? colors.light : colors.dark
-    g.beginPath()
-    g.ellipse(random() * SIZE, random() * SIZE, 14 + random() * 46, 10 + random() * 30, random() * 3, 0, Math.PI * 2)
-    g.fill()
+    small.globalAlpha = 0.05 + random() * 0.08
+    small.fillStyle = random() < 0.5 ? colors.light : colors.dark
+    small.beginPath()
+    small.ellipse(random() * 256, random() * 256, (14 + random() * 46) * shrink, (10 + random() * 30) * shrink, random() * 3, 0, Math.PI * 2)
+    small.fill()
   }
-  g.filter = 'none'
+  g.imageSmoothingEnabled = true
+  g.imageSmoothingQuality = 'high'
+  g.drawImage(blotches, 0, 0, SIZE, SIZE)
   g.globalAlpha = 1
 
   const soft = (color: string, blur: number) => {

@@ -244,7 +244,8 @@ export class Scenery {
       this.root.remove(child)
       child.traverse((object) => {
         const mesh = object as THREE.Mesh
-        if (mesh.geometry && mesh.userData.own) mesh.geometry.dispose()
+        // Каждая сборка создаёт геометрию заново: старую нужно отдать, иначе память видеокарты растёт.
+        if (mesh.geometry) mesh.geometry.dispose()
       })
     }
     this.smokeSources = []

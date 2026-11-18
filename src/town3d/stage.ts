@@ -68,6 +68,30 @@ export function snowCover(sky: Sky): number {
 const DROPS = 800
 const FLAKES = 700
 
+/**
+ * Ступени качества: чёткость картинки и размер карты теней. Если кадры идут медленно,
+ * сцена сама спускается на ступень ниже и запоминает её на неделю.
+ */
+const QUALITY = [
+  { ratio: 2, shadow: 2048 },
+  { ratio: 1.5, shadow: 2048 },
+  { ratio: 1.5, shadow: 1024 },
+  { ratio: 1, shadow: 1024 },
+  { ratio: 1, shadow: 0 },
+]
+const QUALITY_KEY = 'town3d-quality'
+const WEEK = 7 * 24 * 3600 * 1000
+
+function storedQuality(): number {
+  try {
+    const saved = JSON.parse(localStorage.getItem(QUALITY_KEY) ?? 'null') as { level: number; at: number } | null
+    if (saved && Date.now() - saved.at < WEEK) return Math.max(0, Math.min(QUALITY.length - 1, saved.level))
+  } catch {
+    // без хранилища качество просто подбирается заново
+  }
+  return 0
+}
+
 export class Stage {
   readonly scene = new THREE.Scene()
   readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 1200)
@@ -109,14 +133,19 @@ export class Stage {
   private readonly observers: (() => void)[] = []
   private sunDirection = new THREE.Vector3(0, 1, 0)
   private phase: Phase = 'day'
+  /** Замер скорости: сколько кадров из последних шли медленно. */
+  private slow = 0
+  private measured = 0
+  private settle = 40
+  /** Для проверки: средний промежуток между кадрами и ступень качества. */
+  readonly stats = { frameMs: 33, quality: 0 }
 
   constructor(container: HTMLElement, options: StageOptions) {
     this.options = options
     this.span = options.span
     this.target.set(options.center[0], 0, options.center[1])
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'low-power' })
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+    this.renderer = new THREE.WebGLRenderer({ antialias: true })
     this.renderer.shadowMap.enabled = true
     this.renderer.shadowMap.type = THREE.PCFShadowMap
     this.canvas = this.renderer.domElement
@@ -129,8 +158,7 @@ export class Stage {
     const yaw = THREE.MathUtils.degToRad(YAW)
     this.direction.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch))
 
-    this.sun.castShadow = true
-    this.sun.shadow.mapSize.set(2048, 2048)
+    this.setQuality(storedQuality(), false)
     this.sun.shadow.bias = -0.0006
     this.sun.shadow.normalBias = 0.05
     this.scene.add(this.sun, this.sun.target, this.hemi)
@@ -230,6 +258,7 @@ export class Stage {
     if (!parent) return
     this.width = Math.max(1, parent.clientWidth)
     this.height = Math.max(1, parent.clientHeight)
+    this.renderer.setPixelRatio(this.pixelRatio(QUALITY[this.stats.quality].ratio))
     this.renderer.setSize(this.width, this.height, false)
     this.place()
   }
@@ -351,6 +380,55 @@ export class Stage {
     }
   }
 
+  // ——— Качество ———
+
+  /** Плотность пикселей: не выше экранной, не выше ступени качества и не больше полутора миллионов точек на окно. */
+  private pixelRatio(cap: number) {
+    const budget = Math.sqrt(1_500_000 / Math.max(1, this.width * this.height))
+    return Math.max(1, Math.min(window.devicePixelRatio || 1, cap, budget))
+  }
+
+  private setQuality(level: number, remember: boolean) {
+    const quality = QUALITY[level]
+    this.stats.quality = level
+    this.renderer.setPixelRatio(this.pixelRatio(quality.ratio))
+    this.sun.castShadow = quality.shadow > 0
+    if (quality.shadow > 0 && this.sun.shadow.mapSize.x !== quality.shadow) {
+      this.sun.shadow.mapSize.set(quality.shadow, quality.shadow)
+      this.sun.shadow.map?.dispose()
+      this.sun.shadow.map = null
+    }
+    if (this.canvas) this.renderer.setSize(this.width, this.height, false)
+    this.dirty = true
+    if (!remember) return
+    try {
+      localStorage.setItem(QUALITY_KEY, JSON.stringify({ level, at: Date.now() }))
+    } catch {
+      // без хранилища ступень подберётся заново в следующий раз
+    }
+  }
+
+  /** Следит за скоростью: если больше половины кадров идут дольше 42 мс, качество снижается на ступень. */
+  private watch(elapsed: number) {
+    // Долгие паузы — это не медленный кадр, а пересборка города или возвращение на вкладку.
+    if (elapsed > 400) return
+    this.stats.frameMs += (elapsed - this.stats.frameMs) * 0.1
+    if (this.settle > 0) {
+      this.settle--
+      return
+    }
+    this.measured++
+    if (elapsed > 42) this.slow++
+    if (this.measured < 45) return
+    const tooSlow = this.slow > this.measured * 0.5
+    this.measured = 0
+    this.slow = 0
+    if (tooSlow && this.stats.quality < QUALITY.length - 1) {
+      this.setQuality(this.stats.quality + 1, true)
+      this.settle = 40
+    }
+  }
+
   // ——— Цикл рисования ———
 
   invalidate() {
@@ -372,6 +450,7 @@ export class Stage {
     const dt = Math.min(0.1, elapsed / 1000)
     this.last = now
     if (this.motion) {
+      this.watch(elapsed)
       this.time += dt
       this.uniforms.uTime.value = this.time
       for (const tick of this.tickers) tick(dt, this.time)
@@ -500,11 +579,20 @@ export class Stage {
     this.disposed = true
     cancelAnimationFrame(this.frame)
     for (const stop of this.observers) stop()
+    const materials = new Set<THREE.Material>()
     this.scene.traverse((object) => {
       const mesh = object as THREE.Mesh
       if (mesh.geometry) mesh.geometry.dispose()
+      for (const material of Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : []) materials.add(material)
     })
+    for (const material of materials) {
+      ;(material as THREE.MeshLambertMaterial).map?.dispose()
+      material.dispose()
+    }
+    this.sun.shadow.map?.dispose()
     this.renderer.dispose()
+    // Без этого браузер держит видеопамять ушедшей сцены: несколько заходов на вкладку — и сайт начинает тормозить.
+    this.renderer.forceContextLoss()
     this.canvas.remove()
   }
 }

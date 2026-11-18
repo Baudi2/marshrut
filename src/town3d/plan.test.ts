@@ -3,7 +3,7 @@ import { BUILDINGS, TIERS, maxLevel } from '../game/town'
 import { LookBuilder } from './look'
 import { CENTER, LOOKS, constructionLook, levelLook, specialLook, upgradeLook } from './looks'
 import index from './models.gen.json'
-import { BRIDGE_X, PITCH, PLAZA, PLOTS, QUARTER_SLOTS, RIVER, forest, groundHeight, lampsOpen, openPlots, plotOf, quarterOpen, quarterSlot, riverCenter } from './plan'
+import { BRIDGE_X, PITCH, PLAZA, PLOTS, QUARTER, QUARTER_SLOTS, RIVER, forest, groundHeight, lampsOpen, openPlots, plotOf, quarterOpen, quarterSlot, riverCenter } from './plan'
 
 const models = index as unknown as Record<string, unknown>
 
@@ -87,7 +87,8 @@ describe('стоянка', () => {
   })
 
   it('пока моста нет, тропа к нему и места слободы под лесом', () => {
-    const onPath = (trees: { x: number; z: number }[]) => trees.filter((t) => Math.abs(t.x - BRIDGE_X) < 3 && t.z > PLAZA.d / 2 && t.z < riverCenter(0) - RIVER.half - 4).length
+    // Вся полоса будущей тропы: от площади через реку и вдоль аллеи слободы.
+    const onPath = (trees: { x: number; z: number }[]) => trees.filter((t) => Math.abs(t.x - BRIDGE_X) < 3 && t.z > PLAZA.d / 2 && t.z < QUARTER.z + 34).length
     const slot = quarterSlot(0)
     const onSlot = (trees: { x: number; z: number }[]) => trees.filter((t) => Math.abs(t.x - slot.x) < 4 && Math.abs(t.z - slot.z) < 4).length
     expect(onPath(forest(0, 0))).toBeGreaterThan(0)

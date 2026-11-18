@@ -69,7 +69,7 @@ export interface Mark {
 }
 
 const TREE_MODELS = ['r/resource_tree_1', 'r/resource_tree_2', 'r/resource_tree_1', 'r/resource_pine_tree']
-const TREE_SCALE = [1.5, 1.6, 1.3, 2.3]
+const TREE_SCALE = [1.7, 1.8, 1.5, 2.6]
 const TILE = 48
 
 const bridgeLook: LookFn = (b) => {

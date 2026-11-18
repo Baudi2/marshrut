@@ -99,7 +99,7 @@ function gives(type: BuildingType, level: number): string {
   if (type.brick) return `кирпич: +${at(type.brick)} за ход`
   if (type.foodCap) return `запас еды: +${at(type.foodCap)}`
   if (type.materialCap) return `запас дерева и кирпича: +${at(type.materialCap)}`
-  if (type.firewood) return `запас дров: ${at(type.firewood)} ${plural(at(type.firewood), ['рабочий день', 'рабочих дня', 'рабочих дней'])} пропуска`
+  if (type.firewood) return `запас дров: прикрывает ${at(type.firewood)} ${plural(at(type.firewood), ['рабочий день', 'рабочих дня', 'рабочих дней'])} пропуска — город не зарастает и ничего не ломается`
   if (type.id === 'well') return `без колодца жителей не больше ${NO_WELL_LIMIT}`
   if (type.id === 'workshop') return `стройка быстрее на ${6 * level}%, второй строитель`
   if (type.id === 'mill') return `еда огородов +${10 * level}%`
@@ -392,7 +392,14 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
       )}
 
       <SkyCard api={skyApi} />
-      <ConditionPreview real={world.condition.level} missed={world.missedWorkdays} value={preview} onChange={onPreview} />
+      <ConditionPreview
+        real={world.condition.level}
+        missed={world.missedWorkdays}
+        firewood={world.town.firewood}
+        covered={world.covered}
+        value={preview}
+        onChange={onPreview}
+      />
       <Shop shop={shop} />
 
       <div className="card">

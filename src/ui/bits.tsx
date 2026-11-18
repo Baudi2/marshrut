@@ -181,11 +181,16 @@ const PREVIEW_LABELS = ['без пропусков', '2–3 дня', '4–7 дн
 export function ConditionPreview({
   real,
   missed,
+  firewood = 0,
+  covered = 0,
   value,
   onChange,
 }: {
   real: ConditionLevel
   missed: number
+  /** Сколько рабочих дней пропуска прикрывает запас дров и сколько уже прикрыто. */
+  firewood?: number
+  covered?: number
   value: ConditionLevel | null
   onChange: (level: ConditionLevel | null) => void
 }) {
@@ -201,6 +206,9 @@ export function ConditionPreview({
               : `Без занятия ${missed} ${plural(missed, ['рабочий день', 'рабочих дня', 'рабочих дней'])}.`}{' '}
             Один пропуск ничего не меняет, со второго подряд мир начинает зарастать. Очки при этом не отнимаются, а первое
             занятие возвращает порядок. Настоящая погода считается отдельно.
+            {firewood > 0 &&
+              ` Запас дров в дровнике прикрывает до ${firewood} ${plural(firewood, ['рабочего дня', 'рабочих дней', 'рабочих дней'])} пропуска` +
+                (covered > 0 ? `; сейчас прикрыто ${covered}.` : '.')}
           </p>
         </div>
       </div>

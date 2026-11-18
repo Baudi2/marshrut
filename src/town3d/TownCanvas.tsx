@@ -37,6 +37,22 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
   const [status, setStatus] = useState('Загружаю город…')
   // Кнопок на карте нет: движение выключается только настройкой системы «уменьшить движение».
   const [motion] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  // Единственная кнопка на карте: развернуть её на весь экран и вернуть обратно.
+  // Карта растягивается средствами страницы, а не браузера: так это работает и на айфоне.
+  const [full, setFull] = useState(false)
+  useEffect(() => {
+    if (!full) return
+    const before = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setFull(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = before
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [full])
 
   const shown = useMemo(() => marks.filter((mark) => mark.readyAt || mark.id === selected), [marks, selected])
   const shownRef = useRef<Mark[]>([])
@@ -121,7 +137,16 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
   }, [shown])
 
   return (
-    <div className="town3d" ref={host}>
+    <div className={`town3d${full ? ' is-full' : ''}`} ref={host}>
+      <button
+        className="town3d-full"
+        onClick={() => setFull(!full)}
+        aria-label={full ? 'Вернуть карту в обычный размер' : 'Развернуть карту на весь экран'}
+        title={full ? 'Вернуть в обычный размер (Esc)' : 'На весь экран'}
+        aria-pressed={full}
+      >
+        {full ? 'Свернуть' : 'На весь экран'}
+      </button>
       <div className="town3d-overlay" ref={overlay}>
         {shown.map((mark) => (
           <span className={`town3d-tag${mark.readyAt ? ' is-timer' : ''}`} key={mark.id}>

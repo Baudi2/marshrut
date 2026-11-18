@@ -7,7 +7,7 @@ import type { Plan, Progress, RawCycle } from '../data/types'
 import { buildWorld } from './engine'
 import { conditionLevel, gemsForScore, levelFor, missedWorkdays, roman, toISO } from './rules'
 import { SHOP, canAfford, shopItem } from './shop'
-import { repairCost } from './repair'
+import { BREAKS_BY_LEVEL, repairCost } from './repair'
 import { repoPurchases, repoRepairs } from '../data/load'
 
 const raw: RawCycle = {
@@ -441,6 +441,45 @@ describe('починка', () => {
   it('старый ремонт не защищает от нового перерыва', () => {
     const repairs = [{ item: 'pot', date: '2026-11-10' }]
     expect(broken(raw, '2026-12-07', repairs)).toHaveLength(2)
+  })
+})
+
+describe('запас дров', () => {
+  // Лагерь и дровник поставлены 18.11: запас — один рабочий день.
+  const town = [
+    { at: '2026-11-18T10:00:00', do: 'tier' as const },
+    { at: '2026-11-18T11:00:00', do: 'build' as const, type: 'woodshed' },
+  ]
+  const purchases = [
+    { item: 'pot', date: '2026-11-18' },
+    { item: 'signpost', date: '2026-11-18' },
+    { item: 'bench', date: '2026-11-18' },
+  ]
+  const plain = (today: string) => buildWorld([raw], [], today, { purchases, repairs: [] })
+  const stocked = (today: string) => buildWorld([raw], [], today, { purchases, repairs: [], town })
+
+  it('дровник прикрывает столько рабочих дней пропуска, сколько в нём запаса', () => {
+    const before = plain('2026-11-23')
+    const after = stocked('2026-11-23')
+    expect(after.town.firewood).toBe(1)
+    expect(before.missedWorkdays).toBeGreaterThan(1)
+    expect(after.missedWorkdays).toBe(before.missedWorkdays)
+    expect(after.covered).toBe(1)
+    expect(after.condition.level).toBe(conditionLevel(before.missedWorkdays - 1))
+  })
+
+  it('без пропуска запас не тратится, без дровника ничего не прикрыто', () => {
+    expect(stocked('2026-11-18').covered).toBe(0)
+    expect(plain('2026-11-23').covered).toBe(0)
+  })
+
+  it('поломки считаются по тому, что осталось после дров', () => {
+    for (const today of ['2026-11-24', '2026-11-27', '2026-12-01', '2026-12-07']) {
+      const before = plain(today)
+      const after = stocked(today)
+      expect(after.damage.length, today).toBe(BREAKS_BY_LEVEL[conditionLevel(before.missedWorkdays - 1)])
+      expect(after.damage.length, today).toBeLessThanOrEqual(before.damage.length)
+    }
   })
 })
 

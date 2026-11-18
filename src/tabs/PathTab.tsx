@@ -67,7 +67,14 @@ export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi 
 
       <SkyCard api={skyApi} />
 
-      <ConditionPreview real={world.condition.level} missed={world.missedWorkdays} value={preview} onChange={onPreview} />
+      <ConditionPreview
+        real={world.condition.level}
+        missed={world.missedWorkdays}
+        firewood={world.town.firewood}
+        covered={world.covered}
+        value={preview}
+        onChange={onPreview}
+      />
     </div>
   )
 }

@@ -197,6 +197,8 @@ export interface World {
   sessionDates: string[]
   lastActivity: string | null
   missedWorkdays: number
+  /** Сколько из этих дней прикрыл запас дров: они не считаются запустением. */
+  covered: number
   condition: Condition
   /** Число занятий по неделям от первого занятия до текущей недели. */
   rhythm: { weekStart: string; sessions: number }[]
@@ -653,6 +655,10 @@ export function buildWorld(
     gems: town.spent.gems,
   })
   const specials = cycles.flatMap((c) => c.buildings).filter((b) => b.stage >= 2).length
+  // Запас дров: дровник прикрывает столько рабочих дней пропуска, сколько в нём запаса.
+  // Мир начинает зарастать и ломаться только после того, как дрова кончились.
+  const covered = Math.min(missed, town.firewood)
+  const neglect = conditionLevel(missed - covered)
 
   return {
     cycles,
@@ -668,11 +674,12 @@ export function buildWorld(
     means: { coins: wallet.coins, gems: wallet.gems, specials },
     gemLog,
     side,
-    damage: damageFor(sessionDates, ledger.purchases, ledger.repairs, todayISO),
+    damage: damageFor(sessionDates, ledger.purchases, ledger.repairs, todayISO, neglect),
     sessionDates,
     lastActivity,
     missedWorkdays: missed,
-    condition: CONDITIONS[conditionLevel(missed)],
+    covered,
+    condition: CONDITIONS[neglect],
     rhythm,
     checks,
     mistakes,

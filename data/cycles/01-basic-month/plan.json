@@ -1,0 +1,3173 @@
+{
+  "meta": {
+    "title": "Базовый месяц Android: 30 рабочих дней (27.10–8.12.2026)",
+    "cycle": {
+      "n": 1,
+      "id": "01-basic-month",
+      "name": "Базовый месяц",
+      "summit": "База восстановлена",
+      "rankOnComplete": "Прошёл базовый маршрут"
+    },
+    "exportedAt": "2026-11-18",
+    "source": "планер в Claude Docs (вкладки «План по дням», «Ресурсы по дням», «Правила и контекст»)",
+    "sourceRevisions": {
+      "plan": 200,
+      "resources": 180
+    },
+    "language": "ru",
+    "progression": "Идём по номерам дней, по порядку. plannedDate — исходный график от 27.10.2026 (ориентир по дню недели), фактические даты — в progress.json.",
+    "dayLevels": {
+      "minimum": "10–15 мин, день засчитан",
+      "core": "основные шаги дня",
+      "extension": "+60 мин по желанию, только в глубокие дни"
+    },
+    "modes": {
+      "light": "30–45 мин (дни с тренировкой: пн, ср, пт)",
+      "deep": "60 мин ядра (вт, чт)"
+    },
+    "datesInTexts": "Даты внутри текстов шагов, названий недель и чекпоинтов (например «6.11», «24.11») — из исходного графика. Чтобы понять, о каком дне речь, сопоставляй их с plannedDate; в интерфейсе лучше показывать номер дня."
+  },
+  "tracks": [
+    {
+      "code": "A",
+      "name": "Алгоритмы с нуля",
+      "startLevel": "почти забыты; Kotlin знает, паттерны — нет",
+      "sessions": "пн и ср, 11 сессий (11 задач Easy)",
+      "budget": "≈8 ч",
+      "target": "11 Easy на Kotlin с заметками «идея / ловушка / O()» по паттернам (хеш, строки, два указателя, стек, связный список, бинарный поиск, рекурсия по дереву); 9 из 11 решены второй раз с пустого редактора; algo/mistakes.md; 3 задачи решены без подсказок через 2–3 недели; новая Easy на знакомый паттерн — за 20 мин",
+      "rank": {
+        "name": "База",
+        "criteria": [
+          {
+            "kind": "problems",
+            "what": "solved",
+            "need": 11
+          },
+          {
+            "kind": "problems",
+            "what": "repeated",
+            "need": 9
+          },
+          {
+            "kind": "problems",
+            "what": "nohints",
+            "need": 3
+          },
+          {
+            "kind": "timed",
+            "problem": 349
+          },
+          {
+            "kind": "artifacts",
+            "items": [
+              "cheatsheet",
+              "solutions",
+              "algo-mistakes"
+            ]
+          },
+          {
+            "kind": "tests",
+            "share": 0.7,
+            "questions": 6
+          }
+        ]
+      }
+    },
+    {
+      "code": "B",
+      "name": "System Design с основ",
+      "startLevel": "специально не изучал; архитектуру приложений знает на практике, но не словами",
+      "sessions": "вторник, 6 сессий",
+      "budget": "6 ч ядро, до 12",
+      "target": "Конспекты трёх разделов гайда по архитектуре (design/00-layers, 01-data-layer, 02-ui-state); схема слоёв своего рабочего приложения; разбор чужого дизайна чата (03-chat-review); 2 мини-дизайна по шаблону (04 экран списка с офлайном, 05 лента) с письменным разбором; design/mistakes.md",
+      "rank": {
+        "name": "База",
+        "criteria": [
+          {
+            "kind": "days",
+            "need": 6
+          },
+          {
+            "kind": "artifacts",
+            "items": [
+              "layers",
+              "data-layer",
+              "ui-state",
+              "chat-review",
+              "list-offline",
+              "feed",
+              "design-mistakes"
+            ]
+          },
+          {
+            "kind": "tests",
+            "share": 0.7,
+            "questions": 6
+          }
+        ]
+      }
+    },
+    {
+      "code": "C1",
+      "name": "Gradle",
+      "startLevel": "поверхностно: правит зависимости, не понимает сборку",
+      "sessions": "четверг, 3 сессии",
+      "budget": "3 ч ядро, до 6",
+      "target": "Заметка build/gradle-anatomy.md: что делает каждый файл и блок; pet-проект на каталоге версий; умеет объяснить implementation vs api, build types vs flavors, зачем configuration cache; знает 5 команд ./gradlew",
+      "rank": {
+        "name": "База",
+        "criteria": [
+          {
+            "kind": "days",
+            "need": 3
+          },
+          {
+            "kind": "artifacts",
+            "items": [
+              "gradle-anatomy",
+              "catalog"
+            ]
+          },
+          {
+            "kind": "tests",
+            "share": 0.7,
+            "questions": 4
+          }
+        ]
+      }
+    },
+    {
+      "code": "C2",
+      "name": "CI/CD",
+      "startLevel": "никогда не работал",
+      "sessions": "четверг, 3 сессии + hello-world в день 4",
+      "budget": "3 ч ядро, до 6",
+      "target": "Зелёный GitHub Actions workflow в pet-проекте: сборка, unit-тесты, lint, артефакт APK, бейдж (обязательная проверка на PR — если репо публичный); build/ci-notes.md; может объяснить workflow / event / job / step / runner / action и починить типовые падения первого пуша",
+      "rank": {
+        "name": "База",
+        "criteria": [
+          {
+            "kind": "days",
+            "need": 3
+          },
+          {
+            "kind": "ci"
+          },
+          {
+            "kind": "artifacts",
+            "items": [
+              "workflow",
+              "ci-notes"
+            ]
+          },
+          {
+            "kind": "tests",
+            "share": 0.7,
+            "questions": 4
+          }
+        ]
+      }
+    },
+    {
+      "code": "E",
+      "name": "ИИ-репетитор и тесты",
+      "startLevel": "opencode и Claude Code уже в работе; unit-тесты — эпизодически",
+      "sessions": "пятница, 6 × 25 мин",
+      "budget": "≈2,5 ч",
+      "target": "Четыре промпта-репетитора и CLAUDE.md/AGENTS.md в prep-basic и в pet-проекте; 2 unit-теста в pet-проекте (чистая функция, ViewModel с Flow); квиз по своим заметкам с записанным результатом (день 23)",
+      "rank": {
+        "name": "База",
+        "criteria": [
+          {
+            "kind": "days",
+            "need": 6
+          },
+          {
+            "kind": "artifacts",
+            "items": [
+              "ai-tutor",
+              "rules",
+              "tests",
+              "quiz"
+            ]
+          },
+          {
+            "kind": "tests",
+            "share": 0.7,
+            "questions": 4
+          }
+        ]
+      }
+    }
+  ],
+  "weeks": [
+    {
+      "n": 1,
+      "title": "27–30.10: разогрев (короткая: вт–пт)",
+      "goal": "репозиторий и pet-проект, который собирается из терминала; схема слоёв своего рабочего приложения; baseline по задаче 1512; заметка по анатомии Gradle; четыре промпта репетитора и первый зелёный workflow.",
+      "checkpoint": "Репозиторий, pet-проект собирается из терминала; схема слоёв рабочего приложения; baseline.md и задача 1512 с заметкой; gradle-anatomy.md; четыре промпта и CLAUDE.md/AGENTS.md; hello-world workflow зелёный"
+    },
+    {
+      "n": 2,
+      "title": "2–6.11: хеш-таблицы и первый CI (4.11 — праздник)",
+      "goal": "1 Easy (217) + повтор 1512; конспект data layer и offline-first; workflow со сборкой — зелёный или с понятой ошибкой; первый unit-тест.",
+      "checkpoint": "217 + повтор 1512; конспект data layer и offline (5 правил); workflow со сборкой зелёный — или ошибка записана и понята; первый unit-тест"
+    },
+    {
+      "n": 3,
+      "title": "9–13.11: хеш-таблицы, два указателя, состояние экрана, зависимости",
+      "goal": "2 Easy (242, 125) + повторы 217 и 242; схема состояний одного экрана; pet-проект на каталоге версий; один разобранный с репетитором Gradle-блок.",
+      "checkpoint": "242, 125 + повторы 217 и 242; схема состояний экрана; каталог версий в pet-проекте; один Gradle-блок разобран с репетитором"
+    },
+    {
+      "n": 4,
+      "title": "16–20.11: массивы, стек, разбор чужого дизайна, тесты в CI",
+      "goal": "2 Easy (283, 20) + повторы 125 и 283; схема чата с 3 трейдоффами; workflow гоняет тесты, публикует отчёт, бейдж в README; второй unit-тест.",
+      "checkpoint": "283, 20 + повторы 125 и 283; схема чата с 3 трейдоффами в design/03-chat-review.md; workflow с тестами, отчётом и бейджем; второй unit-тест — или записано, на чём встал"
+    },
+    {
+      "n": 5,
+      "title": "23–27.11: списки, бинарный поиск, первый мини-дизайн, варианты сборки",
+      "goal": "2 Easy (206, 704) + повторы 20 и 206; мини-дизайн «экран списка с офлайном» + mistakes.md; build types и замер скорости сборки в pet-проекте; квиз по Gradle и CI.",
+      "checkpoint": "206, 704 + повторы 20 и 206; мини-дизайн «экран списка с офлайном» + design/mistakes.md; build types и замер скорости сборки; квиз 1 с записанным счётом"
+    },
+    {
+      "n": 6,
+      "title": "30.11–4.12 и дни 29–30 (пн 7.12, вт 8.12): деревья, второй дизайн, финал CI, ретро",
+      "goal": "3 Easy (35, 104, 226) + повторы 704 и 35; мини-дизайн «лента новостей» с разбором; workflow с lint и артефактом APK (проверка PR — если репо публичный); повтор baseline 4.12; 7.12 — три задачи без подсказок; 8.12 — ретро и цели цикла 2.",
+      "checkpoint": "35, 104, 226 + повторы 704 и 35; мини-дизайн «лента» с разбором; workflow с lint и APK (проверка PR — если репо публичный); ci-notes.md; повтор baseline"
+    }
+  ],
+  "days": [
+    {
+      "day": 1,
+      "week": 1,
+      "plannedDate": "2026-10-27",
+      "plannedWeekday": "вт",
+      "track": "Старт + B · архитектура 1",
+      "extension": "+60 мин: README weeeBox — только раздел «Interview Process» (10 мин); раздел UI layer того же гайда; нарисовать поток данных одного экрана от нажатия до отрисовки",
+      "minimum": "создать репозиторий prep-basic и аккаунт LeetCode",
+      "trackCode": "B",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 0,
+          "text": "Проверить pet-проект: открыть, собрать из терминала `./gradlew assembleDebug` (на Windows — Git Bash или gradlew.bat), убедиться, что он на GitHub. Проект старше года, не собирается или многомодульный — создать новый Empty Activity в текущей Android Studio и учиться на нём (10 мин).",
+          "minutes": 10
+        },
+        {
+          "n": 1,
+          "text": "Создать второй, отдельный от pet-проекта репозиторий prep-basic — только заметки и решения задач, без кода приложения — с папками algo/, design/, build/, notes/ (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 2,
+          "text": "Аккаунт LeetCode, язык редактора — Kotlin (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "Прочитать обзор Guide to app architecture: принципы, слои UI / domain / data, UDF (25 мин).",
+          "minutes": 25
+        },
+        {
+          "n": 4,
+          "text": "На бумаге или в Excalidraw нарисовать слои приложения, которое пишешь на работе: UI → ViewModel → UseCase → Repository → API/DB; отметить, каких слоёв нет или они смешаны (10 мин).",
+          "minutes": 10
+        },
+        {
+          "n": 5,
+          "text": "Сохранить в prep-basic: текстовая схема и 3 строки «как у нас / чем отличается от гайда / чего нет» в design/00-layers.md — или фото листка в design/ (5 мин)",
+          "minutes": 5
+        }
+      ],
+      "status": "core",
+      "actualDate": "2026-10-27",
+      "resources": [
+        {
+          "title": "Guide to app architecture",
+          "links": [
+            {
+              "title": "Guide to app architecture",
+              "url": "https://developer.android.com/topic/architecture"
+            }
+          ],
+          "todo": "«Common architectural principles» (SSOT, UDF) и «Recommended app architecture» (UI / data / domain) — 25 мин",
+          "lang": "en (есть ru в селекторе)"
+        },
+        {
+          "title": "weeeBox README",
+          "links": [
+            {
+              "title": "weeeBox README",
+              "url": "https://github.com/weeeBox/mobile-system-design"
+            }
+          ],
+          "todo": "Только раздел «Interview Process» — 10 мин; остальное — 17.11",
+          "lang": "en"
+        },
+        {
+          "title": "Build your app from the command line (день 3)",
+          "links": [],
+          "todo": "Шаг 0: собрать pet-проект из терминала командой ./gradlew assembleDebug — 5 мин; не собрался — новый Empty Activity",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 2,
+      "week": 1,
+      "plannedDate": "2026-10-28",
+      "plannedWeekday": "ср",
+      "track": "A · baseline",
+      "extension": null,
+      "minimum": "прочитать шпаргалку по Big-O и завести notes/baseline.md",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 45,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Шпаргалка по Big-O и Kotlin-идиомы для задач: IntArray, `c - 'a'`, HashMap.getOrPut, HashSet, ArrayDeque, buildString, sortedBy — выписать с примерами в algo/kotlin-cheatsheet.md (10 мин).",
+          "minutes": 10
+        },
+        {
+          "n": 2,
+          "text": "Baseline: 1512 Number of Good Pairs (1 Two Sum решена раньше) на таймере 20 мин без разбора — записать время и результат; затем Editorial и переписать сам (30 мин всего).",
+          "minutes": 30
+        },
+        {
+          "n": 3,
+          "text": "notes/baseline.md: время, что было непонятно, самооценка 1–5 по пяти трекам (5 мин)",
+          "minutes": 5
+        }
+      ],
+      "status": "core",
+      "actualDate": "2026-11-12",
+      "resources": [
+        {
+          "title": "LeetCode 1512. Number of Good Pairs",
+          "links": [
+            {
+              "title": "LeetCode 1512. Number of Good Pairs",
+              "url": "https://leetcode.com/problems/number-of-good-pairs/"
+            }
+          ],
+          "todo": "Попытка на таймере 20 мин → вкладка Editorial 10 мин → переписать; время и результат — в notes/baseline.md",
+          "lang": "en"
+        },
+        {
+          "title": "Вкладка Solutions на странице задачи 1512",
+          "links": [],
+          "todo": "10 мин после своей попытки, если Editorial закрыт или непонятен",
+          "lang": "en"
+        },
+        {
+          "title": "TIH: Array cheatsheet",
+          "links": [
+            {
+              "title": "TIH: Array cheatsheet",
+              "url": "https://www.techinterviewhandbook.org/algorithms/array/"
+            }
+          ],
+          "todo": "«Time complexity» — 5 мин; Big-O — таблицы сложности на страницах тем",
+          "lang": "en"
+        },
+        {
+          "title": "Kotlin: Arrays · Kotlin: Collection operations",
+          "links": [
+            {
+              "title": "Kotlin: Arrays",
+              "url": "https://kotlinlang.org/docs/arrays.html"
+            },
+            {
+              "title": "Kotlin: Collection operations",
+              "url": "https://kotlinlang.org/docs/collection-operations.html"
+            }
+          ],
+          "todo": "Не читать целиком: найти IntArray, getOrPut, ArrayDeque, buildString, sortedBy и выписать по одному примеру в algo/kotlin-cheatsheet.md — 10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Яндекс Тренировки 1.0, лекция 1",
+          "links": [
+            {
+              "title": "Яндекс Тренировки 1.0, лекция 1",
+              "url": "https://yandex.ru/yaintern/algorithm-training_1"
+            }
+          ],
+          "todo": "«Сложность, тестирование, особые случаи» — фрагмент про O-нотацию, 20–30 мин; резерв на выходные или 4.11, не в будний день",
+          "lang": "ru"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          1512
+        ],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 3,
+      "week": 1,
+      "plannedDate": "2026-10-29",
+      "plannedWeekday": "чт",
+      "track": "C · Gradle 1",
+      "extension": "+60 мин: прочитать про фазы сборки (initialization / configuration / execution) и плагины com.android.application и kotlin; дописать заметку",
+      "minimum": "запустить `./gradlew tasks` и прочитать вывод",
+      "trackCode": "C1",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Открыть в pet-проекте settings.gradle.kts, build.gradle.kts проекта и модуля, gradle.properties, gradle/wrapper — по каждому блоку записать одну строку «что делает», сверяясь с Gradle build overview (30 мин).",
+          "minutes": 30
+        },
+        {
+          "n": 2,
+          "text": "В терминале (на Windows — Git Bash или gradlew.bat): `./gradlew tasks`, `./gradlew assembleDebug`, `./gradlew testDebugUnitTest`, `./gradlew :app:dependencies --configuration debugRuntimeClasspath` — в последнем не читать всё, а найти одну библиотеку и её транзитивные зависимости (20 мин).",
+          "minutes": 20
+        },
+        {
+          "n": 3,
+          "text": "Собрать заметку build/gradle-anatomy.md: файлы, блоки, 4 команды (10 мин)",
+          "minutes": 10
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Gradle build overview",
+          "links": [
+            {
+              "title": "Gradle build overview",
+              "url": "https://developer.android.com/build/gradle-build-overview"
+            }
+          ],
+          "todo": "Целиком: фазы initialization / configuration / execution, DSL, плагины — 15 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Build your app from the command line",
+          "links": [
+            {
+              "title": "Build your app from the command line",
+              "url": "https://developer.android.com/build/building-cmdline"
+            }
+          ],
+          "todo": "«Build a debug APK»: выполнить `gradlew tasks` и `assembleDebug` — 10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Gradle: Core concepts",
+          "links": [
+            {
+              "title": "Gradle: Core concepts",
+              "url": "https://docs.gradle.org/current/userguide/gradle_basics.html"
+            }
+          ],
+          "todo": "Таблица понятий и «With the Gradle Wrapper» — 15 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Habr: «Gradle под капотом»",
+          "links": [
+            {
+              "title": "Habr: «Gradle под капотом»",
+              "url": "https://habr.com/ru/articles/1058260/"
+            }
+          ],
+          "todo": "Расширение: «Основные концепции Gradle», «Жизненный цикл сборки» — 20 мин",
+          "lang": "ru"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 4,
+      "week": 1,
+      "plannedDate": "2026-10-30",
+      "plannedWeekday": "пт",
+      "track": "Ревью + E · репетитор и первый workflow",
+      "extension": "хвост недели (по желанию)",
+      "minimum": "сохранить один промпт и заполнить трекер",
+      "trackCode": "E",
+      "mode": "light",
+      "plannedMinutes": 40,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Ревью недели по п. 7 «Правил для сложных дней» (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 2,
+          "text": "Скопировать из вкладки «Ресурсы» четыре промпта в notes/ai-tutor.md; файл правил на 5 строк («ты репетитор: не решай за меня, спрашивай, проверяй мои ответы») положить как CLAUDE.md и AGENTS.md в prep-basic и в pet-проект (10 мин).",
+          "minutes": 10
+        },
+        {
+          "n": 3,
+          "text": "Hello-world workflow в pet-проекте по GitHub Actions Quickstart: один `echo`-шаг, пуш, зелёная галочка во вкладке Actions (15 мин)",
+          "minutes": 15
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Claude Code: CLAUDE.md и память проекта",
+          "links": [
+            {
+              "title": "Claude Code: CLAUDE.md и память проекта",
+              "url": "https://code.claude.com/docs/en/memory"
+            }
+          ],
+          "todo": "«Set up a project CLAUDE.md», «Write effective instructions», «AGENTS.md» — 15 мин",
+          "lang": "en"
+        },
+        {
+          "title": "opencode: Rules · GitHub Actions Quickstart",
+          "links": [
+            {
+              "title": "opencode: Rules",
+              "url": "https://opencode.ai/docs/rules/"
+            },
+            {
+              "title": "GitHub Actions Quickstart",
+              "url": "https://docs.github.com/en/actions/get-started/quickstart"
+            }
+          ],
+          "todo": "Rules: «Initialize», «Types», «Claude Code Compatibility» — 10 мин, один AGENTS.md читается обоими. Quickstart: workflow с одним echo-шагом, пуш, вкладка Actions — 15 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 5,
+      "week": 2,
+      "plannedDate": "2026-11-02",
+      "plannedWeekday": "пн",
+      "track": "A · хеш",
+      "extension": null,
+      "minimum": "пересказать решение 1512 вслух",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 38,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Повтор: 1512 Number of Good Pairs заново с пустого редактора (8 мин).",
+          "minutes": 8
+        },
+        {
+          "n": 2,
+          "text": "Шпаргалка по хеш-таблицам: когда Map, когда Set, стоимость операций (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "217 Contains Duplicate (E): 3 edge case вслух → таймер 15 мин → разбор (закрыть его) → переписать сам; заметка «идея / ловушка / O(время, память)» и первая строка algo/mistakes.md «что именно забыл» (25 мин всего). Решил быстрее 10 мин — пара: 387 First Unique Character in a String",
+          "minutes": 25
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "TIH: Hash table",
+          "links": [
+            {
+              "title": "TIH: Hash table",
+              "url": "https://www.techinterviewhandbook.org/algorithms/hash-table/"
+            }
+          ],
+          "todo": "«Introduction», «Time complexity» — 10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "LeetCode 217. Contains Duplicate",
+          "links": [
+            {
+              "title": "LeetCode 217. Contains Duplicate",
+              "url": "https://leetcode.com/problems/contains-duplicate/"
+            }
+          ],
+          "todo": "HashSet, 15 мин; разбор — Editorial",
+          "lang": "en"
+        },
+        {
+          "title": "Яндекс 1.0, лекции 3–4",
+          "links": [
+            {
+              "title": "Яндекс 1.0, лекции 3–4",
+              "url": "https://yandex.ru/yaintern/algorithm-training_1"
+            }
+          ],
+          "todo": "«Множества», «Словари и сортировка подсчётом» — резерв на выходные или 4.11",
+          "lang": "ru"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          217
+        ],
+        "repeatFromEmptyEditor": [
+          1512
+        ],
+        "pairIfFast": [
+          387
+        ],
+        "noHints": []
+      }
+    },
+    {
+      "day": 6,
+      "week": 2,
+      "plannedDate": "2026-11-03",
+      "plannedWeekday": "вт",
+      "track": "B · архитектура 2",
+      "extension": "+60 мин: нарисовать repository с local + remote source для одного экрана своего приложения с офлайном",
+      "minimum": "прочитать подраздел про source of truth",
+      "trackCode": "B",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Раздел Data layer: repository, data source, single source of truth, как данные текут между слоями (25 мин).",
+          "minutes": 25
+        },
+        {
+          "n": 2,
+          "text": "Раздел Build an offline-first app: локальная БД как источник правды, синхронизация, конфликты (25 мин).",
+          "minutes": 25
+        },
+        {
+          "n": 3,
+          "text": "Записать в design/01-data-layer.md 5 правил своими словами и отметить, какие нарушаются на работе (10 мин)",
+          "minutes": 10
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Data layer",
+          "links": [
+            {
+              "title": "Data layer",
+              "url": "https://developer.android.com/topic/architecture/data-layer"
+            }
+          ],
+          "todo": "«Data layer architecture», «Source of truth», «Implement in-memory data caching» — 25 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Build an offline-first app",
+          "links": [
+            {
+              "title": "Build an offline-first app",
+              "url": "https://developer.android.com/topic/architecture/data-layer/offline-first"
+            }
+          ],
+          "todo": "«Reads», «Writes», «Synchronization and conflict resolution» — 20 мин",
+          "lang": "en"
+        },
+        {
+          "title": "weeeBox: offline-first deep dive",
+          "links": [
+            {
+              "title": "weeeBox: offline-first deep dive",
+              "url": "https://github.com/weeeBox/mobile-system-design/blob/master/topics/offline-first-architecture-deep-dive.md"
+            }
+          ],
+          "todo": "Сравнить с гайдом Google — 10 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 7,
+      "week": 2,
+      "plannedDate": "2026-11-05",
+      "plannedWeekday": "чт",
+      "track": "C · CI 1",
+      "extension": "+60 мин: добавить шаг `./gradlew testDebugUnitTest`; прочитать Quickstart и гайд «Building and testing Java with Gradle»",
+      "minimum": "прочитать «Understanding GitHub Actions», записать 6 терминов",
+      "trackCode": "C2",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "«Understanding GitHub Actions»: выписать 6 терминов (workflow, event, job, step, action, runner) в build/ci-notes.md (10 мин).",
+          "minutes": 10
+        },
+        {
+          "n": 2,
+          "text": "Префлайт: `git update-index --chmod=+x gradlew`; в .gitattributes строка `gradlew text eol=lf`; local.properties в .gitignore; версию JDK взять из Settings → Gradle JDK (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": ".github/workflows/android.yml: on push + pull_request → actions/checkout → actions/setup-java (та же версия JDK) → gradle/actions/setup-gradle → `./gradlew assembleDebug` (20 мин).",
+          "minutes": 20
+        },
+        {
+          "n": 4,
+          "text": "Запушить; пока бежит первая сборка (5–10 мин) — писать ci-notes; прочитать лог, починить первую ошибку (25 мин). Результат — зелёная сборка или точно записанная ошибка; красный CI имеет приоритет над пятничным шагом 6.11",
+          "minutes": 25
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Understanding GitHub Actions",
+          "links": [
+            {
+              "title": "Understanding GitHub Actions",
+              "url": "https://docs.github.com/en/actions/get-started/understanding-github-actions"
+            }
+          ],
+          "todo": "Понятия workflow / event / job / step / action / runner — 10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Gradle: Gradle on GitHub Actions",
+          "links": [
+            {
+              "title": "Gradle: Gradle on GitHub Actions",
+              "url": "https://docs.gradle.org/current/userguide/github-actions.html"
+            }
+          ],
+          "todo": "Префлайт перед пушем: `git update-index --chmod=+x gradlew`; в .gitattributes строка `gradlew text eol=lf`; версия JDK — как в Settings → Gradle JDK. Минимальный workflow (checkout@v4, setup-java@v4, setup-gradle) — 15 мин; команда `./gradlew assembleDebug`",
+          "lang": "en"
+        },
+        {
+          "title": "GitHub Docs: Building and testing Java with Gradle",
+          "links": [
+            {
+              "title": "GitHub Docs: Building and testing Java with Gradle",
+              "url": "https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-java-with-gradle"
+            }
+          ],
+          "todo": "Расширение: «Using a Gradle starter workflow» (JDK 17, temurin) — 15 мин",
+          "lang": "en"
+        },
+        {
+          "title": "actions/setup-java · gradle/actions: setup-gradle",
+          "links": [
+            {
+              "title": "actions/setup-java",
+              "url": "https://github.com/actions/setup-java"
+            },
+            {
+              "title": "gradle/actions: setup-gradle",
+              "url": "https://github.com/gradle/actions/blob/main/docs/setup-gradle.md"
+            }
+          ],
+          "todo": "Если сборка красная: README setup-java (distribution: temurin, java-version как локально), setup-gradle «Usage» — 15 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 8,
+      "week": 2,
+      "plannedDate": "2026-11-06",
+      "plannedWeekday": "пт",
+      "track": "Ревью + E · тест 1",
+      "extension": "хвост недели (по желанию)",
+      "minimum": "заполнить трекер",
+      "trackCode": "E",
+      "mode": "light",
+      "plannedMinutes": 40,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Ревью недели (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 2,
+          "text": "Если CI красный — чинить его (25 мин). Иначе: добавить зависимости для тестов (junit, kotlinx-coroutines-test, turbine) и класс MainDispatcherRule из «Testing Kotlin coroutines on Android»; первый unit-тест на чистую функцию или UseCase, 2 проверки, `./gradlew testDebugUnitTest` (25 мин)",
+          "minutes": 25
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Build local unit tests · Testing Kotlin coroutines on Android",
+          "links": [
+            {
+              "title": "Build local unit tests",
+              "url": "https://developer.android.com/training/testing/local-tests"
+            },
+            {
+              "title": "Testing Kotlin coroutines on Android",
+              "url": "https://developer.android.com/kotlin/coroutines/test"
+            }
+          ],
+          "todo": "Local tests: «Create a local unit test class» — 10 мин; coroutines/test: «Setting the Main dispatcher» — скопировать MainDispatcherRule, добавить kotlinx-coroutines-test и turbine в зависимости — 10 мин; по умолчанию JUnit 4",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 9,
+      "week": 3,
+      "plannedDate": "2026-11-09",
+      "plannedWeekday": "пн",
+      "track": "A · хеш 2",
+      "extension": null,
+      "minimum": "пересказать решение 217 вслух",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 43,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Повтор: 217 заново с пустого редактора, не глядя в заметку (8 мин).",
+          "minutes": 8
+        },
+        {
+          "n": 2,
+          "text": "Шпаргалка по хеш-таблицам: подсчёт частот, когда массив из 26 ячеек вместо Map (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "242 Valid Anagram (E): 3 edge case вслух → таймер 20 мин → разбор → переписать; заметка + строка в mistakes.md (30 мин всего). Решил быстрее 10 мин — пара: 383 Ransom Note",
+          "minutes": 30
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "LeetCode 242. Valid Anagram",
+          "links": [
+            {
+              "title": "LeetCode 242. Valid Anagram",
+              "url": "https://leetcode.com/problems/valid-anagram/"
+            }
+          ],
+          "todo": "20 мин; шпаргалка — TIH Hash table (день 5)",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          242
+        ],
+        "repeatFromEmptyEditor": [
+          217
+        ],
+        "pairIfFast": [
+          383
+        ],
+        "noHints": []
+      }
+    },
+    {
+      "day": 10,
+      "week": 3,
+      "plannedDate": "2026-11-10",
+      "plannedWeekday": "вт",
+      "track": "B · архитектура 3",
+      "extension": "+60 мин: раздел UI events; набросок ViewModel с StateFlow для этого экрана на бумаге",
+      "minimum": "нарисовать состояния одного экрана",
+      "trackCode": "B",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Раздел UI layer: UI state, state holders, UDF, события (25 мин).",
+          "minutes": 25
+        },
+        {
+          "n": 2,
+          "text": "Нарисовать состояния экрана списка (loading / content / empty / error) и события, которые их меняют (20 мин).",
+          "minutes": 20
+        },
+        {
+          "n": 3,
+          "text": "Записать в design/02-ui-state.md, как это сделано на работе и чем отличается от гайда (15 мин)",
+          "minutes": 15
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "UI layer",
+          "links": [
+            {
+              "title": "UI layer",
+              "url": "https://developer.android.com/topic/architecture/ui-layer"
+            }
+          ],
+          "todo": "«Define UI state», «Manage state with UDF», «Consume UI state» (in-progress, errors) — 25 мин",
+          "lang": "en"
+        },
+        {
+          "title": "State holders and UI state",
+          "links": [
+            {
+              "title": "State holders and UI state",
+              "url": "https://developer.android.com/topic/architecture/ui-layer/stateholders"
+            }
+          ],
+          "todo": "Расширение: «Types of state holders», «Choose between a ViewModel and plain class» — 15 мин",
+          "lang": "en"
+        },
+        {
+          "title": "UI events",
+          "links": [
+            {
+              "title": "UI events",
+              "url": "https://developer.android.com/topic/architecture/ui-layer/events"
+            }
+          ],
+          "todo": "Расширение — 10 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 11,
+      "week": 3,
+      "plannedDate": "2026-11-11",
+      "plannedWeekday": "ср",
+      "track": "A · два указателя",
+      "extension": null,
+      "minimum": "пересказать решение 242 вслух",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 43,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Повтор: 242 заново с пустого редактора (8 мин).",
+          "minutes": 8
+        },
+        {
+          "n": 2,
+          "text": "Шпаргалка по строкам и двум указателям (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "125 Valid Palindrome (E): 3 edge case вслух → таймер 20 мин → разбор → переписать; заметка + mistakes.md (30 мин всего). Решил быстрее 10 мин — пара: 344 Reverse String",
+          "minutes": 30
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "TIH: String",
+          "links": [
+            {
+              "title": "TIH: String",
+              "url": "https://www.techinterviewhandbook.org/algorithms/string/"
+            }
+          ],
+          "todo": "«Techniques»: Palindrome, Anagram — 5 мин; два указателя — на странице Array (день 2)",
+          "lang": "en"
+        },
+        {
+          "title": "LeetCode 125. Valid Palindrome",
+          "links": [
+            {
+              "title": "LeetCode 125. Valid Palindrome",
+              "url": "https://leetcode.com/problems/valid-palindrome/"
+            }
+          ],
+          "todo": "20 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          125
+        ],
+        "repeatFromEmptyEditor": [
+          242
+        ],
+        "pairIfFast": [
+          344
+        ],
+        "noHints": []
+      }
+    },
+    {
+      "day": 12,
+      "week": 3,
+      "plannedDate": "2026-11-12",
+      "plannedWeekday": "чт",
+      "track": "C · Gradle 2",
+      "extension": "+60 мин: добавить одну новую зависимость через каталог и увидеть её в `./gradlew :app:dependencies`; прочитать «Dependency management basics» Gradle",
+      "minimum": "прочитать про implementation vs api",
+      "trackCode": "C1",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Прочитать про конфигурации зависимостей: implementation / api / testImplementation / kapt-ksp (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 2,
+          "text": "Прочитать гайд по каталогу версий и перенести 3–5 зависимостей pet-проекта в gradle/libs.versions.toml (или разобраться, как он уже устроен) (30 мин).",
+          "minutes": 30
+        },
+        {
+          "n": 3,
+          "text": "`./gradlew :app:dependencies --configuration debugRuntimeClasspath`: найти одну транзитивную зависимость и записать, откуда она (15 мин)",
+          "minutes": 15
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Add build dependencies",
+          "links": [
+            {
+              "title": "Add build dependencies",
+              "url": "https://developer.android.com/build/dependencies"
+            }
+          ],
+          "todo": "Раздел про dependency configurations: implementation / api / testImplementation — 15 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Migrate your build to version catalogs",
+          "links": [
+            {
+              "title": "Migrate your build to version catalogs",
+              "url": "https://developer.android.com/build/migrate-to-catalogs"
+            }
+          ],
+          "todo": "Целиком: [versions] / [libraries] / [plugins], alias(libs.plugins…) — 15 мин, потом перенести 3–5 зависимостей",
+          "lang": "en"
+        },
+        {
+          "title": "Gradle: Version Catalogs",
+          "links": [
+            {
+              "title": "Gradle: Version Catalogs",
+              "url": "https://docs.gradle.org/current/userguide/version_catalogs.html"
+            }
+          ],
+          "todo": "«The TOML format», «Aliases and type-safe accessors» — 10 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 13,
+      "week": 3,
+      "plannedDate": "2026-11-13",
+      "plannedWeekday": "пт",
+      "track": "Ревью + E · репетитор",
+      "extension": "хвост недели (по желанию)",
+      "minimum": "заполнить трекер",
+      "trackCode": "E",
+      "mode": "light",
+      "plannedMinutes": 40,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Ревью недели (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 2,
+          "text": "Красный CI — чинить его; иначе взять самый непонятный блок из build.gradle.kts, пропустить через промпт 2 «объясни и задай 3 вопроса», ответить самому, дописать gradle-anatomy.md (25 мин)",
+          "minutes": 25
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Промпт 2 из notes/ai-tutor.md",
+          "links": [],
+          "todo": "Самый непонятный блок build.gradle.kts — 25 мин",
+          "lang": "—"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 14,
+      "week": 4,
+      "plannedDate": "2026-11-16",
+      "plannedWeekday": "пн",
+      "track": "A · массивы",
+      "extension": null,
+      "minimum": "пересказать решение 125 вслух",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 38,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Повтор: 125 заново с пустого редактора (8 мин).",
+          "minutes": 8
+        },
+        {
+          "n": 2,
+          "text": "283 Move Zeroes (E): 3 edge case вслух → таймер 20 мин → разбор → переписать; заметка + mistakes.md (30 мин всего). Решил быстрее 10 мин — пара: 27 Remove Element",
+          "minutes": 30
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "LeetCode 283. Move Zeroes",
+          "links": [
+            {
+              "title": "LeetCode 283. Move Zeroes",
+              "url": "https://leetcode.com/problems/move-zeroes/"
+            }
+          ],
+          "todo": "20 мин; шпаргалка — TIH Array (день 2)",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          283
+        ],
+        "repeatFromEmptyEditor": [
+          125
+        ],
+        "pairIfFast": [
+          27
+        ],
+        "noHints": []
+      }
+    },
+    {
+      "day": 15,
+      "week": 4,
+      "plannedDate": "2026-11-17",
+      "plannedWeekday": "вт",
+      "track": "B · разбор чужого",
+      "extension": "+60 мин: один мок из плейлиста weeeBox на скорости 1,5× с паузами: предсказывать следующий вопрос интервьюера",
+      "minimum": "прочитать статью про чат без схемы",
+      "trackCode": "B",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Статья «Chat Application» (ProAndroidDev): читать и перерисовывать схему руками (30 мин).",
+          "minutes": 30
+        },
+        {
+          "n": 2,
+          "text": "Выписать 3 трейдоффа — WebSocket против пушей, статусы доставки, клиентский UUID — в design/03-chat-review.md (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 3,
+          "text": "Перечитать TEMPLATE.md weeeBox, раздел README про структуру секции и exercises/chat-app.md: какие пункты шаблона автор статьи закрыл, какие пропустил — это и есть твой чеклист на 24.11 (15 мин)",
+          "minutes": 15
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "ProAndroidDev: Chat Application",
+          "links": [
+            {
+              "title": "ProAndroidDev: Chat Application",
+              "url": "https://proandroiddev.com/mobile-system-design-exercise-chat-application-12223a0c1ac"
+            }
+          ],
+          "todo": "Читать и перерисовывать схему руками — 30 мин",
+          "lang": "en"
+        },
+        {
+          "title": "weeeBox: exercises/chat-app.md · TEMPLATE.md · common-interview-mistakes.md",
+          "links": [
+            {
+              "title": "weeeBox: exercises/chat-app.md",
+              "url": "https://github.com/weeeBox/mobile-system-design/blob/master/exercises/chat-app.md"
+            },
+            {
+              "title": "TEMPLATE.md",
+              "url": "https://github.com/weeeBox/mobile-system-design/blob/master/TEMPLATE.md"
+            },
+            {
+              "title": "common-interview-mistakes.md",
+              "url": "https://github.com/weeeBox/mobile-system-design/blob/master/common-interview-mistakes.md"
+            }
+          ],
+          "todo": "TEMPLATE, README «Interview Process» и chat-app.md: какие пункты шаблона автор статьи закрыл, какие пропустил — 15 мин; common-interview-mistakes — расширение, 10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "YouTube: плейлист моков weeeBox",
+          "links": [
+            {
+              "title": "YouTube: плейлист моков weeeBox",
+              "url": "https://www.youtube.com/playlist?list=PLaMN-JyH50OYAfxJEpiQTYTD-gxTf7x9d"
+            }
+          ],
+          "todo": "Расширение: один мок на 1,5× с паузами — предсказывать следующий вопрос интервьюера",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 16,
+      "week": 4,
+      "plannedDate": "2026-11-18",
+      "plannedWeekday": "ср",
+      "track": "A · стек",
+      "extension": null,
+      "minimum": "пересказать решение 283 вслух",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 43,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Повтор: 283 заново с пустого редактора (8 мин).",
+          "minutes": 8
+        },
+        {
+          "n": 2,
+          "text": "Шпаргалка по стеку: LIFO, ArrayDeque в Kotlin (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "20 Valid Parentheses (E): 3 edge case вслух → таймер 20 мин → разбор → переписать; заметка + mistakes.md (30 мин всего). Решил быстрее 10 мин — пара: 1047 Remove All Adjacent Duplicates in String",
+          "minutes": 30
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "TIH: Stack",
+          "links": [
+            {
+              "title": "TIH: Stack",
+              "url": "https://www.techinterviewhandbook.org/algorithms/stack/"
+            }
+          ],
+          "todo": "«Time complexity», «Corner cases» — 5–10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "LeetCode 20. Valid Parentheses",
+          "links": [
+            {
+              "title": "LeetCode 20. Valid Parentheses",
+              "url": "https://leetcode.com/problems/valid-parentheses/"
+            }
+          ],
+          "todo": "20 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          20
+        ],
+        "repeatFromEmptyEditor": [
+          283
+        ],
+        "pairIfFast": [
+          1047
+        ],
+        "noHints": []
+      }
+    },
+    {
+      "day": 17,
+      "week": 4,
+      "plannedDate": "2026-11-19",
+      "plannedWeekday": "чт",
+      "track": "C · CI 2",
+      "extension": "+60 мин: прочитать, как setup-gradle кэширует зависимости, сравнить время двух прогонов",
+      "minimum": "прочитать про upload-artifact",
+      "trackCode": "C2",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Добавить в workflow шаг `./gradlew testDebugUnitTest` (если его ещё нет) и добиться зелёного прогона; красный — чинить, это и есть урок (20 мин).",
+          "minutes": 20
+        },
+        {
+          "n": 2,
+          "text": "Шаг actions/upload-artifact для отчёта тестов (app/build/reports/tests) — скачать и открыть его (20 мин).",
+          "minutes": 20
+        },
+        {
+          "n": 3,
+          "text": "Бейдж статуса workflow в README (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 4,
+          "text": "Дописать ci-notes.md: что делает каждый шаг (15 мин)",
+          "minutes": 15
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "GitHub Docs: Building and testing Java with Gradle → artifacts",
+          "links": [
+            {
+              "title": "GitHub Docs: Building and testing Java with Gradle → artifacts",
+              "url": "https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-java-with-gradle"
+            }
+          ],
+          "todo": "«Packaging workflow data as artifacts» — пример с upload-artifact — 10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "actions/upload-artifact",
+          "links": [
+            {
+              "title": "actions/upload-artifact",
+              "url": "https://github.com/actions/upload-artifact"
+            }
+          ],
+          "todo": "README «Usage»: @v4, name / path / retention-days — 10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Adding a workflow status badge",
+          "links": [
+            {
+              "title": "Adding a workflow status badge",
+              "url": "https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/monitoring-workflows/adding-a-workflow-status-badge"
+            }
+          ],
+          "todo": "Бейдж в README — 5 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Gradle on GitHub Actions → Caching behavior",
+          "links": [
+            {
+              "title": "Gradle on GitHub Actions → Caching behavior",
+              "url": "https://docs.gradle.org/current/userguide/github-actions.html"
+            }
+          ],
+          "todo": "Расширение: как setup-gradle кэширует Gradle User Home — 10 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 18,
+      "week": 4,
+      "plannedDate": "2026-11-20",
+      "plannedWeekday": "пт",
+      "track": "Ревью + E · тест 2",
+      "extension": "хвост недели (по желанию)",
+      "minimum": "заполнить трекер",
+      "trackCode": "E",
+      "mode": "light",
+      "plannedMinutes": 40,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Ревью недели (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 2,
+          "text": "Красный CI — чинить его. Иначе второй unit-тест: ViewModel с Flow через runTest, MainDispatcherRule и Turbine — одна проверка «после загрузки состояние content»; запустить локально и в CI. Не уложился в 25 мин — записать, на чём встал, и добить в расширении 26.11 (25 мин)",
+          "minutes": 25
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Testing Kotlin flows on Android",
+          "links": [
+            {
+              "title": "Testing Kotlin flows on Android",
+              "url": "https://developer.android.com/kotlin/flow/test"
+            }
+          ],
+          "todo": "«Using Turbine», «Testing StateFlows» — 10 мин внутри 25-минутного шага; MainDispatcherRule и зависимости уже добавлены 6.11",
+          "lang": "en"
+        },
+        {
+          "title": "Turbine README · kotlinx-coroutines-test README",
+          "links": [
+            {
+              "title": "Turbine README",
+              "url": "https://github.com/cashapp/turbine"
+            },
+            {
+              "title": "kotlinx-coroutines-test README",
+              "url": "https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-test/README.md"
+            }
+          ],
+          "todo": "Turbine: «Download», «Single Flow» — 5 мин; kotlinx-coroutines-test — только если runTest незнаком (резерв)",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 19,
+      "week": 5,
+      "plannedDate": "2026-11-23",
+      "plannedWeekday": "пн",
+      "track": "A · списки",
+      "extension": null,
+      "minimum": "пересказать решение 20 вслух",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 43,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Повтор: 20 заново с пустого редактора (8 мин).",
+          "minutes": 8
+        },
+        {
+          "n": 2,
+          "text": "Шпаргалка по связным спискам: узел, голова, два указателя prev/curr (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "206 Reverse Linked List (E): 3 edge case вслух (пустой список, один узел, два) → таймер 20 мин → разбор → переписать, прогнать на бумаге для 3 узлов; заметка + mistakes.md (30 мин всего). Решил быстрее 10 мин — пара: 876 Middle of the Linked List",
+          "minutes": 30
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "TIH: Linked list",
+          "links": [
+            {
+              "title": "TIH: Linked list",
+              "url": "https://www.techinterviewhandbook.org/algorithms/linked-list/"
+            }
+          ],
+          "todo": "«Techniques»: dummy node, two pointers — 10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "LeetCode 206. Reverse Linked List",
+          "links": [
+            {
+              "title": "LeetCode 206. Reverse Linked List",
+              "url": "https://leetcode.com/problems/reverse-linked-list/"
+            }
+          ],
+          "todo": "20 мин; прогнать на бумаге для 3 узлов",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          206
+        ],
+        "repeatFromEmptyEditor": [
+          20
+        ],
+        "pairIfFast": [
+          876
+        ],
+        "noHints": []
+      }
+    },
+    {
+      "day": 20,
+      "week": 5,
+      "plannedDate": "2026-11-24",
+      "plannedWeekday": "вт",
+      "track": "B · мини-дизайн 1",
+      "extension": "+60 мин: прочитать PracHub целиком; дописать в дизайн синхронизацию и конфликты",
+      "minimum": "написать API-контракт одного эндпоинта с пагинацией",
+      "trackCode": "B",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Скопировать TEMPLATE.md weeeBox в design/04-list-offline.md (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 2,
+          "text": "Дизайн «экран списка с офлайном и пагинацией» по шаблону, таймер 30 мин: требования → API с пагинацией → слои → кэш и офлайн → ошибки и ретраи.",
+          "minutes": 30
+        },
+        {
+          "n": 3,
+          "text": "Сравнить с гайдом PracHub (раздел про sync и offline) и со своей схемой чата от 17.11: что забыл (10 мин).",
+          "minutes": 10
+        },
+        {
+          "n": 4,
+          "text": "Прочитать в статье VK/RuStore список критериев интервьюера, отметить, какие закрывает твой дизайн; завести design/mistakes.md и записать 3 пропуска (15 мин)",
+          "minutes": 15
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "weeeBox TEMPLATE.md",
+          "links": [
+            {
+              "title": "weeeBox TEMPLATE.md",
+              "url": "https://github.com/weeeBox/mobile-system-design/blob/master/TEMPLATE.md"
+            }
+          ],
+          "todo": "Скопировать в design/04-list-offline.md, заполнять по таймеру 30 мин",
+          "lang": "en"
+        },
+        {
+          "title": "PracHub: Mobile System Design guide 2026",
+          "links": [
+            {
+              "title": "PracHub: Mobile System Design guide 2026",
+              "url": "https://prachub.com/resources/mobile-system-design-interview-guide-2026-ios-android-offline-sync-and-trade-offs"
+            }
+          ],
+          "todo": "Раздел про offline sync (mutation ID, версии, состояния pending / synced / failed) — 10 мин после своего дизайна",
+          "lang": "en"
+        },
+        {
+          "title": "weeeBox: pagination deep dive",
+          "links": [
+            {
+              "title": "weeeBox: pagination deep dive",
+              "url": "https://github.com/weeeBox/mobile-system-design/blob/master/topics/mobile-pagination-deep-dive.md"
+            }
+          ],
+          "todo": "Сверить решение по пагинации (cursor vs offset, размер страницы) — 5 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Habr, VK/RuStore: System Design для мобильщиков",
+          "links": [
+            {
+              "title": "Habr, VK/RuStore: System Design для мобильщиков",
+              "url": "https://habr.com/ru/companies/vk/articles/798391/"
+            }
+          ],
+          "todo": "Список критериев интервьюера: отметить, какие закрывает твой дизайн — 10 мин",
+          "lang": "ru"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 21,
+      "week": 5,
+      "plannedDate": "2026-11-25",
+      "plannedWeekday": "ср",
+      "track": "A · бинарный поиск",
+      "extension": null,
+      "minimum": "пересказать решение 206 вслух",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 43,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Повтор: 206 заново с пустого редактора (8 мин).",
+          "minutes": 8
+        },
+        {
+          "n": 2,
+          "text": "Шпаргалка по бинарному поиску: границы, середина, условие выхода (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "704 Binary Search (E): 3 edge case вслух → таймер 20 мин → разбор → переписать; заметка о ловушке с границами + mistakes.md (30 мин всего). Решил быстрее 10 мин — пара: 278 First Bad Version",
+          "minutes": 30
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "TIH: Binary search",
+          "links": [
+            {
+              "title": "TIH: Binary search",
+              "url": "https://www.techinterviewhandbook.org/algorithms/binary-search/"
+            }
+          ],
+          "todo": "10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "LeetCode 704. Binary Search",
+          "links": [
+            {
+              "title": "LeetCode 704. Binary Search",
+              "url": "https://leetcode.com/problems/binary-search/"
+            }
+          ],
+          "todo": "20 мин; ловушка — границы и середина",
+          "lang": "en"
+        },
+        {
+          "title": "Яндекс 1.0, лекция 6 «Бинарный поиск»",
+          "links": [
+            {
+              "title": "Яндекс 1.0, лекция 6 «Бинарный поиск»",
+              "url": "https://yandex.ru/yaintern/algorithm-training_1"
+            }
+          ],
+          "todo": "30–40 мин — резерв на выходные",
+          "lang": "ru"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          704
+        ],
+        "repeatFromEmptyEditor": [
+          206
+        ],
+        "pairIfFast": [
+          278
+        ],
+        "noHints": []
+      }
+    },
+    {
+      "day": 22,
+      "week": 5,
+      "plannedDate": "2026-11-26",
+      "plannedWeekday": "чт",
+      "track": "C · Gradle 3",
+      "extension": "+60 мин: добить тест ViewModel от 20.11, если он не дописан; иначе прочитать «Optimize your build speed» целиком и выписать 3 приёма",
+      "minimum": "прочитать про build types",
+      "trackCode": "C1",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Прочитать про build types и product flavors (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 2,
+          "text": "В pet-проекте: добавить в debug applicationIdSuffix и поле BuildConfig (нужен `buildFeatures { buildConfig = true }`), собрать оба варианта, посмотреть разницу (20 мин).",
+          "minutes": 20
+        },
+        {
+          "n": 3,
+          "text": "Скорость: проверить gradle.properties (org.gradle.caching, configuration cache), замерить `./gradlew assembleDebug --profile` до и после включения (20 мин).",
+          "minutes": 20
+        },
+        {
+          "n": 4,
+          "text": "Записать в gradle-anatomy.md (5 мин)",
+          "minutes": 5
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Configure build variants",
+          "links": [
+            {
+              "title": "Configure build variants",
+              "url": "https://developer.android.com/build/build-variants"
+            }
+          ],
+          "todo": "«Configure build types» (applicationIdSuffix), «Configure product flavors» — 15 мин; BuildConfig: включить `buildFeatures { buildConfig = true }`, поле — через buildConfigField в build type",
+          "lang": "en"
+        },
+        {
+          "title": "Optimize your build speed",
+          "links": [
+            {
+              "title": "Optimize your build speed",
+              "url": "https://developer.android.com/build/optimize-your-build"
+            }
+          ],
+          "todo": "«Use the configuration cache» и соседние советы — 15 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Gradle: Configuration cache · Habr «Gradle под капотом» (день 3)",
+          "links": [
+            {
+              "title": "Gradle: Configuration cache",
+              "url": "https://docs.gradle.org/current/userguide/configuration_cache.html"
+            }
+          ],
+          "todo": "Gradle — 10 мин; Habr: «Почему этап Configuration — главная проблема» — в расширение",
+          "lang": "en / ru"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 23,
+      "week": 5,
+      "plannedDate": "2026-11-27",
+      "plannedWeekday": "пт",
+      "track": "Ревью + E · квиз 1",
+      "extension": "хвост недели (по желанию)",
+      "minimum": "заполнить трекер",
+      "trackCode": "E",
+      "mode": "light",
+      "plannedMinutes": 40,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Ревью недели (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 2,
+          "text": "Попросить ИИ-репетитора составить 10 вопросов по твоим gradle-anatomy.md и ci-notes.md, ответить без подглядывания, записать счёт в notes/quiz-1.md (25 мин)",
+          "minutes": 25
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Промпт-квиз",
+          "links": [],
+          "todo": "«Составь 10 вопросов по этим двум файлам, задавай по одному, оценивай ответ от 0 до 2» — 25 мин",
+          "lang": "—"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 24,
+      "week": 6,
+      "plannedDate": "2026-11-30",
+      "plannedWeekday": "пн",
+      "track": "A · бинарный поиск 2",
+      "extension": null,
+      "minimum": "пересказать решение 704 вслух",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 43,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Повтор: 704 заново с пустого редактора (8 мин).",
+          "minutes": 8
+        },
+        {
+          "n": 2,
+          "text": "Перечитать свою заметку о границах (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "35 Search Insert Position (E): 3 edge case вслух (пустой массив, меньше всех, больше всех) → таймер 20 мин → разбор → переписать; заметка + mistakes.md (30 мин всего). Решил быстрее 10 мин — пара: 69 Sqrt(x)",
+          "minutes": 30
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "TIH: Binary search (день 21)",
+          "links": [
+            {
+              "title": "TIH: Binary search",
+              "url": "https://www.techinterviewhandbook.org/algorithms/binary-search/"
+            }
+          ],
+          "todo": "Перечитать свою заметку о границах и «Techniques» в шпаргалке — 5 мин",
+          "lang": "en"
+        },
+        {
+          "title": "LeetCode 35. Search Insert Position",
+          "links": [
+            {
+              "title": "LeetCode 35. Search Insert Position",
+              "url": "https://leetcode.com/problems/search-insert-position/"
+            }
+          ],
+          "todo": "20 мин; тот же бинарный поиск, ответ — позиция left после выхода из цикла",
+          "lang": "en"
+        },
+        {
+          "title": "LeetCode 69. Sqrt(x)",
+          "links": [
+            {
+              "title": "LeetCode 69. Sqrt(x)",
+              "url": "https://leetcode.com/problems/sqrtx/"
+            }
+          ],
+          "todo": "Пара, если 35 решена быстрее 10 мин: бинарный поиск по ответу",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          35
+        ],
+        "repeatFromEmptyEditor": [
+          704
+        ],
+        "pairIfFast": [
+          69
+        ],
+        "noHints": []
+      }
+    },
+    {
+      "day": 25,
+      "week": 6,
+      "plannedDate": "2026-12-01",
+      "plannedWeekday": "вт",
+      "track": "B · мини-дизайн 2",
+      "extension": "+60 мин: рассказать дизайн ИИ-репетитору по промпту «проверь по чеклисту», ответить на его 3 вопроса",
+      "minimum": "слои экрана ленты",
+      "trackCode": "B",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Дизайн «лента новостей» по шаблону, таймер 40 мин: требования → API с пагинацией → слои → кэш картинок и офлайн-чтение → ошибки и плохая сеть → design/05-feed.md.",
+          "minutes": 40
+        },
+        {
+          "n": 2,
+          "text": "Пересказать дизайн вслух за 2 минуты, как интервьюеру: что не выговаривается — то не понято (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "Сравнить с упражнениями weeeBox и гайдом PracHub, дописать mistakes.md (15 мин)",
+          "minutes": 15
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "weeeBox: exercises/README.md",
+          "links": [
+            {
+              "title": "weeeBox: exercises/README.md",
+              "url": "https://github.com/weeeBox/mobile-system-design/blob/master/exercises/README.md"
+            }
+          ],
+          "todo": "Задание «Design Instagram Post Feed / News Feed» — без готового разбора; дизайн 40 мин",
+          "lang": "en"
+        },
+        {
+          "title": "weeeBox README → «Deep Dive: Tweet Feed Flow» · pagination deep dive (день 20) · PracHub (день 20)",
+          "links": [],
+          "todo": "Сверить свой дизайн — 20 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 26,
+      "week": 6,
+      "plannedDate": "2026-12-02",
+      "plannedWeekday": "ср",
+      "track": "A · деревья",
+      "extension": null,
+      "minimum": "104 на бумаге, без кода",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 45,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Повтор: 35 заново с пустого редактора (8 мин).",
+          "minutes": 8
+        },
+        {
+          "n": 2,
+          "text": "Шпаргалка по рекурсии и деревьям: базовый случай, обход в глубину (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "104 Maximum Depth of Binary Tree (E): 3 edge case вслух (null, один узел, перекошенное дерево) → таймер 15 мин → разбор → переписать (20 мин всего).",
+          "minutes": 20
+        },
+        {
+          "n": 4,
+          "text": "226 Invert Binary Tree (E): таймер 8 мин → разбор при необходимости → переписать; заметки к обеим + mistakes.md (12 мин всего). Обе быстрее 20 мин — пара: 100 Same Tree",
+          "minutes": 12
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "TIH: Tree · TIH: Recursion",
+          "links": [
+            {
+              "title": "TIH: Tree",
+              "url": "https://www.techinterviewhandbook.org/algorithms/tree/"
+            },
+            {
+              "title": "TIH: Recursion",
+              "url": "https://www.techinterviewhandbook.org/algorithms/recursion/"
+            }
+          ],
+          "todo": "Tree: «Common terms», «Techniques»; Recursion: базовый случай — 5 мин",
+          "lang": "en"
+        },
+        {
+          "title": "LeetCode 104. Maximum Depth of Binary Tree · LeetCode 226. Invert Binary Tree · LeetCode 100. Same Tree",
+          "links": [
+            {
+              "title": "LeetCode 104. Maximum Depth of Binary Tree",
+              "url": "https://leetcode.com/problems/maximum-depth-of-binary-tree/"
+            },
+            {
+              "title": "LeetCode 226. Invert Binary Tree",
+              "url": "https://leetcode.com/problems/invert-binary-tree/"
+            },
+            {
+              "title": "LeetCode 100. Same Tree",
+              "url": "https://leetcode.com/problems/same-tree/"
+            }
+          ],
+          "todo": "104 — таймер 15 мин, 226 — 8 мин; 100 — пара, если обе решены быстрее 20 мин",
+          "lang": "en"
+        },
+        {
+          "title": "Яндекс 1.0, лекция 8 «Деревья»",
+          "links": [
+            {
+              "title": "Яндекс 1.0, лекция 8 «Деревья»",
+              "url": "https://yandex.ru/yaintern/algorithm-training_1"
+            }
+          ],
+          "todo": "30–40 мин — резерв на выходные 28–29.11",
+          "lang": "ru"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          104,
+          226
+        ],
+        "repeatFromEmptyEditor": [
+          35
+        ],
+        "pairIfFast": [
+          100
+        ],
+        "noHints": []
+      }
+    },
+    {
+      "day": 27,
+      "week": 6,
+      "plannedDate": "2026-12-03",
+      "plannedWeekday": "чт",
+      "track": "C · CI 3",
+      "extension": "+60 мин: перенести готовый workflow на свой KMP-проект: собирать только Android-таргет (`./gradlew :composeApp:assembleDebug` — подставить имя своего модуля), записать, что ломается на ubuntu-runner (iOS-таргеты, время сборки) — мост к циклу 2",
+      "minimum": "прочитать свой workflow и объяснить каждый шаг вслух",
+      "trackCode": "C2",
+      "mode": "deep",
+      "plannedMinutes": 60,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Добавить шаг `./gradlew lint`; если он красный из-за старых предупреждений — завести baseline: `lint { baseline = file(\"lint-baseline.xml\") }` в build.gradle.kts модуля, прогнать lint ещё раз, закоммитить файл (раздел «Create a baseline» гайда по lint) (20 мин).",
+          "minutes": 20
+        },
+        {
+          "n": 2,
+          "text": "upload-artifact для debug APK, скачать и установить на устройство (10 мин).",
+          "minutes": 10
+        },
+        {
+          "n": 3,
+          "text": "Репозиторий публичный — сделать workflow обязательной проверкой для PR в main (ruleset / branch protection), проверить тестовым PR; приватный — пропустить (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 4,
+          "text": "Оформить build/ci-notes.md как связную страницу: что делает каждый шаг и почему (15 мин)",
+          "minutes": 15
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Improve your code with lint checks",
+          "links": [
+            {
+              "title": "Improve your code with lint checks",
+              "url": "https://developer.android.com/studio/write/lint"
+            }
+          ],
+          "todo": "«Run lint from the command line»: `./gradlew lint` — 10 мин; «Create a baseline»: `lint { baseline = file(\"lint-baseline.xml\") }`, если старых предупреждений много — 10 мин",
+          "lang": "en"
+        },
+        {
+          "title": "ktlint · detekt",
+          "links": [
+            {
+              "title": "ktlint",
+              "url": "https://pinterest.github.io/ktlint/"
+            },
+            {
+              "title": "detekt",
+              "url": "https://detekt.dev/"
+            }
+          ],
+          "todo": "Расширение, только если lint уже зелёный: подключить одно из двух по быстрому старту — 20 мин",
+          "lang": "en"
+        },
+        {
+          "title": "actions/upload-artifact (день 17) · About protected branches",
+          "links": [
+            {
+              "title": "About protected branches",
+              "url": "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches"
+            }
+          ],
+          "todo": "Артефакт APK: path = app/build/outputs/apk/debug/*.apk — 10 мин; репо публичный — «Require status checks before merging» — 10 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 28,
+      "week": 6,
+      "plannedDate": "2026-12-04",
+      "plannedWeekday": "пт",
+      "track": "Ревью + E · baseline",
+      "extension": "хвост недели (по желанию)",
+      "minimum": "самооценка 1–5",
+      "trackCode": "E",
+      "mode": "light",
+      "plannedMinutes": 40,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Ревью недели (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 2,
+          "text": "Повтор baseline: новая Easy на хеш — 349 Intersection of Two Arrays — на таймере 20 мин без разбора; записать время и результат рядом с днём 2; самооценка 1–5 по пяти трекам (25 мин)",
+          "minutes": 25
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "LeetCode 349. Intersection of Two Arrays",
+          "links": [
+            {
+              "title": "LeetCode 349. Intersection of Two Arrays",
+              "url": "https://leetcode.com/problems/intersection-of-two-arrays/"
+            }
+          ],
+          "todo": "На таймере 20 мин, без разбора до конца таймера; запас — [1365](https://leetcode.com/problems/how-many-numbers-are-smaller-than-the-current-number/)",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [
+          349
+        ],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    },
+    {
+      "day": 29,
+      "week": 6,
+      "plannedDate": "2026-12-07",
+      "plannedWeekday": "пн",
+      "track": "A · повтор",
+      "extension": null,
+      "minimum": "одна из трёх без подсказок",
+      "trackCode": "A",
+      "mode": "light",
+      "plannedMinutes": 40,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Решить заново без подсказок, по 12 мин каждая: 125 Valid Palindrome, 20 Valid Parentheses, 206 Reverse Linked List (36 мин).",
+          "minutes": 36
+        },
+        {
+          "n": 2,
+          "text": "Отметить в mistakes.md, что решилось само, а где забуксовал (4 мин)",
+          "minutes": 4
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "LeetCode 125, 20, 206 (ссылки выше)",
+          "links": [],
+          "todo": "Повтор без подсказок, по 12 мин",
+          "lang": "en"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": [
+          125,
+          20,
+          206
+        ]
+      }
+    },
+    {
+      "day": 30,
+      "week": 6,
+      "plannedDate": "2026-12-08",
+      "plannedWeekday": "вт",
+      "track": "Ретро (до 45 мин)",
+      "extension": null,
+      "minimum": "ретро в 5 строк",
+      "trackCode": "retro",
+      "mode": "retro",
+      "plannedMinutes": 45,
+      "steps": [
+        {
+          "n": 1,
+          "text": "Сравнить baseline дня 2 и дня 28, результат квиза (10 мин).",
+          "minutes": 10
+        },
+        {
+          "n": 2,
+          "text": "Чеклист дня 30 ниже — отметить честно (5 мин).",
+          "minutes": 5
+        },
+        {
+          "n": 3,
+          "text": "Ретро в notes/retro-1.md: что работало, что убрать, по каждому треку «усложнять / ещё месяц базы» (15 мин).",
+          "minutes": 15
+        },
+        {
+          "n": 4,
+          "text": "Записать 3–5 целей цикла 2 по процедуре из вкладки «Правила и контекст» (15 мин)",
+          "minutes": 15
+        }
+      ],
+      "status": null,
+      "actualDate": null,
+      "resources": [
+        {
+          "title": "Вкладка «Правила и контекст» → «Что после»",
+          "links": [],
+          "todo": "Процедура ретро и целей цикла 2",
+          "lang": "—"
+        }
+      ],
+      "leetcode": {
+        "new": [],
+        "repeatFromEmptyEditor": [],
+        "pairIfFast": [],
+        "noHints": []
+      }
+    }
+  ],
+  "keyPoints": [
+    {
+      "day": 2,
+      "title": "Baseline",
+      "what": "задача на таймере и самооценка по пяти трекам"
+    },
+    {
+      "day": 7,
+      "title": "Первый зелёный workflow",
+      "what": "сборка pet-проекта в GitHub Actions"
+    },
+    {
+      "day": 20,
+      "title": "Первый свой мини-дизайн",
+      "what": "экран списка с офлайном по шаблону"
+    },
+    {
+      "day": 28,
+      "title": "Baseline-финал",
+      "what": "новая задача на таймере и повтор самооценки"
+    },
+    {
+      "day": 29,
+      "title": "Три задачи без подсказок",
+      "what": "125, 20 и 206 спустя 2–3 недели"
+    },
+    {
+      "day": 30,
+      "title": "Ретро",
+      "what": "итоги и цели цикла 2"
+    }
+  ],
+  "camp": [
+    {
+      "id": "hq",
+      "label": "prep-basic",
+      "repo": "prep-basic",
+      "path": "(репозиторий и папки)",
+      "title": "Штаб: репозиторий prep-basic",
+      "kind": "hall",
+      "track": null,
+      "day": 1,
+      "growsOn": []
+    },
+    {
+      "id": "pet",
+      "label": "pet-проект",
+      "repo": "pet-project",
+      "path": "(новый проект Empty Activity)",
+      "title": "Мастерская: pet-проект",
+      "kind": "hall",
+      "track": null,
+      "day": 1,
+      "growsOn": [
+        12,
+        22
+      ]
+    },
+    {
+      "id": "layers",
+      "repo": "prep-basic",
+      "path": "design/00-layers.md",
+      "title": "Схема слоёв рабочего приложения",
+      "kind": "cabin",
+      "track": "B",
+      "day": 1,
+      "growsOn": []
+    },
+    {
+      "id": "cheatsheet",
+      "repo": "prep-basic",
+      "path": "algo/kotlin-cheatsheet.md",
+      "title": "Шпаргалка Kotlin для задач",
+      "kind": "cabin",
+      "track": "A",
+      "day": 2,
+      "growsOn": [
+        5,
+        16
+      ]
+    },
+    {
+      "id": "solutions",
+      "repo": "prep-basic",
+      "path": "algo/*.kt",
+      "title": "Решения задач",
+      "kind": "hall",
+      "track": "A",
+      "day": 2,
+      "growsOn": [
+        5,
+        9,
+        11,
+        14,
+        16,
+        19,
+        21,
+        24,
+        26
+      ]
+    },
+    {
+      "id": "algo-mistakes",
+      "label": "algo/mistakes.md",
+      "repo": "prep-basic",
+      "path": "algo/mistakes.md",
+      "title": "Журнал ошибок: алгоритмы",
+      "kind": "cabin",
+      "track": "A",
+      "day": 2,
+      "growsOn": [
+        5,
+        9,
+        11,
+        14,
+        16,
+        19,
+        21,
+        24,
+        26,
+        29
+      ]
+    },
+    {
+      "id": "baseline",
+      "repo": "prep-basic",
+      "path": "notes/baseline.md",
+      "title": "Замер: начало и конец",
+      "kind": "tower",
+      "track": "A",
+      "day": 2,
+      "growsOn": [
+        28
+      ]
+    },
+    {
+      "id": "gradle-anatomy",
+      "repo": "prep-basic",
+      "path": "build/gradle-anatomy.md",
+      "title": "Анатомия Gradle",
+      "kind": "cabin",
+      "track": "C1",
+      "day": 3,
+      "growsOn": [
+        13,
+        22
+      ]
+    },
+    {
+      "id": "ai-tutor",
+      "repo": "prep-basic",
+      "path": "notes/ai-tutor.md",
+      "title": "Промпты репетитора",
+      "kind": "cabin",
+      "track": "E",
+      "day": 4,
+      "growsOn": []
+    },
+    {
+      "id": "rules",
+      "repo": "prep-basic",
+      "path": "CLAUDE.md",
+      "title": "Правила для ИИ-репетитора",
+      "kind": "cabin",
+      "track": "E",
+      "day": 4,
+      "growsOn": []
+    },
+    {
+      "id": "data-layer",
+      "repo": "prep-basic",
+      "path": "design/01-data-layer.md",
+      "title": "Конспект: data layer и офлайн",
+      "kind": "cabin",
+      "track": "B",
+      "day": 6,
+      "growsOn": []
+    },
+    {
+      "id": "ci-notes",
+      "repo": "prep-basic",
+      "path": "build/ci-notes.md",
+      "title": "Заметки по CI",
+      "kind": "cabin",
+      "track": "C2",
+      "day": 7,
+      "growsOn": [
+        17,
+        27
+      ]
+    },
+    {
+      "id": "workflow",
+      "repo": "pet-project",
+      "path": ".github/workflows/android.yml",
+      "title": "Workflow сборки",
+      "kind": "tower",
+      "track": "C2",
+      "day": 7,
+      "growsOn": [
+        17,
+        27
+      ]
+    },
+    {
+      "id": "tests",
+      "repo": "pet-project",
+      "path": "app/src/test",
+      "title": "Unit-тесты",
+      "kind": "cabin",
+      "track": "E",
+      "day": 8,
+      "growsOn": [
+        18
+      ]
+    },
+    {
+      "id": "ui-state",
+      "repo": "prep-basic",
+      "path": "design/02-ui-state.md",
+      "title": "Конспект: состояние экрана",
+      "kind": "cabin",
+      "track": "B",
+      "day": 10,
+      "growsOn": []
+    },
+    {
+      "id": "catalog",
+      "repo": "pet-project",
+      "path": "gradle/libs.versions.toml",
+      "title": "Каталог версий",
+      "kind": "cabin",
+      "track": "C1",
+      "day": 12,
+      "growsOn": []
+    },
+    {
+      "id": "chat-review",
+      "repo": "prep-basic",
+      "path": "design/03-chat-review.md",
+      "title": "Разбор дизайна чата",
+      "kind": "cabin",
+      "track": "B",
+      "day": 15,
+      "growsOn": []
+    },
+    {
+      "id": "list-offline",
+      "repo": "prep-basic",
+      "path": "design/04-list-offline.md",
+      "title": "Мини-дизайн: список с офлайном",
+      "kind": "hall",
+      "track": "B",
+      "day": 20,
+      "growsOn": []
+    },
+    {
+      "id": "design-mistakes",
+      "label": "design/mistakes.md",
+      "repo": "prep-basic",
+      "path": "design/mistakes.md",
+      "title": "Журнал ошибок: дизайн",
+      "kind": "cabin",
+      "track": "B",
+      "day": 20,
+      "growsOn": [
+        25
+      ]
+    },
+    {
+      "id": "quiz",
+      "repo": "prep-basic",
+      "path": "notes/quiz-1.md",
+      "title": "Квиз по своим заметкам",
+      "kind": "cabin",
+      "track": "E",
+      "day": 23,
+      "growsOn": []
+    },
+    {
+      "id": "feed",
+      "repo": "prep-basic",
+      "path": "design/05-feed.md",
+      "title": "Мини-дизайн: лента",
+      "kind": "hall",
+      "track": "B",
+      "day": 25,
+      "growsOn": []
+    },
+    {
+      "id": "retro",
+      "repo": "prep-basic",
+      "path": "notes/retro-1.md",
+      "title": "Ретро и цели цикла 2",
+      "kind": "tower",
+      "track": null,
+      "day": 30,
+      "growsOn": []
+    }
+  ],
+  "bonusDays": [
+    {
+      "afterDay": 6,
+      "week": 2,
+      "plannedDate": "2026-11-04",
+      "plannedWeekday": "ср",
+      "track": "буферный день (в исходном графике — праздник 4.11)",
+      "extension": null,
+      "minimum": null,
+      "optional": true,
+      "text": "Необязательно: повторить 217 без подсказок или посмотреть лекцию про множества и словари",
+      "resources": [
+        {
+          "title": "Яндекс 1.0, лекции 3–4 (см. день 5)",
+          "links": [],
+          "todo": "Необязательно: лекция про множества или словари — 30 мин, или повтор 217 без подсказок",
+          "lang": "ru"
+        }
+      ]
+    }
+  ],
+  "checklistDay30": [
+    {
+      "text": "Алгоритмы: 11 Easy в algo/ с заметками «идея / ловушка / O()» и algo/mistakes.md; 9 из 11 (1512, 217, 242, 125, 283, 20, 206, 704, 35) решены второй раз с пустого редактора; 3 задачи решены без подсказок (125, 20, 206); новая Easy на знакомый паттерн (349) — за 20 мин",
+      "checked": false
+    },
+    {
+      "text": "System Design: схема слоёв рабочего приложения; конспекты data layer и UI state; 2 мини-дизайна (список с офлайном, лента) с разбором; mistakes.md",
+      "checked": false
+    },
+    {
+      "text": "Gradle: gradle-anatomy.md; каталог версий в pet-проекте; можешь объяснить implementation vs api, build types vs flavors, зачем configuration cache",
+      "checked": false
+    },
+    {
+      "text": "CI/CD: зелёный workflow со сборкой, тестами, lint и артефактом APK (обязательная проверка PR — если репо публичный); ci-notes.md",
+      "checked": false
+    },
+    {
+      "text": "ИИ и тесты: четыре промпта и CLAUDE.md/AGENTS.md в обоих репо; 2 unit-теста в pet-проекте; квиз 1 с результатом",
+      "checked": false
+    },
+    {
+      "text": "Дисциплина: ≥ 24 из 30 дней с минимумом; ≥ 4 из 5 полных недель закрыты; 6 пятничных отчётов отправлены",
+      "checked": false
+    },
+    {
+      "text": "Ретро и цели цикла 2 записаны в notes/retro-1.md",
+      "checked": false
+    }
+  ],
+  "leetcode": [
+    {
+      "id": 1512,
+      "title": "Number of Good Pairs",
+      "url": "https://leetcode.com/problems/number-of-good-pairs/",
+      "difficulty": "Easy",
+      "pattern": "хеш-таблица: счётчик",
+      "role": "baseline",
+      "plannedDay": 2,
+      "repeatDay": 5
+    },
+    {
+      "id": 217,
+      "title": "Contains Duplicate",
+      "url": "https://leetcode.com/problems/contains-duplicate/",
+      "difficulty": "Easy",
+      "pattern": "хеш-множество",
+      "role": "main",
+      "plannedDay": 5,
+      "repeatDay": 9,
+      "pairId": 387
+    },
+    {
+      "id": 242,
+      "title": "Valid Anagram",
+      "url": "https://leetcode.com/problems/valid-anagram/",
+      "difficulty": "Easy",
+      "pattern": "хеш-таблица: счётчик букв",
+      "role": "main",
+      "plannedDay": 9,
+      "repeatDay": 11,
+      "pairId": 383
+    },
+    {
+      "id": 125,
+      "title": "Valid Palindrome",
+      "url": "https://leetcode.com/problems/valid-palindrome/",
+      "difficulty": "Easy",
+      "pattern": "строки, два указателя",
+      "role": "main",
+      "plannedDay": 11,
+      "repeatDay": 14,
+      "pairId": 344,
+      "noHintsDay": 29
+    },
+    {
+      "id": 283,
+      "title": "Move Zeroes",
+      "url": "https://leetcode.com/problems/move-zeroes/",
+      "difficulty": "Easy",
+      "pattern": "массивы, два указателя",
+      "role": "main",
+      "plannedDay": 14,
+      "repeatDay": 16,
+      "pairId": 27
+    },
+    {
+      "id": 20,
+      "title": "Valid Parentheses",
+      "url": "https://leetcode.com/problems/valid-parentheses/",
+      "difficulty": "Easy",
+      "pattern": "стек",
+      "role": "main",
+      "plannedDay": 16,
+      "repeatDay": 19,
+      "pairId": 1047,
+      "noHintsDay": 29
+    },
+    {
+      "id": 206,
+      "title": "Reverse Linked List",
+      "url": "https://leetcode.com/problems/reverse-linked-list/",
+      "difficulty": "Easy",
+      "pattern": "связный список",
+      "role": "main",
+      "plannedDay": 19,
+      "repeatDay": 21,
+      "pairId": 876,
+      "noHintsDay": 29
+    },
+    {
+      "id": 704,
+      "title": "Binary Search",
+      "url": "https://leetcode.com/problems/binary-search/",
+      "difficulty": "Easy",
+      "pattern": "бинарный поиск",
+      "role": "main",
+      "plannedDay": 21,
+      "repeatDay": 24,
+      "pairId": 278
+    },
+    {
+      "id": 35,
+      "title": "Search Insert Position",
+      "url": "https://leetcode.com/problems/search-insert-position/",
+      "difficulty": "Easy",
+      "pattern": "бинарный поиск",
+      "role": "main",
+      "plannedDay": 24,
+      "repeatDay": 26,
+      "pairId": 69
+    },
+    {
+      "id": 104,
+      "title": "Maximum Depth of Binary Tree",
+      "url": "https://leetcode.com/problems/maximum-depth-of-binary-tree/",
+      "difficulty": "Easy",
+      "pattern": "деревья, рекурсия",
+      "role": "main",
+      "plannedDay": 26
+    },
+    {
+      "id": 226,
+      "title": "Invert Binary Tree",
+      "url": "https://leetcode.com/problems/invert-binary-tree/",
+      "difficulty": "Easy",
+      "pattern": "деревья, рекурсия",
+      "role": "main",
+      "plannedDay": 26,
+      "pairId": 100
+    },
+    {
+      "id": 349,
+      "title": "Intersection of Two Arrays",
+      "url": "https://leetcode.com/problems/intersection-of-two-arrays/",
+      "difficulty": "Easy",
+      "pattern": "хеш-множество",
+      "role": "baseline-final",
+      "plannedDay": 28
+    },
+    {
+      "id": 387,
+      "title": "First Unique Character in a String",
+      "url": "https://leetcode.com/problems/first-unique-character-in-a-string/",
+      "difficulty": "Easy",
+      "pattern": "хеш-таблица: счётчик",
+      "role": "pair",
+      "plannedDay": 5
+    },
+    {
+      "id": 383,
+      "title": "Ransom Note",
+      "url": "https://leetcode.com/problems/ransom-note/",
+      "difficulty": "Easy",
+      "pattern": "хеш-таблица: счётчик букв",
+      "role": "pair",
+      "plannedDay": 9
+    },
+    {
+      "id": 344,
+      "title": "Reverse String",
+      "url": "https://leetcode.com/problems/reverse-string/",
+      "difficulty": "Easy",
+      "pattern": "строки, два указателя",
+      "role": "pair",
+      "plannedDay": 11
+    },
+    {
+      "id": 27,
+      "title": "Remove Element",
+      "url": "https://leetcode.com/problems/remove-element/",
+      "difficulty": "Easy",
+      "pattern": "массивы, два указателя",
+      "role": "pair",
+      "plannedDay": 14
+    },
+    {
+      "id": 1047,
+      "title": "Remove All Adjacent Duplicates in String",
+      "url": "https://leetcode.com/problems/remove-all-adjacent-duplicates-in-string/",
+      "difficulty": "Easy",
+      "pattern": "стек",
+      "role": "pair",
+      "plannedDay": 16
+    },
+    {
+      "id": 876,
+      "title": "Middle of the Linked List",
+      "url": "https://leetcode.com/problems/middle-of-the-linked-list/",
+      "difficulty": "Easy",
+      "pattern": "связный список",
+      "role": "pair",
+      "plannedDay": 19
+    },
+    {
+      "id": 278,
+      "title": "First Bad Version",
+      "url": "https://leetcode.com/problems/first-bad-version/",
+      "difficulty": "Easy",
+      "pattern": "бинарный поиск",
+      "role": "pair",
+      "plannedDay": 21
+    },
+    {
+      "id": 69,
+      "title": "Sqrt(x)",
+      "url": "https://leetcode.com/problems/sqrtx/",
+      "difficulty": "Easy",
+      "pattern": "бинарный поиск",
+      "role": "pair",
+      "plannedDay": 24
+    },
+    {
+      "id": 100,
+      "title": "Same Tree",
+      "url": "https://leetcode.com/problems/same-tree/",
+      "difficulty": "Easy",
+      "pattern": "деревья, рекурсия",
+      "role": "pair",
+      "plannedDay": 26
+    },
+    {
+      "id": 1365,
+      "title": "How Many Numbers Are Smaller Than the Current Number",
+      "url": "https://leetcode.com/problems/how-many-numbers-are-smaller-than-the-current-number/",
+      "difficulty": "Easy",
+      "pattern": "хеш-таблица",
+      "role": "reserve",
+      "plannedDay": 28
+    }
+  ],
+  "tutorPrompts": [
+    "Задача: «Я решаю задачу №… на Kotlin. Не давай код и не называй алгоритм. Задай мне по одному наводящему вопросу, жди ответа. Когда я напишу решение — найди ошибки вопросами, а не правками, и спроси сложность по времени и памяти».",
+    "Файл: «Объясни этот файл блок за блоком, простыми словами, не меняя его. После каждого блока — один вопрос на понимание. В конце — 3 вопроса, которые задал бы интервьюер».",
+    "Дизайн: «Ты интервьюер. Вот мой дизайн по шаблону. Отвечай на мои уточняющие вопросы как заказчик. Проверь по чеклисту: требования, API, слои, кэш и офлайн, ошибки и плохая сеть. Не предлагай решения — спроси, чего не хватает, по одному пункту за раз».",
+    "Ошибка: «Вот лог ошибки (сборки или CI). Объясни, что она значит, и спроси, что я проверю первым. Готовый фикс не предлагай — подтверди или опровергни мою гипотезу»."
+  ],
+  "tools": [
+    {
+      "tool": "Репозиторий prep-basic",
+      "why": "артефакты всех треков: algo/, design/, build/, notes/",
+      "howto": "GitHub, приватный; README с ссылкой на этот план",
+      "links": []
+    },
+    {
+      "tool": "Pet-проект на GitHub",
+      "why": "Gradle- и CI-шаги, unit-тесты",
+      "howto": "любой свой Android-проект, который собирается и лежит на GitHub (для Actions)",
+      "links": []
+    },
+    {
+      "tool": "LeetCode",
+      "why": "задачи на Kotlin",
+      "howto": "[Список задач LeetCode](https://leetcode.com/problemset/) — в редакторе выбрать Kotlin; разбор — вкладка Editorial или Solutions",
+      "links": [
+        {
+          "title": "Список задач LeetCode",
+          "url": "https://leetcode.com/problemset/"
+        }
+      ]
+    },
+    {
+      "tool": "Шпаргалки по паттернам",
+      "why": "10 минут перед задачей",
+      "howto": "[Tech Interview Handbook: study cheatsheets](https://www.techinterviewhandbook.org/algorithms/study-cheatsheet/) — индекс по темам",
+      "links": [
+        {
+          "title": "Tech Interview Handbook: study cheatsheets",
+          "url": "https://www.techinterviewhandbook.org/algorithms/study-cheatsheet/"
+        }
+      ]
+    },
+    {
+      "tool": "Лекции на русском",
+      "why": "если шпаргалки не хватает",
+      "howto": "[Яндекс Тренировки по алгоритмам 1.0](https://yandex.ru/yaintern/algorithm-training_1) — 8 лекций: сложность → линейный поиск → множества → словари → два указателя → бинарный поиск → события → деревья; бесплатно",
+      "links": [
+        {
+          "title": "Яндекс Тренировки по алгоритмам 1.0",
+          "url": "https://yandex.ru/yaintern/algorithm-training_1"
+        }
+      ]
+    },
+    {
+      "tool": "Таймер",
+      "why": "15–20 мин на задачу, 30–40 на дизайн",
+      "howto": "любой, важно не продлевать",
+      "links": []
+    },
+    {
+      "tool": "ИИ-репетитор",
+      "why": "объяснения, вопросы на понимание, квизы",
+      "howto": "opencode или Claude Code с файлом правил в prep-basic и в pet-проекте: [Claude Code — CLAUDE.md](https://code.claude.com/docs/en/memory), [opencode — Rules / AGENTS.md](https://opencode.ai/docs/rules/); промпты — в notes/ai-tutor.md (день 4)",
+      "links": [
+        {
+          "title": "Claude Code — CLAUDE.md",
+          "url": "https://code.claude.com/docs/en/memory"
+        },
+        {
+          "title": "opencode — Rules / AGENTS.md",
+          "url": "https://opencode.ai/docs/rules/"
+        }
+      ]
+    },
+    {
+      "tool": "Шаблон дизайна",
+      "why": "разбор чужого дизайна 17.11, свои мини-дизайны 24.11 и 1.12",
+      "howto": "[weeeBox TEMPLATE.md](https://github.com/weeeBox/mobile-system-design/blob/master/TEMPLATE.md): Requirements → High-Level Diagram → Deep Dive → Signal checklist",
+      "links": [
+        {
+          "title": "weeeBox TEMPLATE.md",
+          "url": "https://github.com/weeeBox/mobile-system-design/blob/master/TEMPLATE.md"
+        }
+      ]
+    }
+  ],
+  "reserveResources": [
+    {
+      "track": "Алгоритмы",
+      "title": "Яндекс Тренировки 1.0, лекции 2, 5, 7",
+      "links": [
+        {
+          "title": "Яндекс Тренировки 1.0, лекции 2, 5, 7",
+          "url": "https://yandex.ru/yaintern/algorithm-training_1"
+        }
+      ],
+      "todo": "«Линейный поиск», «Префиксные суммы и два указателя», «Сортировка событий»; к каждой лекции — контест и разбор",
+      "lang": "ru"
+    },
+    {
+      "track": "Алгоритмы",
+      "title": "Яндекс Тренировки 2.0",
+      "links": [
+        {
+          "title": "Яндекс Тренировки 2.0",
+          "url": "https://yandex.ru/yaintern/algorithm-training_2"
+        }
+      ],
+      "todo": "На цикл 2: два уровня сложности",
+      "lang": "ru"
+    },
+    {
+      "track": "Алгоритмы",
+      "title": "Habr: «Побеждаем алгоритмическую секцию»",
+      "links": [
+        {
+          "title": "Habr: «Побеждаем алгоритмическую секцию»",
+          "url": "https://habr.com/en/articles/935666"
+        }
+      ],
+      "todo": "Как Android-разработчик готовился с нуля: методика и паттерны — 15 мин",
+      "lang": "ru"
+    },
+    {
+      "track": "System Design",
+      "title": "weeeBox topics: caching, in-app API design, navigation, RESTful API design",
+      "links": [
+        {
+          "title": "caching",
+          "url": "https://github.com/weeeBox/mobile-system-design/blob/master/topics/caching-deep-dive.md"
+        },
+        {
+          "title": "in-app API design",
+          "url": "https://github.com/weeeBox/mobile-system-design/blob/master/topics/in-app-api-design-deep-dive.md"
+        },
+        {
+          "title": "navigation",
+          "url": "https://github.com/weeeBox/mobile-system-design/blob/master/topics/mobile-navigation-deep-dive.md"
+        },
+        {
+          "title": "RESTful API design",
+          "url": "https://github.com/weeeBox/mobile-system-design/blob/master/topics/restful-api-design-deep-dive.md"
+        }
+      ],
+      "todo": "По одному deep dive на расширение вторника, 15–20 мин",
+      "lang": "en"
+    },
+    {
+      "track": "System Design",
+      "title": "weeeBox exercises: file-downloader-library, caching-library, image-library",
+      "links": [
+        {
+          "title": "file-downloader-library",
+          "url": "https://github.com/weeeBox/mobile-system-design/blob/master/exercises/file-downloader-library.md"
+        },
+        {
+          "title": "caching-library",
+          "url": "https://github.com/weeeBox/mobile-system-design/blob/master/exercises/caching-library.md"
+        },
+        {
+          "title": "image-library",
+          "url": "https://github.com/weeeBox/mobile-system-design/blob/master/exercises/image-library.md"
+        }
+      ],
+      "todo": "Запасные мини-дизайны с готовыми разборами",
+      "lang": "en"
+    },
+    {
+      "track": "System Design",
+      "title": "Modern Android App Architecture (pathway) · Architecture recommendations",
+      "links": [
+        {
+          "title": "Modern Android App Architecture (pathway)",
+          "url": "https://developer.android.com/courses/pathways/android-architecture"
+        },
+        {
+          "title": "Architecture recommendations",
+          "url": "https://developer.android.com/topic/architecture/recommendations"
+        }
+      ],
+      "todo": "Pathway — повтор дней 2, 7, 11 в формате курса; рекомендации — чеклист",
+      "lang": "en"
+    },
+    {
+      "track": "Gradle",
+      "title": "Habr (Т-Банк): Gradle Convention Plugins",
+      "links": [
+        {
+          "title": "Habr (Т-Банк): Gradle Convention Plugins",
+          "url": "https://habr.com/ru/articles/843648"
+        }
+      ],
+      "todo": "Расширение после дня 12: composite build, convention plugins",
+      "lang": "ru"
+    },
+    {
+      "track": "Gradle",
+      "title": "Gradle for Android cookbook · Configure your build · Dependency management basics",
+      "links": [
+        {
+          "title": "Gradle for Android cookbook",
+          "url": "https://cookbook.gradle.org/android"
+        },
+        {
+          "title": "Configure your build",
+          "url": "https://developer.android.com/build"
+        },
+        {
+          "title": "Dependency management basics",
+          "url": "https://docs.gradle.org/current/userguide/dependency_management_basics.html"
+        }
+      ],
+      "todo": "Обзорные страницы, когда нужен контекст",
+      "lang": "en"
+    },
+    {
+      "track": "CI/CD",
+      "title": "GitHub Actions Quickstart",
+      "links": [
+        {
+          "title": "GitHub Actions Quickstart",
+          "url": "https://docs.github.com/en/actions/get-started/quickstart"
+        }
+      ],
+      "todo": "Основной ресурс дня 4 (hello-world); вернуться, если workflow 5.11 не стартует",
+      "lang": "en"
+    },
+    {
+      "track": "CI/CD",
+      "title": "gradle/actions: setup-gradle · actions/setup-java",
+      "links": [
+        {
+          "title": "gradle/actions: setup-gradle",
+          "url": "https://github.com/gradle/actions/blob/main/docs/setup-gradle.md"
+        },
+        {
+          "title": "actions/setup-java",
+          "url": "https://github.com/actions/setup-java"
+        }
+      ],
+      "todo": "Параметры кэша и версии JDK",
+      "lang": "en"
+    },
+    {
+      "track": "CI/CD",
+      "title": "ProAndroidDev: CI/CD for Android with GitHub Actions, part 1",
+      "links": [
+        {
+          "title": "ProAndroidDev: CI/CD for Android with GitHub Actions, part 1",
+          "url": "https://proandroiddev.com/continuous-integration-delivery-for-android-with-github-actions-part-1-b232ed2b1740"
+        }
+      ],
+      "todo": "Пошаговый workflow для Android",
+      "lang": "en"
+    },
+    {
+      "track": "Тесты",
+      "title": "Testing Kotlin coroutines on Android · Cash App: Flow testing with Turbine",
+      "links": [
+        {
+          "title": "Testing Kotlin coroutines on Android",
+          "url": "https://developer.android.com/kotlin/coroutines/test"
+        },
+        {
+          "title": "Cash App: Flow testing with Turbine",
+          "url": "https://code.cash.app/flow-testing-with-turbine"
+        }
+      ],
+      "todo": "coroutines/test — основной ресурс дня 8 (MainDispatcherRule); Cash App — идея Turbine, 10 мин",
+      "lang": "en"
+    },
+    {
+      "track": "ИИ-репетитор",
+      "title": "Claude Code: .claude/rules и авто-память · opencode: Custom Instructions",
+      "links": [
+        {
+          "title": "Claude Code: .claude/rules и авто-память",
+          "url": "https://code.claude.com/docs/en/memory"
+        },
+        {
+          "title": "opencode: Custom Instructions",
+          "url": "https://opencode.ai/docs/rules/"
+        }
+      ],
+      "todo": "Расширение дня 4: правила по типам файлов, подключение заметок",
+      "lang": "en"
+    }
+  ]
+}

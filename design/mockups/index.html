@@ -1,0 +1,1137 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Маршрут — направление дизайна</title>
+<style>
+/* ===== Токены интерфейса. Сцена от темы не зависит. ===== */
+:root, .th-light {
+  color-scheme: light;
+  --bg: #f3f0e8; --surface: #fbfaf6; --surface-2: #ece8dd;
+  --ink: #1d221f; --ink-2: #454c46; --muted: #5f665f;
+  --line: #dcd7c9; --line-strong: #bdb6a4; --focus: #1d221f;
+  --accent: #2e6a4e; --accent-hover: #255a41; --accent-soft: #dde9e0; --accent-ink: #1e4d37; --on-accent: #ffffff;
+  --warm: #8f5c0e; --warm-soft: #f4e8cd; --rust: #9e432c; --rust-soft: #f5e1d8;
+  --coin: #b8891f; --gem: #2f7fa3;
+  --t-A: #2f6db5; --t-B: #b65a2c; --t-C1: #2b7d5c; --t-C2: #9a7012; --t-E: #b0507a;
+}
+.th-dark, :root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121614; --surface: #1a1f1c; --surface-2: #232a26;
+  --ink: #e9ece6; --ink-2: #c3c9c1; --muted: #9aa29a;
+  --line: #2d3530; --line-strong: #46514a; --focus: #e9ece6;
+  --accent: #7cc29d; --accent-hover: #93d0af; --accent-soft: #1f3529; --accent-ink: #b2e0c6; --on-accent: #0e1612;
+  --warm: #e2ad55; --warm-soft: #382c15; --rust: #e58d6f; --rust-soft: #3b231b;
+  --coin: #e0b44f; --gem: #7cc3e0;
+  --t-A: #6fa3e0; --t-B: #e08a5c; --t-C1: #5fbf94; --t-C2: #d9b04f; --t-E: #e08fb0;
+}
+:root { --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --mono: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--sans); -webkit-text-size-adjust: 100%; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: 1.75rem; line-height: 1.2; font-weight: 650; }
+h2 { font-size: 1.375rem; line-height: 1.25; font-weight: 650; }
+h3 { font-size: 1.0625rem; line-height: 1.3; font-weight: 650; }
+code { font-family: var(--mono); font-size: .875em; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+a { color: var(--accent-ink); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+.wrap { max-width: 1040px; margin: 0 auto; padding: 16px 16px 64px; }
+.page-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; justify-content: space-between; padding: 8px 0 20px; border-bottom: 1px solid var(--line); }
+.page-head p { color: var(--ink-2); max-width: 60ch; margin-top: 6px; }
+section { padding: 28px 0 8px; display: grid; gap: 14px; }
+section > p { color: var(--ink-2); max-width: 70ch; }
+
+/* ===== Кнопки ===== */
+.btn { font: inherit; font-size: .9375rem; font-weight: 600; min-height: 44px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn:hover { background: var(--surface-2); }
+.btn-primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-quiet { background: transparent; border-color: transparent; color: var(--accent-ink); padding-inline: 8px; }
+.btn[disabled] { background: var(--surface-2); color: var(--muted); border-color: transparent; cursor: not-allowed; }
+.btn .ic { width: 18px; height: 18px; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* ===== Чипы ===== */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: .8125rem; line-height: 1.2; font-weight: 600; padding: 4px 10px 4px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); white-space: nowrap; }
+.chip .ic { width: 14px; height: 14px; flex: none; }
+.chip-done { background: var(--accent-soft); border-color: transparent; color: var(--accent-ink); }
+.chip-now { background: var(--surface); border-color: var(--ink-2); color: var(--ink); }
+.chip-warm { background: var(--warm-soft); border-color: transparent; color: var(--warm); }
+.chip-rust { background: var(--rust-soft); border-color: transparent; color: var(--rust); }
+.chip-track .ic { color: var(--tc); }
+
+/* ===== Карточки ===== */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
+.card-flat { background: var(--surface-2); border-color: transparent; }
+
+/* ===== Вкладки ===== */
+.tabbar { display: grid; grid-template-columns: repeat(6, 1fr); background: var(--surface); border-top: 1px solid var(--line); }
+.tabbar a { display: grid; justify-items: center; gap: 2px; padding: 8px 0 10px; font-size: .6875rem; font-weight: 600; color: var(--muted); text-decoration: none; }
+.tabbar a .ic { width: 22px; height: 22px; }
+.tabbar a[aria-current] { color: var(--ink); box-shadow: inset 0 2px 0 var(--accent); }
+.tabtop { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 12px; }
+.tabtop a { padding: 7px 12px; border-radius: 9px; font-size: .875rem; font-weight: 600; color: var(--ink-2); text-decoration: none; display: inline-flex; gap: 6px; align-items: center; }
+.tabtop a .ic { width: 16px; height: 16px; }
+.tabtop a[aria-current] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line-strong); }
+
+/* ===== Ресурсы ===== */
+.ic { width: 20px; height: 20px; display: inline-block; vertical-align: middle; color: var(--ink-2); }
+.ic-coin { color: var(--coin); } .ic-gem { color: var(--gem); }
+.hud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.hud > div { background: var(--surface); padding: 7px 8px; display: grid; grid-template-columns: auto 1fr; column-gap: 6px; align-items: center; min-width: 0; }
+.hud .ic { grid-row: span 2; width: 20px; height: 20px; }
+.hud b { font-size: .9375rem; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.hud b small { font-weight: 500; color: var(--muted); font-size: .8125rem; }
+.hud span { font-size: .6875rem; color: var(--muted); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 720px) { .hud.wide { grid-template-columns: repeat(8, 1fr); } }
+
+/* ===== Таймер стройки ===== */
+.build { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--warm-soft); color: var(--ink); }
+.build-head { display: flex; gap: 8px; align-items: center; font-size: .875rem; font-weight: 600; }
+.build-head .ic { color: var(--warm); width: 18px; height: 18px; flex: none; }
+.build-left { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--warm); white-space: nowrap; }
+.bar { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--warm) 22%, transparent); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--warm); border-radius: 999px; }
+.build small { color: var(--ink-2); font-size: .75rem; }
+
+/* ===== Кошелёк ===== */
+.wallet { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
+.wallet b { font-size: 1.375rem; font-variant-numeric: tabular-nums; }
+.wallet .ic { width: 24px; height: 24px; }
+.ledger { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: .8125rem; color: var(--ink-2); }
+.ledger li { display: flex; justify-content: space-between; gap: 12px; }
+
+/* ===== Лист постройки ===== */
+.sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 8px 16px 16px; display: grid; gap: 12px; }
+.sheet::before { content: ""; justify-self: center; width: 36px; height: 4px; border-radius: 4px; background: var(--line-strong); }
+.sheet-head { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+.pips { display: flex; gap: 3px; margin-top: 4px; }
+.pips i { width: 14px; height: 6px; border-radius: 2px; border: 1px solid var(--accent); }
+.pips i.on { background: var(--accent); }
+.previews { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; }
+.previews figure { margin: 0; display: grid; gap: 2px; text-align: center; font-size: .75rem; color: var(--muted); }
+.previews svg { width: 100%; height: auto; border-radius: 8px; display: block; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: .875rem; }
+.facts dt { color: var(--muted); } .facts dd { margin: 0; }
+.cost { display: flex; flex-wrap: wrap; gap: 6px; }
+.cost span { display: inline-flex; align-items: center; gap: 4px; font-size: .875rem; font-variant-numeric: tabular-nums; padding: 3px 8px; border-radius: 8px; background: var(--surface-2); }
+.cost span .ic { width: 16px; height: 16px; }
+.cost span.short { background: var(--rust-soft); color: var(--rust); }
+
+/* ===== Набор: две темы рядом ===== */
+.kit { display: grid; gap: 16px; }
+@media (min-width: 900px) { .kit { grid-template-columns: 1fr 1fr; } }
+.panel { background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+
+/* ===== Телефон ===== */
+.phone { width: 100%; max-width: 390px; border: 1px solid var(--line-strong); border-radius: 22px; overflow: hidden; background: var(--bg); display: grid; }
+.phone-body { padding: 12px 14px 16px; display: grid; gap: 12px; }
+.topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.brand b { font-size: 1.0625rem; } .brand span { display: block; font-size: .75rem; color: var(--muted); }
+.lvl { display: grid; justify-items: end; font-size: .75rem; color: var(--muted); gap: 3px; }
+.meter { width: 84px; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); }
+.step-text { font-size: 1.125rem; line-height: 1.45; }
+.timer { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 12px; }
+.timer-face { font-size: 2.5rem; line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.fold { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.fold summary { padding: 12px 16px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.fold summary span { color: var(--muted); font-weight: 500; font-size: .875rem; }
+.today-grid { display: grid; gap: 16px; justify-items: center; }
+@media (min-width: 900px) { .today-grid { grid-template-columns: 390px 1fr; justify-items: stretch; align-items: start; } }
+
+/* ===== Сцены ===== */
+.scene { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); }
+.scene svg { display: block; width: 100%; height: auto; font-family: var(--sans); }
+.scene figcaption, .cap { font-size: .8125rem; color: var(--muted); padding: 8px 12px; background: var(--surface); border-top: 1px solid var(--line); }
+figure { margin: 0; }
+.stages { display: grid; gap: 16px; }
+@media (min-width: 900px) { .stages { grid-template-columns: 1fr 1fr; } .stages .big { grid-column: 1 / -1; } }
+.lm-list { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; background: var(--surface); border-top: 1px solid var(--line); }
+
+.grammar { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.grammar figure { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.grammar svg { display: block; width: 100%; height: auto; }
+.grammar figcaption { font-size: .75rem; color: var(--ink-2); padding: 4px 8px 6px; line-height: 1.3; }
+
+/* ===== Управление живой сценой ===== */
+.controls { display: grid; gap: 10px; }
+.seg { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.seg legend { font-size: .75rem; font-weight: 600; color: var(--muted); padding: 0; margin-bottom: 4px; width: 100%; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg span { display: inline-block; padding: 7px 11px; min-height: 36px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); font-size: .875rem; font-weight: 600; color: var(--ink-2); }
+.seg input:checked + span { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.seg input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
+@media (min-width: 900px) { .live { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; } }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .8125rem; color: var(--ink-2); padding: 10px 12px; background: var(--surface); border-top: 1px solid var(--line); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.legend svg { width: 22px; height: 22px; }
+.theme-switch { display: flex; gap: 4px; }
+
+/* ===== Движение ===== */
+.flame { animation: flick 1.4s ease-in-out infinite alternate; }
+@keyframes flick { from { transform: scale(1, 1); } to { transform: scale(.9, 1.1); } }
+.smoke { animation: rise 6s ease-in-out infinite; }
+@keyframes rise { 0% { transform: translate(0, 0); opacity: .85; } 100% { transform: translate(3px, -7px); opacity: .25; } }
+.walker { animation: stroll 16s ease-in-out infinite; }
+@keyframes stroll { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(9px); } }
+.spin { animation: spin 18s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.drift { animation: drift 70s ease-in-out infinite; }
+@keyframes drift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(14px); } }
+.fall { animation: fall .8s linear infinite; }
+@keyframes fall { from { transform: translate(0, -14px); opacity: 0; } 20% { opacity: 1; } to { transform: translate(-7px, 26px); opacity: 0; } }
+.flake { animation: flake 6s linear infinite; }
+@keyframes flake { from { transform: translate(0, -10px); opacity: 0; } 15% { opacity: 1; } to { transform: translate(9px, 42px); opacity: 0; } }
+.flash { animation: flash 11s linear infinite; }
+@keyframes flash { 0%, 90% { opacity: 0; } 91% { opacity: .45; } 92.5% { opacity: 0; } 94% { opacity: .25; } 96%, 100% { opacity: 0; } }
+.pulse { animation: pulse 2.6s ease-out infinite; }
+@keyframes pulse { from { transform: scale(1); opacity: .7; } to { transform: scale(1.8); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .flame, .smoke, .walker, .spin, .drift, .fall, .flake, .pulse { animation: none !important; }
+  .flash { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Общие определения: фильтры запустения, свечение, значки -->
+<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <filter id="sat1" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values=".78"/></filter>
+    <filter id="sat2" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values=".52"/><feComponentTransfer><feFuncR type="linear" slope=".95" intercept=".03"/><feFuncG type="linear" slope=".95" intercept=".03"/><feFuncB type="linear" slope=".95" intercept=".03"/></feComponentTransfer></filter>
+    <filter id="sat3" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values=".3"/><feComponentTransfer><feFuncR type="linear" slope=".9" intercept=".06"/><feFuncG type="linear" slope=".9" intercept=".06"/><feFuncB type="linear" slope=".9" intercept=".06"/></feComponentTransfer></filter>
+    <filter id="broken" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values=".18"/><feComponentTransfer><feFuncR type="linear" slope=".88"/><feFuncG type="linear" slope=".88"/><feFuncB type="linear" slope=".9"/></feComponentTransfer></filter>
+    <radialGradient id="glow"><stop offset="0" stop-color="#ffd590" stop-opacity=".75"/><stop offset="1" stop-color="#ffd590" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glowF"><stop offset="0" stop-color="#ffb860" stop-opacity=".7"/><stop offset=".5" stop-color="#ffa850" stop-opacity=".25"/><stop offset="1" stop-color="#ffa850" stop-opacity="0"/></radialGradient>
+  </defs>
+  <!-- Ресурсы -->
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="currentColor"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/></symbol>
+  <symbol id="i-gem" viewBox="0 0 24 24"><path d="M12 3 20 9 12 21 4 9Z" fill="currentColor"/><path d="M4 9H20M12 3 9 9l3 12 3-12-3-6" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1"/></symbol>
+  <symbol id="i-food" viewBox="0 0 24 24"><path d="M3.5 16c0-5.2 3.8-8.5 8.5-8.5s8.5 3.3 8.5 8.5v2.5h-17Z" fill="currentColor"/><path d="M8.5 10.5 7.6 14M12 9.5V14M15.5 10.5l.9 3.5" stroke="#fff" stroke-opacity=".5" stroke-width="1.4" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="i-wood" viewBox="0 0 24 24"><rect x="2.5" y="8" width="14" height="9" rx="1.5" fill="currentColor"/><ellipse cx="17" cy="12.5" rx="4.2" ry="4.6" fill="currentColor"/><ellipse cx="17" cy="12.5" rx="2.2" ry="2.5" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/></symbol>
+  <symbol id="i-stone" viewBox="0 0 24 24"><path d="M2.5 18.5 5.5 10l6.5-4.5 6.5 3.5 3 9.5Z" fill="currentColor"/><path d="M12 5.5 13 12l8.5 6.5" stroke="#fff" stroke-opacity=".4" stroke-width="1.2" fill="none"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="3.6" fill="currentColor"/><path d="M4.5 20.5c.6-5.2 3.5-7.8 7.5-7.8s6.9 2.6 7.5 7.8Z" fill="currentColor"/></symbol>
+  <symbol id="i-hammer" viewBox="0 0 24 24"><path d="M4 5.5h9.5l2.5 2.5-2.5 2.5H4Z" fill="currentColor"/><rect x="8.5" y="10" width="3.2" height="11" rx="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-level" viewBox="0 0 24 24"><path d="M4 19 12 5l8 14Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8.5 13h7" stroke="currentColor" stroke-width="2"/></symbol>
+  <!-- Состояния и действия -->
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19.5 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="currentColor"/><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+  <symbol id="i-ring" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5Z" fill="currentColor"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <!-- Вкладки -->
+  <symbol id="t-today" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 6.5v5.5l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="t-path" viewBox="0 0 24 24"><path d="M2.5 20 10 7l3.5 5.5L16 9l5.5 11Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 20c1-2 4-2 5-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="1.5 2"/></symbol>
+  <symbol id="t-town" viewBox="0 0 24 24"><path d="M3 20V11l5-4 5 4v9M13 20v-6l4-3 4 3v6M2 20h20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M7 20v-4h2v4" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+  <symbol id="t-tasks" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" fill="currentColor"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="t-growth" viewBox="0 0 24 24"><path d="M3 19 9 12l4 3 8-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 6h5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="t-skills" viewBox="0 0 24 24"><path d="M12 21V4M12 10 6.5 6M12 14l6-4.5M12 17l-4.5-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="6" cy="5.5" r="2" fill="currentColor"/><circle cx="18.5" cy="9" r="2" fill="currentColor"/><circle cx="7" cy="13.5" r="2" fill="currentColor"/></symbol>
+  <!-- Эмблемы треков: форма дублирует цвет -->
+  <symbol id="em-A" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></symbol>
+  <symbol id="em-B" viewBox="0 0 24 24"><path d="M12 3.5 21 20H3Z" fill="currentColor"/></symbol>
+  <symbol id="em-C1" viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5" fill="currentColor"/></symbol>
+  <symbol id="em-C2" viewBox="0 0 24 24"><path d="M12 2.5 21.5 12 12 21.5 2.5 12Z" fill="currentColor"/></symbol>
+  <symbol id="em-E" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z" fill="currentColor"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Маршрут · направление дизайна · черновик 1</div>
+      <h1>Полевой дневник</h1>
+      <p>Тихая иллюстрированная тетрадь путника: плоские формы без обводки, свет слева сверху, приглушённые сезонные краски. Сцена живёт по реальному времени, интерфейс — по выбранной теме.</p>
+    </div>
+    <div class="theme-switch" role="group" aria-label="Тема интерфейса">
+      <button class="btn" data-theme-set="auto">Авто</button>
+      <button class="btn" data-theme-set="light">Светлая</button>
+      <button class="btn" data-theme-set="dark">Тёмная</button>
+    </div>
+  </header>
+
+  <!-- 1. Набор компонентов -->
+  <section aria-labelledby="h-kit">
+    <h2 id="h-kit">1. Набор компонентов</h2>
+    <p>Один и тот же набор в светлой и тёмной теме. Статус всегда несёт значок и слово, цвет только помогает.</p>
+    <div class="kit">
+      <div class="panel th-light" data-kit></div>
+      <div class="panel th-dark" data-kit></div>
+    </div>
+  </section>
+
+  <!-- 2. Сегодня -->
+  <section aria-labelledby="h-today">
+    <h2 id="h-today">2. Экран «Сегодня»</h2>
+    <p>Один шаг на экране, таймер под текстом шага, ресурсы — компактной сеткой сверху, стройка — одной полосой. Всё остальное свёрнуто. На широком экране справа появляется колонка с городом и очередью стройки.</p>
+    <div class="today-grid">
+      <div class="phone">
+        <div class="phone-body">
+          <div class="topline">
+            <div class="brand"><b>Маршрут</b><span>Цикл 1 · Базовый месяц</span></div>
+            <div class="lvl"><span>уровень 3 · 212 / 300</span><span class="meter"><i style="width:59%"></i></span></div>
+          </div>
+          <div class="hud" data-hud></div>
+          <div>
+            <div class="eyebrow">День 3 из 30 · глубокий · 60 мин</div>
+            <h2 style="margin-top:2px">Gradle 1</h2>
+            <div class="chips" style="margin-top:8px">
+              <span class="chip chip-track" style="--tc:var(--t-C1)"><svg class="ic"><use href="#em-C1"/></svg>C1 · Gradle</span>
+              <span class="chip chip-done"><svg class="ic"><use href="#i-check"/></svg>шаг 1 сделан</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="eyebrow">Шаг 2 из 3 · сейчас · 20 мин</div>
+            <p class="step-text">В терминале выполнить <code>./gradlew tasks</code>, <code>assembleDebug</code>, <code>testDebugUnitTest</code> и <code>:app:dependencies</code>. В последнем не читать всё: найти одну библиотеку и её транзитивные зависимости.</p>
+            <p class="muted" style="font-size:.875rem">Готово, когда четыре команды отработали и одна цепочка зависимостей выписана в заметку.</p>
+            <div class="timer">
+              <div class="timer-face">20:00</div>
+              <div class="btn-row">
+                <button class="btn btn-primary"><svg class="ic"><use href="#i-play"/></svg>Начать</button>
+                <button class="btn">Шаг сделан</button>
+              </div>
+            </div>
+          </div>
+          <div class="build" role="group" aria-label="Стройка">
+            <div class="build-head"><svg class="ic"><use href="#i-hammer"/></svg>Амбар → ур. 3<span class="build-left">осталось 3 ч 12 мин</span></div>
+            <div class="bar"><i style="width:47%"></i></div>
+            <small>Готово сегодня в 19:40 · свободен 1 строитель из 2</small>
+          </div>
+          <details class="fold"><summary>Что открыть <span>3 ссылки</span></summary></details>
+          <details class="fold"><summary>Все шаги дня <span>1 из 3</span></summary></details>
+          <details class="fold"><summary>Минимум и расширение</summary></details>
+        </div>
+        <nav class="tabbar" aria-label="Вкладки">
+          <a href="#" aria-current="page"><svg class="ic"><use href="#t-today"/></svg>Сегодня</a>
+          <a href="#"><svg class="ic"><use href="#t-path"/></svg>Путь</a>
+          <a href="#"><svg class="ic"><use href="#t-town"/></svg>Город</a>
+          <a href="#"><svg class="ic"><use href="#t-tasks"/></svg>Задачи</a>
+          <a href="#"><svg class="ic"><use href="#t-growth"/></svg>Прирост</a>
+          <a href="#"><svg class="ic"><use href="#t-skills"/></svg>Навыки</a>
+        </nav>
+      </div>
+      <div class="card" style="width:100%">
+        <h3>Широкий экран</h3>
+        <p class="muted" style="font-size:.9375rem">Вкладки уходят наверх сегментами, ресурсы — в одну строку из восьми ячеек, справа от шага — сцена города в уменьшенном виде и очередь стройки. Шаг и таймер остаются первыми в порядке чтения.</p>
+        <nav class="tabtop" aria-label="Вкладки, широкий экран">
+          <a href="#" aria-current="page"><svg class="ic"><use href="#t-today"/></svg>Сегодня</a>
+          <a href="#"><svg class="ic"><use href="#t-path"/></svg>Путь</a>
+          <a href="#"><svg class="ic"><use href="#t-town"/></svg>Город</a>
+          <a href="#"><svg class="ic"><use href="#t-tasks"/></svg>Задачи</a>
+          <a href="#"><svg class="ic"><use href="#t-growth"/></svg>Прирост</a>
+          <a href="#"><svg class="ic"><use href="#t-skills"/></svg>Навыки</a>
+        </nav>
+        <div class="hud wide" data-hud></div>
+        <figure class="scene" id="today-town"></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Город по стадиям -->
+  <section aria-labelledby="h-town">
+    <h2 id="h-town">3. Город: три стадии роста</h2>
+    <p>Сетка участков постоянна: пять участков в ряду, ряды уходят вглубь к горе. Камера отъезжает по мере роста, поэтому стоянка крупная, а город целиком помещается в ширину телефона без прокрутки вбок. Ориентиры — файлы учёбы — стоят отдельной каменной террасой у подножия.</p>
+    <div class="stages">
+      <figure class="scene"><div id="st-0"></div><figcaption>Стоянка · лето · закат · ясно. Путник, костёр, палатка.</figcaption></figure>
+      <figure class="scene"><div id="st-1"></div><figcaption>Деревня · осень · день · облачно. Пекарня строится, дровник сломан, на террасе пять ориентиров.</figcaption></figure>
+      <figure class="scene big"><div id="st-2"></div><figcaption>Город · зима · день · ясно. Ратуша с часовой башней, дом достраивается до ур. 4, мастерская ждёт ремонта.</figcaption><div class="lm-list" id="lm-list" aria-label="Ориентиры на террасе"></div></figure>
+    </div>
+  </section>
+
+  <!-- 4. Живая сцена -->
+  <section aria-labelledby="h-live">
+    <h2 id="h-live">4. Сложение состояний</h2>
+    <p>Порядок слоёв: сезонная палитра → рисунок в дневных красках → тонировка времени суток → затемнение погоды → источники света → осадки и туман → метки. Ночь получается наложением и светом, второй палитры нет.</p>
+    <div class="live">
+      <figure class="scene"><div id="live"></div><figcaption id="live-cap"></figcaption></figure>
+      <div class="controls card">
+        <fieldset class="seg" data-k="stage"><legend>Стадия</legend></fieldset>
+        <fieldset class="seg" data-k="season"><legend>Сезон</legend></fieldset>
+        <fieldset class="seg" data-k="time"><legend>Время суток</legend></fieldset>
+        <fieldset class="seg" data-k="weather"><legend>Погода</legend></fieldset>
+        <fieldset class="seg" data-k="neglect"><legend>Запустение</legend></fieldset>
+        <div class="btn-row"><button class="btn" id="now-btn"><svg class="ic"><use href="#i-clock"/></svg>Как сейчас</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Маршрут -->
+  <section aria-labelledby="h-route">
+    <h2 id="h-route">5. Карта маршрута, фрагмент</h2>
+    <p>Тот же мир и те же краски: город лежит в долине, тропа поднимается по склону. Узлы дней — светлые таблички поверх тонировки, поэтому читаются и ночью.</p>
+    <figure class="scene" style="max-width:560px"><div id="route"></div><div class="legend" id="route-legend"></div></figure>
+  </section>
+
+  <!-- 6. Грамматика построек -->
+  <section aria-labelledby="h-gram">
+    <h2 id="h-gram">6. Грамматика построек</h2>
+    <p>Постройка собирается из частей: основание, стены, крыша, проёмы, примета типа. Уровень меняет материал и размер по общему правилу, тип добавляет свою примету. Так 25 типов × 5 уровней не требуют 125 рисунков.</p>
+    <div class="grammar" id="grammar"></div>
+  </section>
+</div>
+
+<template id="kit-tpl">
+  <div class="eyebrow" data-theme-name></div>
+  <div class="btn-row">
+    <button class="btn btn-primary">Улучшить до ур. 3</button>
+    <button class="btn">Шаг сделан</button>
+    <button class="btn btn-quiet">Подробнее</button>
+    <button class="btn" disabled><svg class="ic"><use href="#i-lock"/></svg>Не хватает 12 камня</button>
+  </div>
+  <div class="chips">
+    <span class="chip chip-done"><svg class="ic"><use href="#i-check"/></svg>сделан ядром</span>
+    <span class="chip chip-now"><svg class="ic"><use href="#i-dot"/></svg>текущий</span>
+    <span class="chip"><svg class="ic"><use href="#i-ring"/></svg>впереди</span>
+    <span class="chip chip-warm"><svg class="ic"><use href="#i-clock"/></svg>строится</span>
+    <span class="chip chip-rust"><svg class="ic"><use href="#i-hammer"/></svg>нужен ремонт</span>
+  </div>
+  <div class="chips">
+    <span class="chip chip-track" style="--tc:var(--t-A)"><svg class="ic"><use href="#em-A"/></svg>A · Алгоритмы</span>
+    <span class="chip chip-track" style="--tc:var(--t-B)"><svg class="ic"><use href="#em-B"/></svg>B · System Design</span>
+    <span class="chip chip-track" style="--tc:var(--t-C1)"><svg class="ic"><use href="#em-C1"/></svg>C1 · Gradle</span>
+    <span class="chip chip-track" style="--tc:var(--t-C2)"><svg class="ic"><use href="#em-C2"/></svg>C2 · CI/CD</span>
+    <span class="chip chip-track" style="--tc:var(--t-E)"><svg class="ic"><use href="#em-E"/></svg>E · Репетитор</span>
+  </div>
+  <nav class="tabtop" aria-label="Пример вкладок">
+    <a href="#" aria-current="page"><svg class="ic"><use href="#t-today"/></svg>Сегодня</a>
+    <a href="#"><svg class="ic"><use href="#t-path"/></svg>Путь</a>
+    <a href="#"><svg class="ic"><use href="#t-town"/></svg>Город</a>
+  </nav>
+  <div class="hud" data-hud></div>
+  <div class="build">
+    <div class="build-head"><svg class="ic"><use href="#i-clock"/></svg>Пекарня, ур. 2<span class="build-left">45 мин</span></div>
+    <div class="bar"><i style="width:72%"></i></div>
+  </div>
+  <div class="card">
+    <h3>Кошелёк</h3>
+    <div class="wallet">
+      <span><svg class="ic ic-coin"><use href="#i-coin"/></svg> <b>412</b> монет</span>
+      <span><svg class="ic ic-gem"><use href="#i-gem"/></svg> <b>3</b> камня</span>
+    </div>
+    <ul class="ledger">
+      <li><span>День 2 закрыт ядром</span><span class="num">+50</span></li>
+      <li><span>Задача 1512 решена с разбором</span><span class="num">+10</span></li>
+      <li><span>Тест недели 1: 16 из 20</span><span class="num">+2 камня</span></li>
+    </ul>
+  </div>
+  <div class="sheet" role="dialog" aria-label="Амбар">
+    <div class="sheet-head">
+      <div>
+        <h3>Амбар</h3>
+        <div class="muted" style="font-size:.8125rem">Уровень 2 из 5</div>
+        <div class="pips" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+      </div>
+      <span class="chip"><svg class="ic"><use href="#i-hammer"/></svg>строителей 1 из 2</span>
+    </div>
+    <div class="previews">
+      <figure><div data-mini="barn:2"></div>сейчас</figure>
+      <span aria-hidden="true" class="muted">→</span>
+      <figure><div data-mini="barn:3"></div>ур. 3</figure>
+    </div>
+    <dl class="facts">
+      <dt>Даёт</dt><dd>запас еды 60 → <b>90</b></dd>
+      <dt>Стройка</dt><dd class="num">2 ч 30 мин</dd>
+    </dl>
+    <div class="cost" aria-label="Цена улучшения">
+      <span><svg class="ic"><use href="#i-wood"/></svg>40</span>
+      <span class="short"><svg class="ic"><use href="#i-stone"/></svg>20 · есть 8</span>
+      <span><svg class="ic ic-coin"><use href="#i-coin"/></svg>30</span>
+    </div>
+    <button class="btn" disabled><svg class="ic"><use href="#i-lock"/></svg>Не хватает 12 камня</button>
+    <div class="build">
+      <div class="build-head"><svg class="ic"><use href="#i-clock"/></svg>Строится: ур. 3<span class="build-left">осталось 3 ч 12 мин</span></div>
+      <div class="bar"><i style="width:47%"></i></div>
+      <small>Так лист выглядит во время стройки: кнопка уступает место таймеру.</small>
+    </div>
+  </div>
+</template>
+
+<script>
+/* ============ Основа ============ */
+const R = n => Math.round(n * 10) / 10;
+const T = (x, y, s = 1, rot = 0) => `translate(${R(x)} ${R(y)})` + (s !== 1 ? ` scale(${R(s * 100) / 100})` : '') + (rot ? ` rotate(${rot})` : '');
+function rng(seed) { let a = seed | 0; return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+let C = null;   // контекст отрисовки: сезон, свет, собранные огни и метки
+let SID = 0;
+
+/* ============ Палитры ============ */
+const PAL = {
+  summer: { sky: ['#c6dbe3', '#eef0e3'], far: '#a9bcb3', mtn: ['#9da89f', '#7f8b84'], snowcap: '#f4f5f2', ground: ['#b9c690', '#9db179'], terrace: '#aab884', path: '#e0d2ab', tree: ['#5d8757', '#456f48'], decid: ['#6e9a5a', '#557f4a'], water: '#8fbfcc', water2: '#e3f1f3', tuft: '#5f7f36' },
+  spring: { sky: ['#d0e3ea', '#f2f1e6'], far: '#b3c6bd', mtn: ['#a2ada3', '#86928a'], snowcap: '#f4f5f2', ground: ['#c4d29c', '#a6bd80'], terrace: '#b2c18d', path: '#e2d6b2', tree: ['#5f8a59', '#46704a'], decid: ['#95ba70', '#79a35d'], blossom: '#ecccd3', water: '#93c3cf', water2: '#e3f1f3', tuft: '#6f8f40' },
+  autumn: { sky: ['#d7dbd5', '#efe8da'], far: '#b4b5a3', mtn: ['#a09f93', '#85857b'], snowcap: '#f1f1ec', ground: ['#c9bc8a', '#b1a273'], terrace: '#bcae7d', path: '#dccaa0', tree: ['#56775a', '#42614a'], decid: ['#c88d44', '#a8642f'], water: '#8fb2bb', water2: '#e1ecee', tuft: '#7f7a3c' },
+  winter: { sky: ['#d0dae1', '#eef1f2'], far: '#c3ccd0', mtn: ['#aab3b6', '#8f999d'], snowcap: '#fbfcfc', ground: ['#e9edeb', '#d6dddb'], terrace: '#dfe5e3', path: '#c7bfae', tree: ['#4d6a5c', '#3b5649'], decid: ['#8a7a6a', '#6f6255'], water: '#9fb9c2', water2: '#eef4f5', tuft: '#7f8f78' },
+};
+const TIME = {
+  dawn:  { tint: '#efc4b0', op: .55, lights: .5, glow: .55, fog: '#efddd2', rain: '#8a8f9a', snow: '#ffffff' },
+  day:   { tint: null, op: 0, lights: 0, glow: .25, fog: '#eef0ee', rain: '#7d8a94', snow: '#ffffff' },
+  dusk:  { tint: '#e3a37b', op: .6, lights: .75, glow: .7, fog: '#e7cfbd', rain: '#8d8790', snow: '#fbf3ec' },
+  night: { tint: '#25304d', op: .82, lights: 1, glow: 1, fog: '#4f5b72', rain: '#9aa6b8', snow: '#c9d1de' },
+};
+const WEATHER = {
+  clear: { clouds: 0 }, cloudy: { clouds: 3 },
+  overcast: { clouds: 6, grey: true, dim: ['#b4bcc1', .55] },
+  fog: { clouds: 2, grey: true, dim: ['#c6cccf', .3], fog: .75 },
+  rain: { clouds: 6, grey: true, dim: ['#a6afb6', .55], rain: 80 },
+  snow: { clouds: 5, grey: true, dim: ['#d4d9de', .3], snow: 90 },
+  storm: { clouds: 7, grey: true, dim: ['#68727e', .7], rain: 130, flash: true },
+};
+const NEG = [{ tufts: 0, fire: 0, road: 1 }, { tufts: 12, fire: 1, road: .85 }, { tufts: 26, fire: 2, road: .65 }, { tufts: 44, fire: 3, road: .45 }];
+const LABEL = {
+  stage: { camp: 'Стоянка', village: 'Деревня', city: 'Город' },
+  season: { winter: 'зима', spring: 'весна', summer: 'лето', autumn: 'осень' },
+  time: { dawn: 'рассвет', day: 'день', dusk: 'закат', night: 'ночь' },
+  weather: { clear: 'ясно', cloudy: 'облачно', overcast: 'пасмурно', fog: 'туман', rain: 'дождь', snow: 'снег', storm: 'гроза' },
+  neglect: { 0: '0 · порядок', 1: '1 · тропа зарастает', 2: '2 · туман, угли', 3: '3 · всё остыло' },
+};
+
+/* Материалы постройки: светлая грань, теневая грань, линии фактуры */
+const MAT = {
+  canvas: { l: '#e6dec8', d: '#cbc1a7', line: '#a99d82' },
+  log: { l: '#9b7452', d: '#7c5b3f', line: '#5f4431' },
+  plank: { l: '#b68c60', d: '#956f4b', line: '#7a5a3d' },
+  stone: { l: '#bdb8ac', d: '#9d988c', line: '#827d72' },
+  plaster: { l: '#e9e2d1', d: '#d0c7b4', line: '#6d523a' },
+  ashlar: { l: '#dcd6c9', d: '#b8b2a4', line: '#a19b8d' },
+};
+const ROOFC = { canvas: ['#ddd3bb', '#c2b79c'], thatch: ['#c9a868', '#a7874f'], shingle: ['#7f6452', '#5f4a3c'], tile: ['#a9664b', '#86503b'], slate: ['#6f777c', '#585f64'] };
+const INK = '#4a3a2c', GLASS = '#525a62', LIT = '#ffd27e', STONE = '#a9a397';
+/* Цвета треков в мире: приглушены под палитру сцены; форма эмблемы дублирует цвет */
+const TRK = { A: ['#4a78ad', '#3a6190'], B: ['#b9693f', '#99542f'], C1: ['#3d8a6a', '#2f6f55'], C2: ['#b8903a', '#98752c'], E: ['#ad6888', '#8e526e'], none: ['#6b7378', '#565d62'] };
+const TRACK_NAME = { A: 'Алгоритмы', B: 'System Design', C1: 'Gradle', C2: 'CI/CD', E: 'Репетитор', none: 'Общее' };
+const CLOTH = ['#6f7f8f', '#8a6d4b', '#5f7a5a', '#9a7b6a', '#76698a', '#a58a4a', '#5d6f78'];
+
+/* ============ Детали ============ */
+function wall(x, y, w, h, m) {
+  const c = MAT[m];
+  let s = `<rect x="${R(x)}" y="${R(y)}" width="${R(w)}" height="${R(h)}" fill="${c.l}"/><rect x="${R(x + w * .78)}" y="${R(y)}" width="${R(w * .22)}" height="${R(h)}" fill="${c.d}"/>`;
+  let d = '';
+  if (m === 'log') for (let yy = y + 3.2; yy < y + h - .5; yy += 3.2) d += `M${R(x)} ${R(yy)}h${R(w)}`;
+  if (m === 'plank') for (let xx = x + 4; xx < x + w - .5; xx += 4) d += `M${R(xx)} ${R(y)}v${R(h)}`;
+  if (m === 'stone' || m === 'ashlar') { let i = 0; for (let yy = y + 4; yy < y + h + .1; yy += 4, i++) { if (yy < y + h - .5) d += `M${R(x)} ${R(yy)}h${R(w)}`; for (let xx = x + (i % 2 ? 3.5 : 7); xx < x + w - 1; xx += 7) d += `M${R(xx)} ${R(yy - 4)}v${R(Math.min(4, y + h - yy + 4))}`; } }
+  if (m === 'plaster') { const b = Math.min(7, w / 4); d += `M${R(x + .6)} ${R(y)}v${R(h)}M${R(x + w - .6)} ${R(y)}v${R(h)}M${R(x)} ${R(y + h * .5)}h${R(w)}M${R(x)} ${R(y + h * .5)}l${R(b)} ${R(-h * .5)}M${R(x + w)} ${R(y + h * .5)}l${R(-b)} ${R(-h * .5)}`; }
+  if (d) s += `<path d="${d}" stroke="${c.line}" stroke-width="${m === 'plaster' ? 1.1 : .6}" fill="none" opacity="${m === 'plaster' ? .9 : .6}"/>`;
+  return s;
+}
+function roof(type, x, y, w, h, k) {
+  const [l, d] = Array.isArray(k) ? k : ROOFC[k];
+  const o = Math.max(2, w * .08), m = x + w / 2;
+  let s = '', cap = '';
+  if (type === 'gable' || type === 'cone') {
+    s = `<path d="M${R(x - o)} ${R(y)}L${R(m)} ${R(y - h)}L${R(m)} ${R(y)}Z" fill="${l}"/><path d="M${R(m)} ${R(y - h)}L${R(x + w + o)} ${R(y)}L${R(m)} ${R(y)}Z" fill="${d}"/>`;
+    cap = type === 'gable' ? `M${R(x - o)} ${R(y)}L${R(m)} ${R(y - h)}L${R(x + w + o)} ${R(y)}` : `M${R(m - w * .2)} ${R(y - h * .6)}L${R(m)} ${R(y - h)}L${R(m + w * .2)} ${R(y - h * .6)}`;
+  } else if (type === 'hip') {
+    const a = x + w * .2, b = x + w * .8;
+    s = `<path d="M${R(x - o)} ${R(y)}L${R(a)} ${R(y - h)}L${R(m)} ${R(y - h)}L${R(m)} ${R(y)}Z" fill="${l}"/><path d="M${R(m)} ${R(y - h)}L${R(b)} ${R(y - h)}L${R(x + w + o)} ${R(y)}L${R(m)} ${R(y)}Z" fill="${d}"/>`;
+    cap = `M${R(x - o)} ${R(y)}L${R(a)} ${R(y - h)}L${R(b)} ${R(y - h)}L${R(x + w + o)} ${R(y)}`;
+  } else if (type === 'lean') {
+    s = `<path d="M${R(x - o)} ${R(y - h)}L${R(x + w + o)} ${R(y - h * .4)}L${R(x + w + o)} ${R(y - h * .4 + 2.6)}L${R(x - o)} ${R(y - h + 2.6)}Z" fill="${d}"/>`;
+    cap = `M${R(x - o)} ${R(y - h)}L${R(x + w + o)} ${R(y - h * .4)}`;
+  }
+  if (C.season === 'winter' && cap) s += `<path d="${cap}" fill="none" stroke="#f6f8f8" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+  return s;
+}
+function win(x, y, w = 5, h = 6) {
+  if (C.lit) C.lights.push(`<g transform="${C.tf}"><circle cx="${R(x + w / 2)}" cy="${R(y + h / 2)}" r="${R(w * 1.9)}" fill="url(#glow)"/><rect x="${R(x)}" y="${R(y)}" width="${w}" height="${h}" rx=".6" fill="${LIT}"/></g>`);
+  return `<rect x="${R(x)}" y="${R(y)}" width="${w}" height="${h}" rx=".6" fill="${GLASS}" stroke="${INK}" stroke-width=".7"/>`;
+}
+const door = (x, y, w, h) => `<path d="M${R(x)} ${R(y + h)}V${R(y + 2)}Q${R(x + w / 2)} ${R(y - 1)} ${R(x + w)} ${R(y + 2)}V${R(y + h)}Z" fill="${INK}"/>`;
+const bigDoor = (x, y, w, h) => `<rect x="${R(x)}" y="${R(y)}" width="${R(w)}" height="${R(h)}" fill="#7a5a3e" stroke="${INK}" stroke-width=".8"/><path d="M${R(x)} ${R(y)}L${R(x + w)} ${R(y + h)}M${R(x + w)} ${R(y)}L${R(x)} ${R(y + h)}" stroke="${INK}" stroke-width=".8"/>`;
+const smoke = (x, y) => C.smoke ? `<g class="smoke" fill="#f1f1ee" opacity=".75"><circle cx="${R(x)}" cy="${R(y - 3)}" r="1.8"/><circle cx="${R(x + 2)}" cy="${R(y - 7.5)}" r="2.5"/><circle cx="${R(x + 1)}" cy="${R(y - 13)}" r="3.2"/></g>` : '';
+const shadow = w => `<ellipse cx="2" cy=".6" rx="${R(w * .6)}" ry="2.6" fill="#1c1a16" opacity=".13"/>`;
+const pennant = (x, y, col, h = 9) => `<path d="M${R(x)} ${R(y)}v${-h}" stroke="#4b4640" stroke-width=".9"/><path d="M${R(x + .4)} ${R(y - h)}l7 2.4-7 2.4Z" fill="${col}"/>`;
+function logs(x, y, n) { let s = ''; const rows = n >= 6 ? [3, 2, 1] : n >= 3 ? [2, 1] : [1]; rows.forEach((k, j) => { for (let i = 0; i < k; i++) { const cx = x + (i - (k - 1) / 2) * 5, cy = y - 2.5 - j * 4.4; s += `<circle cx="${R(cx)}" cy="${R(cy)}" r="2.5" fill="${MAT.log.l}" stroke="${MAT.log.line}" stroke-width=".6"/><circle cx="${R(cx)}" cy="${R(cy)}" r=".8" fill="${MAT.log.line}"/>`; } }); return s; }
+const crate = (x, y) => `<rect x="${R(x - 3)}" y="${R(y - 6)}" width="6" height="6" fill="${MAT.plank.l}" stroke="${MAT.plank.line}" stroke-width=".6"/><path d="M${R(x - 3)} ${R(y - 6)}l6 6m0-6l-6 6" stroke="${MAT.plank.line}" stroke-width=".5"/>`;
+const barrel = (x, y) => `<rect x="${R(x - 3)}" y="${R(y - 7)}" width="6" height="7" rx="1.8" fill="${MAT.log.l}"/><path d="M${R(x - 3)} ${R(y - 5)}h6M${R(x - 3)} ${R(y - 2)}h6" stroke="#4b4640" stroke-width=".6"/>`;
+const bale = (x, y) => `<ellipse cx="${R(x)}" cy="${R(y - 4)}" rx="5.5" ry="4" fill="#d2b26a"/><path d="M${R(x - 3)} ${R(y - 7)}v6M${R(x + 1)} ${R(y - 8)}v8" stroke="#b39250" stroke-width=".6"/>`;
+const anvil = (x, y) => `<rect x="${R(x - 1.4)}" y="${R(y - 3)}" width="2.8" height="3" fill="#4b5257"/><path d="M${R(x - 4.5)} ${R(y - 5.6)}h8l-1.8 2.6h-5Z" fill="#4b5257"/>`;
+function hangSign(x, y, dir, glyph) { const bx = x + dir * 6; return `<path d="M${R(x)} ${R(y)}h${dir * 7}" stroke="#4b4640" stroke-width=".8"/><path d="M${R(bx - 3)} ${R(y)}v1.5M${R(bx + 3)} ${R(y)}v1.5" stroke="#4b4640" stroke-width=".5"/><rect x="${R(bx - 4)}" y="${R(y + 1.5)}" width="8" height="5.5" rx=".6" fill="${MAT.plank.l}" stroke="${MAT.plank.line}" stroke-width=".5"/>${glyph(bx, y + 4.2)}`; }
+const gMug = (x, y) => `<rect x="${R(x - 1.6)}" y="${R(y - 1.6)}" width="2.6" height="3.2" fill="${INK}"/><path d="M${R(x + 1)} ${R(y - .8)}h1v1.6h-1" stroke="${INK}" stroke-width=".5" fill="none"/>`;
+const gHammer = (x, y) => `<path d="M${R(x - 2)} ${R(y - 1.4)}h3.2M${R(x - .4)} ${R(y - 1.4)}v3.2" stroke="${INK}" stroke-width="1"/>`;
+const gLoaf = (x, y) => `<ellipse cx="${R(x)}" cy="${R(y + .3)}" rx="2.6" ry="1.6" fill="#b5764f"/>`;
+function shelter(w, h) {
+  const x = -w / 2, c = MAT.canvas;
+  let s = `<path d="M${R(x + 2)} 0V${R(-h)}M${R(x + w - 2)} 0V${R(-h * .6)}" stroke="${MAT.log.line}" stroke-width="1.5"/>`;
+  s += `<path d="M${R(x - 1)} ${R(-h - 1)}L${R(x + w + 2)} ${R(-h * .6 - 1)}L${R(x + w + 3)} ${R(-h * .6 + 2.5)}L${R(x)} ${R(-h + 2.5)}Z" fill="${c.l}"/><path d="M${R(x + w + 2)} ${R(-h * .6 - 1)}L${R(x + w + 3)} ${R(-h * .6 + 2.5)}" stroke="${c.d}" stroke-width="1.4"/>`;
+  if (C.season === 'winter') s += `<path d="M${R(x - 1)} ${R(-h - 1)}L${R(x + w + 2)} ${R(-h * .6 - 1)}" stroke="#f6f8f8" stroke-width="2.2" stroke-linecap="round"/>`;
+  return s;
+}
+const withShelter = (w, h, extra) => ({ s: shelter(w, h) + extra, top: -h - 2, w });
+
+/* ============ Корпус по уровню ============
+   1 — навес из жердей и холста; 2 — сруб, соломенная крыша, одно окно;
+   3 — сруб, тёс, два окна, труба; 4 — доска на каменном цоколе; 5 — второй этаж,
+   штукатурка с брусом на каменном низе, черепица, флажок */
+const LV = [null, { mat: 'canvas', roof: 'canvas' }, { mat: 'log', roof: 'thatch' }, { mat: 'log', roof: 'shingle' }, { mat: 'plank', roof: 'shingle', plinth: 1 }, { mat: 'plaster', roof: 'tile', plinth: 1 }];
+function hut(w, h, lvl, o = {}) {
+  const L = LV[lvl], x = -w / 2; let s = '', base = 0;
+  if (L.plinth) { s += `<rect x="${R(x - 1.5)}" y="-3" width="${R(w + 3)}" height="3" fill="${STONE}"/>`; base = -3; }
+  const fl = o.storeys ?? (lvl === 5 ? 2 : 1);
+  const lowH = h * .85, wh = fl === 2 ? h * 1.75 : h, wy = base - wh, rh = o.roofH ?? R(w * .4);
+  if (lvl >= 3 && o.chimney !== false) { const cx = x + w * .7; s += `<rect x="${R(cx)}" y="${R(wy - rh * .62)}" width="4" height="${R(rh * .62)}" fill="${STONE}"/>` + smoke(cx + 2, wy - rh * .62); }
+  if (fl === 2) { s += wall(x, wy, w, wh - lowH, L.mat) + wall(x, base - lowH, w, lowH, lvl >= 5 ? 'stone' : 'log'); }
+  else s += wall(x, wy, w, wh, L.mat);
+  const dx = o.dx ?? 0, kind = o.door || 'std';
+  if (kind === 'std') s += door(dx - 3, base - 10, 6, 10);
+  if (kind === 'big') { const dw = w * .36, dh = Math.min(h * .85, 15); s += bigDoor(dx - dw / 2, base - dh, dw, dh); }
+  if (kind === 'open') { const dw = w * .46, dh = h * .72; s += `<rect x="${R(dx - dw / 2)}" y="${R(base - dh)}" width="${R(dw)}" height="${R(dh)}" fill="#3b3129"/>`; }
+  const nw = lvl <= 1 ? 0 : lvl === 2 ? 1 : 2, wyl = base - h * .66;
+  if (nw >= 1) s += win(x + w * .1, wyl);
+  if (nw >= 2) s += win(x + w * .76, wyl);
+  if (fl === 2) { const uy = wy + (wh - lowH) * .28; [x + w * .1, x + w * .5 - 2.5, x + w * .76].forEach(px => { s += win(px, uy); }); }
+  s += roof(o.roof || 'gable', x, wy, w, rh, L.roof);
+  const flag = lvl === 5 && o.flag !== false;
+  if (flag) s += pennant(0, wy - rh, '#9c4a35');
+  return { s, top: wy - rh - (flag ? 9 : 0), w: w + 4, wy, rh };
+}
+function sub(dx, dy, sc, fn) {
+  const prev = C.tf, t = ` translate(${R(dx)} ${R(dy)})` + (sc !== 1 ? ` scale(${sc})` : '');
+  C.tf = prev + t; const r = fn(); C.tf = prev;
+  return { ...r, s: `<g transform="${t.trim()}">${r.s}</g>`, top: dy + r.top * sc };
+}
+
+/* ============ Типы построек ============ */
+const B = {
+  house(l) {
+    if (l === 1) { const c = MAT.canvas; let s = `<path d="M-13 0L0 -17L0 0Z" fill="${c.l}"/><path d="M0 -17L13 0L0 0Z" fill="${c.d}"/><path d="M-3.8 0L0 -9L3.8 0Z" fill="${INK}"/><path d="M0 -17v-3M-13 0l-4 1M13 0l4 1" stroke="${MAT.log.line}" stroke-width=".9"/>`; if (C.season === 'winter') s += `<path d="M-13 0L0 -17L13 0" fill="none" stroke="#f6f8f8" stroke-width="2" stroke-linejoin="round"/>`; return { s, top: -20, w: 28 }; }
+    if (l === 2) { const [a, b] = ROOFC.thatch; let s = `<path d="M-15 0L0 -22L0 0Z" fill="${a}"/><path d="M0 -22L15 0L0 0Z" fill="${b}"/><path d="M-3 -26L3 -19M3 -26L-3 -19" stroke="${MAT.log.line}" stroke-width="1.3"/><path d="M-9 -4l4 -8M8 -4l-3 -7" stroke="#a7874f" stroke-width=".7"/><path d="M-4 0L0 -9L4 0Z" fill="${INK}"/>`; if (C.season === 'winter') s += `<path d="M-15 0L0 -22L15 0" fill="none" stroke="#f6f8f8" stroke-width="2.2" stroke-linejoin="round"/>`; return { s, top: -26, w: 32 }; }
+    return hut([0, 0, 0, 30, 36, 34][l], l === 3 ? 16 : 18, l);
+  },
+  barn(l) {
+    if (l === 1) return withShelter(36, 14, bale(-6, 0) + bale(6, 0));
+    const r = hut(l >= 4 ? 48 : 42, l >= 3 ? 21 : 18, l, { door: 'big', chimney: false, storeys: 1, roofH: l >= 3 ? 22 : 17 });
+    if (l >= 3) r.s += `<rect x="-3" y="${R(r.wy - 9)}" width="6" height="6" fill="${INK}"/>`;
+    if (l <= 3) r.s += bale(r.w / 2 + 3, 0);
+    return r;
+  },
+  sawmill(l) {
+    if (l === 1) return withShelter(36, 14, logs(0, 0, 3));
+    const r = hut(40, 16, l, { door: 'open', chimney: false, storeys: 1 });
+    r.s += logs(26, 0, l >= 3 ? 6 : 3);
+    if (l >= 3) r.s += `<circle cx="-25" cy="-6" r="4.5" fill="#9aa0a3"/><circle cx="-25" cy="-6" r="1.2" fill="#5b6266"/>`;
+    if (l >= 5) r.s += crate(-19, 0);
+    return r;
+  },
+  quarry(l) {
+    const k = .7 + .07 * l;
+    let s = `<path d="M${R(-30 * k)} 0L${R(-26 * k)} ${R(-16 * k)}L${R(-12 * k)} ${R(-24 * k)}L${R(4 * k)} ${R(-21 * k)}L${R(16 * k)} ${R(-28 * k)}L${R(30 * k)} ${R(-12 * k)}L${R(32 * k)} 0Z" fill="#a9a59b"/><path d="M${R(16 * k)} ${R(-28 * k)}L${R(30 * k)} ${R(-12 * k)}L${R(32 * k)} 0L${R(14 * k)} 0Z" fill="#8e8a81"/><path d="M${R(-14 * k)} ${R(-10 * k)}l8 -3M${R(2 * k)} ${R(-14 * k)}l6 4" stroke="#7c786f" stroke-width=".7"/>`;
+    for (let i = 0; i <= l; i++) { const bx = 8 + (i % 3) * 6.5, by = -Math.floor(i / 3) * 4; s += `<rect x="${R(bx)}" y="${R(by - 4)}" width="6" height="4" fill="${MAT.stone.l}" stroke="${MAT.stone.line}" stroke-width=".5"/>`; }
+    let top = -28 * k;
+    if (l >= 2) { const r = sub(-16, 0, 1, () => hut(18, 11, Math.min(l, 4), { chimney: false, storeys: 1, roofH: 8 })); s += r.s; }
+    if (l >= 4) { s += `<path d="M20 0L25 -32L30 0M25 -32L37 -28M37 -28v12" stroke="${MAT.log.line}" stroke-width="1.1" fill="none"/><rect x="34.5" y="-16" width="5" height="3.5" fill="${MAT.stone.l}"/>`; top = -32; }
+    return { s, top, w: 64 * k };
+  },
+  warehouse(l) {
+    if (l === 1) return withShelter(40, 14, crate(-8, 0) + crate(-1, 0) + crate(6, 0) + crate(-4.5, -6));
+    const r = hut(l >= 4 ? 52 : 46, 18, l, { roof: 'hip', door: 'big', chimney: false, storeys: 1, roofH: 12 });
+    r.s += crate(r.w / 2 + 3, 0) + (l >= 3 ? crate(r.w / 2 + 3, -6) : '');
+    return r;
+  },
+  well(l) {
+    const w = l >= 4 ? 18 : 14; let s = '';
+    if (l >= 2) s += `<path d="M${R(-w / 2 + 1.5)} -6V-20M${R(w / 2 - 1.5)} -6V-20M${R(-w / 2)} -19h${w}M0 -19v7" stroke="${MAT.log.line}" stroke-width="1.4" fill="none"/><rect x="-1.8" y="-12" width="3.6" height="3" fill="${MAT.log.l}"/>`;
+    s += `<ellipse cx="0" cy="-6" rx="${R(w / 2)}" ry="2.2" fill="#3d4448"/>` + wall(-w / 2, -6, w, 6, l === 2 || l === 3 ? 'log' : 'stone');
+    if (l >= 3) s += roof('gable', -w / 2 - 1, -20, w + 2, 8, l >= 4 ? 'shingle' : 'thatch');
+    if (l >= 5) s += `<path d="M${R(w / 2)} -15h4v3" stroke="#4b4640" stroke-width="1" fill="none"/>` + wall(w / 2 + 3, -3, 9, 3, 'stone');
+    return { s, top: l >= 3 ? -28 : l >= 2 ? -20 : -8, w: w + 6 };
+  },
+  workshop(l) {
+    if (l === 1) return withShelter(34, 14, anvil(2, 0));
+    const r = hut(38, 18, l, { door: 'open', storeys: l >= 5 ? 2 : 1 });
+    r.s += anvil(r.w / 2 + 3, 0);
+    if (l >= 3) r.s += hangSign(-19, r.wy + 3, -1, gHammer);
+    return r;
+  },
+  bakery(l) {
+    const oven = (x) => `<path d="M${R(x - 7)} 0A7 7 0 0 1 ${R(x + 7)} 0Z" fill="#b5765c"/><path d="M${R(x)} -7A7 7 0 0 1 ${R(x + 7)} 0H${R(x)}Z" fill="#96604a"/><path d="M${R(x - 2.6)} 0v-2.4a2.6 2.6 0 0 1 5.2 0V0Z" fill="#3b3129"/><rect x="${R(x + 1)}" y="-12" width="3" height="6" fill="${STONE}"/>` + smoke(x + 2.5, -12);
+    if (l === 1) return { s: shelter(28, 13) + oven(14), top: -15, w: 44 };
+    const r = hut(34, 17, l, { chimney: false });
+    r.s += oven(r.w / 2 + 4);
+    if (l >= 3) r.s += hangSign(-17, r.wy + 3, -1, gLoaf);
+    r.w += 10;
+    return r;
+  },
+  tavern(l) {
+    if (l === 1) return withShelter(36, 14, barrel(-5, 0) + barrel(2, 0));
+    const r = hut(l >= 4 ? 42 : 38, 19, l, { storeys: l >= 4 ? 2 : 1 });
+    r.s += hangSign(r.w / 2 - 2, r.wy + 4, 1, gMug) + barrel(-r.w / 2 - 3, 0);
+    return r;
+  },
+  market(l) {
+    const n = [0, 1, 2, 2, 3, 3][l], cols = ['#a5684f', '#5f7f86', '#9a8a4f'];
+    let s = '', top = -15;
+    if (l >= 4) { const r = sub(0, -5, .85, () => hut(40, 15, l, { roof: 'hip', storeys: 1, chimney: false, roofH: 10, flag: false })); s += r.s; top = r.top; }
+    const xs = n === 1 ? [0] : n === 2 ? [-11, 11] : [-19, 0, 19];
+    xs.forEach((x, i) => { s += `<path d="M${x - 6} 0V-12M${x + 6} 0V-12" stroke="${MAT.log.line}" stroke-width="1"/><rect x="${x - 7}" y="-5" width="14" height="5" fill="${MAT.plank.l}"/><path d="M${x - 8} -13H${x + 8}L${x + 9.5} -8.5H${x - 9.5}Z" fill="${cols[i]}"/><path d="M${x - 4} -13l-.6 4.5M${x + 1} -13v4.5M${x + 5.6} -13l.6 4.5" stroke="#efe6d2" stroke-width="1.6"/>`; });
+    if (C.season === 'winter') xs.forEach(x => { s += `<path d="M${x - 8} -13H${x + 8}" stroke="#f6f8f8" stroke-width="1.8" stroke-linecap="round"/>`; });
+    return { s, top, w: n * 22 };
+  },
+  woodshed(l) {
+    if (l === 1) return withShelter(28, 12, logs(0, 0, 3));
+    const w = [0, 0, 30, 34, 38, 40][l], H = 17 + l, x = -w / 2, L = LV[l];
+    let s = `<path d="M${R(x)} 0V${R(-H + 2)}L${R(x + w)} ${R(-H * .4 + 2)}V0Z" fill="${MAT[L.mat === 'plaster' ? 'plank' : L.mat].d}"/>`;
+    const rows = Math.min(l, 4);
+    for (let j = 0; j < rows; j++) for (let i = 0; i < Math.floor(w / 5.2); i++) { const cx = x + 3 + i * 5.2, cy = -2.4 - j * 4.4; if (cy > -H * .4 - 1 || cx < x + w * (1 - (cy + H * .4) / (-H * .6))) s += `<circle cx="${R(cx)}" cy="${R(cy)}" r="2.3" fill="${MAT.log.l}" stroke="${MAT.log.line}" stroke-width=".5"/>`; }
+    s += `<path d="M${R(x + 1)} 0V${R(-H + 2)}M${R(x + w - 1)} 0V${R(-H * .4 + 2)}" stroke="${MAT.log.line}" stroke-width="1.5"/>`;
+    s += roof('lean', x, 0, w, H, L.roof);
+    return { s, top: -H - 1, w };
+  },
+  mill(l) {
+    if (l === 1) return withShelter(28, 13, `<ellipse cx="0" cy="-2" rx="5" ry="2" fill="${STONE}"/><rect x="-5" y="-2" width="10" height="2" fill="#8f8a7f"/>`);
+    const wb = 16 + l * 1.5, wt = wb * .64, hb = 18 + l * 5, base = l >= 4 ? -3 : 0, m = l >= 5 ? 'plaster' : l >= 4 ? 'plank' : 'log', c = MAT[m];
+    let s = l >= 4 ? `<rect x="${R(-wb / 2 - 1.5)}" y="-3" width="${R(wb + 3)}" height="3" fill="${STONE}"/>` : '';
+    const top = base - hb;
+    s += `<path d="M${R(-wb / 2)} ${base}L${R(-wt / 2)} ${R(top)}H${R(wt / 2)}L${R(wb / 2)} ${base}Z" fill="${c.l}"/><path d="M${R(wb * .28)} ${base}L${R(wt * .28)} ${R(top)}H${R(wt / 2)}L${R(wb / 2)} ${base}Z" fill="${c.d}"/>`;
+    if (m === 'log') { let d = ''; for (let y = base - 3.2; y > top + 1; y -= 3.2) { const k = (base - y) / hb, hw = wb / 2 - (wb - wt) / 2 * k; d += `M${R(-hw)} ${R(y)}H${R(hw)}`; } s += `<path d="${d}" stroke="${c.line}" stroke-width=".6" opacity=".6"/>`; }
+    s += door(-3, base - 9, 6, 9);
+    if (l >= 3) s += win(-2.5, top + hb * .3);
+    s += roof('cone', -wt / 2 - 1, top, wt + 2, 9 + l, LV[l].roof);
+    const rr = 11 + l * 2.2, hub = top - 2;
+    const blades = [0, 90, 180, 270].map(a => `<g transform="rotate(${a + 20})"><path d="M0 0V${R(-rr)}" stroke="#6b5440" stroke-width="1.1"/><rect x=".6" y="${R(-rr)}" width="${R(rr * .28)}" height="${R(rr * .74)}" fill="#e7dfcb" stroke="#6b5440" stroke-width=".5"/></g>`).join('');
+    s += `<g transform="translate(0 ${R(hub)})"><g class="${C.smoke ? 'spin' : ''}">${blades}</g><circle r="1.6" fill="#4b4640"/></g>`;
+    return { s, top: hub - rr, w: rr * 2 };
+  },
+  watchtower(l) {
+    let s = '', top;
+    if (l === 1) { s = `<path d="M-8 0L-5 -22M8 0L5 -22M-6.5 -10h13" stroke="${MAT.log.line}" stroke-width="1.4"/><rect x="-9" y="-24" width="18" height="2.6" fill="${MAT.plank.l}"/><path d="M-8 -24v-5h16v5" stroke="${MAT.log.line}" stroke-width=".9" fill="none"/>`; return { s, top: -30, w: 20 }; }
+    const bw = l >= 5 ? 15 : 12, bh = l >= 5 ? 36 : 28;
+    if (l === 4) s += wall(-bw / 2, -12, bw, 12, 'stone') + wall(-bw / 2, -bh, bw, bh - 12, 'plank');
+    else s += wall(-bw / 2, -bh, bw, bh, l >= 5 ? 'stone' : 'log');
+    s += door(-2.5, -8, 5, 8) + win(-1, -bh + 8, 2.4, 5);
+    const pw = bw + 7, py = -bh;
+    s += `<rect x="${R(-pw / 2)}" y="${R(py - 2.6)}" width="${R(pw)}" height="2.6" fill="${MAT.plank.d}"/>`;
+    if (l === 2) { s += `<path d="M${R(-pw / 2 + 1)} ${R(py - 2.6)}v-5h${R(pw - 2)}v5" stroke="${MAT.log.line}" stroke-width=".9" fill="none"/>`; top = py - 8; }
+    else if (l <= 4) { s += `<path d="M${R(-pw / 2 + 1.5)} ${R(py - 2.6)}v-8M${R(pw / 2 - 1.5)} ${R(py - 2.6)}v-8" stroke="${MAT.log.line}" stroke-width="1.1"/>` + roof('gable', -pw / 2, py - 10, pw, 8, LV[l].roof); top = py - 18; }
+    else { s += wall(-pw / 2, py - 7, pw, 4.4, 'stone') + roof('cone', -pw / 2 + 1, py - 7, pw - 2, 15, 'tile') + pennant(0, py - 22, '#9c4a35'); top = py - 31; }
+    return { s, top, w: pw };
+  },
+};
+
+/* Центр поселения меняется со стадией */
+function fire(x, y, sc = 1) {
+  const st = C.fire;
+  let s = `<g transform="${T(x, y, sc)}"><ellipse cx="0" cy="0" rx="10" ry="3" fill="${st >= 3 ? '#9b9890' : '#5a4a3c'}" opacity=".55"/>`;
+  [-9, -5, 0, 5, 9].forEach((px, i) => { s += `<ellipse cx="${px}" cy="${i % 4 ? 1.4 : .2}" rx="2.2" ry="1.5" fill="${STONE}"/>`; });
+  s += `<path d="M-7 -.5L5 -4M7 -.5L-5 -4" stroke="#5e4431" stroke-width="2.4" stroke-linecap="round"/></g>`;
+  if (st <= 2) {
+    let f = `<g transform="${C.tf} ${T(x, y, sc)}"><circle cy="-6" r="${st === 2 ? 10 : 24}" fill="url(#glowF)" opacity="${R(C.glow * (st === 2 ? .6 : 1) * 10) / 10}"/>`;
+    if (st < 2) f += `<g transform="scale(${st === 0 ? 1 : .7})"><g class="flame"><path d="M0 -20C6 -12 8 -8 5 -3C3 0 -3 0 -5 -3C-8 -8 -4 -12 0 -20Z" fill="#ec7a22"/><path d="M0 -12C2.6 -8 3.4 -6 2 -3C1.2 -1.8 -1.2 -1.8 -2 -3C-3.4 -6 -1.6 -8 0 -12Z" fill="#ffd25e"/></g></g>`;
+    else f += `<circle cx="-2" cy="-2.4" r="1.5" fill="#e8742a"/><circle cx="2.2" cy="-2" r="1.2" fill="#e8742a"/>`;
+    C.fires.push(f + '</g>');
+    if (st < 2) s += smoke(x + 1, y - 20 * sc);
+  }
+  return s;
+}
+function central(stage) {
+  if (stage <= 1) { let s = fire(0, 0, 1.1); if (stage === 1) s += `<rect x="-26" y="-4" width="12" height="3.4" rx="1.6" fill="${MAT.log.l}"/><rect x="15" y="-4" width="12" height="3.4" rx="1.6" fill="${MAT.log.l}"/>`; return { s, top: -26, w: 40 }; }
+  if (stage === 2) { let s = `<path d="M-14 0V-18M14 0V-18" stroke="${MAT.log.line}" stroke-width="1.8"/>` + wall(-6, -6, 12, 6, 'stone') + fire(0, -6, .7) + roof('gable', -16, -18, 32, 10, 'shingle'); return { s, top: -28, w: 36 }; }
+  if (stage === 3) { const r = hut(58, 20, 3, { storeys: 1, roofH: 18 }); r.s += win(-2.5 - 12, -14) ; r.s += pennant(0, r.wy - r.rh, '#7f5a3a'); return r; }
+  if (stage === 4) { const r = hut(56, 19, 4, { storeys: 2, roof: 'hip', roofH: 13, chimney: false }); r.s += wall(-5, r.wy - r.rh - 7, 10, 8, 'plank') + roof('cone', -6, r.wy - r.rh - 7, 12, 9, 'shingle'); r.top = r.wy - r.rh - 16; return r; }
+  const r = hut(62, 19, 5, { storeys: 2, roof: 'hip', roofH: 13, chimney: false, flag: false });
+  const tw = 16, th = 66;
+  r.s += wall(-tw / 2, -3 - th, tw, th, 'stone') + door(-3.5, -15, 7, 12) + win(-2, -40, 4, 7);
+  r.s += `<circle cx="0" cy="${-3 - th + 9}" r="5.2" fill="#efe9da" stroke="${INK}" stroke-width=".9"/><path d="M0 ${-3 - th + 9}v-3.6M0 ${-3 - th + 9}l2.6 1.4" stroke="${INK}" stroke-width=".9" stroke-linecap="round"/>`;
+  r.s += roof('cone', -tw / 2 - 1, -3 - th, tw + 2, 18, 'tile') + pennant(0, -3 - th - 18, '#9c4a35');
+  r.top = -3 - th - 27;
+  return r;
+}
+
+/* Ориентиры: файлы учёбы. Камень светлее любого дерева, крыша и стяг в цвете трека, эмблема — форма трека */
+function emblem(code, x, y, r, fill) {
+  if (code === 'A') return `<circle cx="${R(x)}" cy="${R(y)}" r="${R(r)}" fill="${fill}"/>`;
+  if (code === 'B') return `<path d="M${R(x)} ${R(y - r)}L${R(x + r)} ${R(y + r * .8)}H${R(x - r)}Z" fill="${fill}"/>`;
+  if (code === 'C1') return `<rect x="${R(x - r * .85)}" y="${R(y - r * .85)}" width="${R(r * 1.7)}" height="${R(r * 1.7)}" fill="${fill}"/>`;
+  if (code === 'C2') return `<path d="M${R(x)} ${R(y - r)}L${R(x + r)} ${R(y)}L${R(x)} ${R(y + r)}L${R(x - r)} ${R(y)}Z" fill="${fill}"/>`;
+  if (code === 'E') { const a = r * .38; return `<path d="M${R(x - a)} ${R(y - r)}h${R(2 * a)}v${R(r - a)}h${R(r - a)}v${R(2 * a)}h${R(a - r)}v${R(r - a)}h${R(-2 * a)}v${R(a - r)}h${R(a - r)}v${R(-2 * a)}h${R(r - a)}Z" fill="${fill}"/>`; }
+  return `<circle cx="${R(x)}" cy="${R(y)}" r="${R(r * .5)}" fill="${fill}"/>`;
+}
+const banner = (x, y, code) => { const [c] = TRK[code]; return `<path d="M${R(x)} ${R(y)}h6v10l-3 -2.2-3 2.2Z" fill="${c}"/>` + emblem(code, x + 3, y + 4, 1.8, '#f6f3ea'); };
+const LMK = { cabin: { w: 22, h: 20, rh: 17, roof: 'gable' }, hall: { w: 34, h: 15, rh: 9, roof: 'gable' }, tower: { w: 13, h: 32, rh: 15, roof: 'cone' } };
+function landmark(kind, code, st) {
+  const k = LMK[kind], col = TRK[code], x = -k.w / 2;
+  let s = '';
+  if (st === 0) {
+    s += `<path d="M${R(x)} 0v-5M${R(-x)} 0v-5M${R(x + 3)} -4v-4M${R(-x - 3)} -4v-4" stroke="${MAT.log.line}" stroke-width="1"/><path d="M${R(x)} -4.5L${R(x + 3)} -7.5H${R(-x - 3)}L${R(-x)} -4.5Z" fill="none" stroke="#efe6d2" stroke-width=".7" stroke-dasharray="1.6 1.2"/>`;
+    s += `<path d="M${R(x - 4)} 0v-15" stroke="${MAT.log.line}" stroke-width="1.1"/><rect x="${R(x - 10)}" y="-19" width="12" height="7" rx=".8" fill="${col[0]}"/>` + emblem(code, x - 4, -15.5, 2.2, '#f6f3ea');
+    return { s, top: -19, w: k.w + 10 };
+  }
+  const wy = -2.5 - k.h, full = () => {
+    let t = `<rect x="${R(x - 2)}" y="-2.5" width="${R(k.w + 4)}" height="2.5" fill="${MAT.ashlar.d}"/>` + wall(x, wy, k.w, k.h, 'ashlar');
+    if (kind === 'hall') { t += `<rect x="${R(x + 2)}" y="${R(wy + 2)}" width="${R(k.w - 4)}" height="${R(k.h - 2)}" fill="#6b6458"/>`; for (let i = 0; i < 5; i++) t += `<rect x="${R(x + 2.5 + i * (k.w - 7) / 4)}" y="${R(wy + 1)}" width="2.2" height="${R(k.h - 1)}" fill="#efeae0"/>`; }
+    else t += door(-2.6, -2.5 - 8, 5.2, 8);
+    if (kind === 'tower') { t += win(-1.2, wy + 6, 2.4, 5) + win(-1.2, wy + 15, 2.4, 5); }
+    t += roof(k.roof, x, wy, k.w, k.rh, col);
+    if (kind === 'cabin') { if (C.lit) C.lights.push(`<g transform="${C.tf}"><circle cx="0" cy="${R(wy - k.rh * .38)}" r="6" fill="url(#glow)"/><circle cx="0" cy="${R(wy - k.rh * .38)}" r="2.4" fill="${LIT}"/></g>`); t += `<circle cx="0" cy="${R(wy - k.rh * .38)}" r="2.4" fill="${GLASS}" stroke="#efeae0" stroke-width=".8"/>`; t += win(x + 2.5, wy + 5, 4, 5); }
+    if (kind === 'hall') t += emblem(code, 0, wy - k.rh * .38, 2.2, '#f6f3ea');
+    t += banner(kind === 'tower' ? -k.w / 2 - 6.5 : x + 1, wy + 1.5, code);
+    return t;
+  };
+  if (st === 1) {
+    const lit = C.lit; C.lit = false; const ghost = full(); C.lit = lit;
+    s += `<g opacity=".3">${ghost}</g>` + wall(x, -2.5 - k.h * .5, k.w, k.h * .5, 'ashlar') + scaffold(k.w, wy - k.rh * .6) + pennant(-x + 2, wy - k.rh * .6, col[0], 7);
+    return { s, top: wy - k.rh, w: k.w + 6 };
+  }
+  s += full();
+  if (st === 3) {
+    const aw = k.w * .55;
+    s = wall(-x - 1, -9, aw, 7, 'ashlar') + `<rect x="${R(-x - 1)}" y="-2.5" width="${R(aw + 1)}" height="2.5" fill="${MAT.ashlar.d}"/>` + roof('gable', -x - 1, -9, aw, 6, col) + s;
+    s += `<ellipse cx="${R(x - 4)}" cy="-3" rx="4.5" ry="3.4" fill="#4f6b52"/>` + pennant(0, wy - k.rh, col[0], 8);
+  }
+  return { s, top: wy - k.rh - (st === 3 ? 8 : 0), w: k.w + (st === 3 ? k.w * .55 : 4) };
+}
+
+/* Стройка и поломка */
+function scaffold(w, top) {
+  const x0 = -w / 2 - 2, x1 = w / 2 + 2, xs = [x0, x0 + (x1 - x0) / 3, x0 + 2 * (x1 - x0) / 3, x1];
+  let d = '';
+  xs.forEach(x => { d += `M${R(x)} 0V${R(top)}`; });
+  for (let y = -6; y > top + 2; y -= 8) d += `M${R(x0 - 1)} ${y}H${R(x1 + 1)}`;
+  d += `M${R(x0)} 0L${R(xs[1])} ${R(top * .55)}M${R(xs[2])} ${R(top * .55)}L${R(x1)} 0`;
+  return `<path d="${d}" stroke="#a5835b" stroke-width="1" fill="none" stroke-linecap="round"/>`;
+}
+const brokenMarks = r => `<path d="M${R(r.w * .1)} ${R(r.top * .55)}l6 -3 2 5 -5 2Z" fill="#3a3430"/><rect x="-6" y="-8" width="12" height="2" fill="#8d6a49" transform="rotate(-18 0 -7)"/><rect x="${R(r.w / 2 - 2)}" y="-1.8" width="11" height="1.8" fill="#8d6a49" transform="rotate(7 ${R(r.w / 2)} -1)"/>`;
+
+/* Люди */
+function person(x, y, s, col, o = {}) {
+  let t = `<g transform="${T(x, y, s)}"><g class="${o.walk && C.smoke ? 'walker' : ''}" style="animation-delay:-${o.delay || 0}s">`;
+  t += `<path d="M-1.5 -6L-2 0M1.5 -6L2 0" stroke="#3a3f45" stroke-width="1.5" stroke-linecap="round"/><path d="M-3 -5.5L-2.4 -12Q0 -13.2 2.4 -12L3 -5.5Z" fill="${col}"/><circle cy="-14.6" r="2.2" fill="#dcae8a"/><path d="M-2.3 -14.9a2.3 2.3 0 0 1 4.6 0Z" fill="${o.hair || '#4b3f35'}"/>`;
+  if (o.tool === 'hammer') t += `<path d="M2.6 -9l3.4 -3.4" stroke="#5e4431" stroke-width="1"/><rect x="5" y="-14" width="3.2" height="1.8" fill="#555c60" transform="rotate(-45 6.6 -13)"/>`;
+  if (o.basket) t += `<path d="M-5.5 -7h4l-.6 3h-2.8Z" fill="#b08a55"/>`;
+  return t + '</g></g>';
+}
+function player(x, y, s, sit = false) {
+  const lift = sit ? 5 : 0;
+  let t = `<g transform="${T(x, y, s)}">`;
+  t += sit ? `<rect x="-8" y="-3.4" width="14" height="3.4" rx="1.6" fill="${MAT.log.l}"/><path d="M-1 -4.5L5 -4.5L7 0" stroke="#2f3640" stroke-width="1.8" stroke-linecap="round" fill="none"/>` : `<path d="M7 -15L8.5 0" stroke="#5e4431" stroke-width="1.2" stroke-linecap="round"/><path d="M-1.4 -6L-2.4 0M1.4 -6L2.8 0" stroke="#2f3640" stroke-width="1.8" stroke-linecap="round"/>`;
+  t += `<g transform="translate(0 ${lift})"><rect x="-6.4" y="-13" width="4.6" height="7.5" rx="1.4" fill="#8a6a4a"/><rect x="-6.8" y="-15.2" width="5.4" height="2.6" rx="1.3" fill="#5f7f9a"/><path d="M-3.2 -5.5L-2.8 -13Q0 -14.4 2.8 -13L3.2 -5.5Z" fill="#b5432f"/><path d="M2.6 -11L6.5 -8.6" stroke="#b5432f" stroke-width="1.8" stroke-linecap="round"/><rect x="-3.1" y="-13.6" width="6.2" height="2" rx="1" fill="#d9a441"/><circle cy="-16" r="2.5" fill="#dcae8a"/><path d="M-4.6 -17.2h9.2M-2.8 -17.2q2.8 -5 5.6 0" fill="#6b5038" stroke="#6b5038" stroke-width="1.1"/></g>`;
+  return t + '</g>';
+}
+
+/* Природа */
+function conifer(x, y, s, P) {
+  let t = `<g transform="${T(x, y, s)}"><rect x="-1" y="-3" width="2" height="3.5" fill="#5e4431"/><path d="M0 -21L7.5 -8H-7.5Z" fill="${P.tree[0]}"/><path d="M0 -15L9 -2.5H-9Z" fill="${P.tree[1]}"/><path d="M0 -15V-2.5H9Z" fill="#1c1a16" opacity=".1"/>`;
+  if (C.season === 'winter') t += `<path d="M0 -21L2.8 -16.2H-2.8ZM-6 -4.5h12l1 1.6h-14Z" fill="#f6f8f8"/>`;
+  return t + '</g>';
+}
+function decid(x, y, s, P, r) {
+  let t = `<g transform="${T(x, y, s)}"><rect x="-1" y="-7" width="2" height="7.5" fill="#5e4431"/>`;
+  if (C.season === 'winter') t += `<path d="M0 -7V-17M0 -10l-5 -5M0 -12l4.5 -4.5M0 -14.5l-2.5 -3" stroke="${P.decid[0]}" stroke-width="1" stroke-linecap="round"/>`;
+  else { t += `<circle cy="-13" r="6.5" fill="${P.decid[0]}"/><circle cx="3.6" cy="-11" r="4.8" fill="${P.decid[1]}"/><circle cx="-3.6" cy="-10.5" r="4.4" fill="${P.decid[0]}"/>`; if (P.blossom) for (let i = 0; i < 5; i++) t += `<circle cx="${R((r() - .5) * 10)}" cy="${R(-9 - r() * 9)}" r=".9" fill="${P.blossom}"/>`; }
+  return t + '</g>';
+}
+const tuft = (x, y, col) => `<path d="M${R(x)} ${R(y)}l-3 -4.5M${R(x)} ${R(y)}v-5.5M${R(x)} ${R(y)}l3 -4.5" stroke="${col}" stroke-width="1.1" stroke-linecap="round"/>`;
+function cloud(x, y, s, col, i) { return `<g transform="${T(x, y, s)}"><g class="drift" style="animation-delay:-${i * 11}s" fill="${col}" opacity=".88"><ellipse rx="16" ry="5"/><ellipse cx="-7" cy="-4" rx="8" ry="5.5"/><ellipse cx="6" cy="-5" rx="9" ry="6.5"/></g></g>`; }
+
+/* Убранство */
+function lamp(x, y, s = 1) {
+  if (C.lit) C.lights.push(`<g transform="${T(x, y, s)}"><circle cy="-15.5" r="10" fill="url(#glow)"/><rect x="-1.6" y="-17.2" width="3.2" height="3.4" rx=".6" fill="${LIT}"/></g>`);
+  return `<g transform="${T(x, y, s)}"><path d="M0 0V-14" stroke="#3f3a34" stroke-width="1.2"/><rect x="-2.2" y="-17.8" width="4.4" height="4.4" rx=".8" fill="${GLASS}" stroke="#3f3a34" stroke-width=".8"/><path d="M-2.8 -17.8L0 -19.8L2.8 -17.8Z" fill="#3f3a34"/></g>`;
+}
+const bench = (x, y, s = 1) => `<g transform="${T(x, y, s)}"><rect x="-7" y="-7" width="14" height="1.6" fill="${MAT.plank.d}"/><rect x="-7" y="-4.2" width="14" height="1.8" fill="${MAT.plank.l}"/><path d="M-5.5 -2.4V0M5.5 -2.4V0M-5.5 -5.4v1.2M5.5 -5.4v1.2" stroke="${MAT.log.line}" stroke-width="1.1"/></g>`;
+const signpost = (x, y, s = 1) => `<g transform="${T(x, y, s)}"><path d="M0 0V-17" stroke="${MAT.log.line}" stroke-width="1.5"/><path d="M0 -16h9l2.4 2-2.4 2H0Z" fill="${MAT.plank.l}"/><path d="M0 -11h-8l-2.4 2 2.4 2H0Z" fill="${MAT.plank.d}"/></g>`;
+const flagpole = (x, y, s = 1) => `<g transform="${T(x, y, s)}"><path d="M0 0V-36" stroke="#4b4640" stroke-width="1.1"/><path d="M.5 -36Q6 -35 12 -32.5Q6 -31.5 .5 -29Z" fill="#9c4a35"/></g>`;
+const bridge = (x, y, s = 1) => `<g transform="${T(x, y, s)}"><path d="M-17 1Q0 -7 17 1V3.5Q0 -4.5 -17 3.5Z" fill="${MAT.plank.l}"/><path d="M-17 -4Q0 -12 17 -4M-12 -1.6v-4.8M0 -3.2v-5M12 -1.6v-4.8" stroke="${MAT.log.line}" stroke-width="1" fill="none"/></g>`;
+const fountain = (x, y, s, P) => `<g transform="${T(x, y, s)}">${wall(-11, -4.5, 22, 4.5, 'ashlar')}<ellipse cy="-4.5" rx="11" ry="2.6" fill="${P.water}"/><rect x="-1.3" y="-13" width="2.6" height="8.5" fill="${MAT.ashlar.l}"/><path d="M0 -13q-4 -3 -6.5 8.5M0 -13q4 -3 6.5 8.5" stroke="${P.water2}" stroke-width=".9" fill="none"/></g>`;
+
+/* Метки: светлые таблички поверх всех слоёв */
+function tag(x, y, kind, text) {
+  const w = R(text.length * 6.1 + (kind === 'name' ? 14 : 26)), fill = { timer: '#fbf3e1', repair: '#f7e4dc', name: '#fbfaf6' }[kind], st = { timer: '#8f5c0e', repair: '#9e432c', name: '#6d726c' }[kind];
+  const icon = kind === 'timer' ? 'i-clock' : kind === 'repair' ? 'i-hammer' : '';
+  return `<g transform="translate(${R(x - w / 2)} ${R(y - 20)})"><path d="M${R(w / 2 - 4)} 15.5l4 4 4-4Z" fill="${fill}" stroke="${st}" stroke-width=".9"/><rect width="${w}" height="16" rx="8" fill="${fill}" stroke="${st}" stroke-width=".9"/>${icon ? `<use href="#${icon}" x="5" y="2.5" width="11" height="11" style="color:${st}"/>` : ''}<text x="${icon ? 19 : 7}" y="11.6" font-size="11" font-weight="600" fill="#1f2420">${text}</text></g>`;
+}
+
+/* ============ Сборка слоёв ============ */
+function compose(o, draw) {
+  const id = 'sc' + (++SID), cam = o.cam, Tm = TIME[o.time], Wt = WEATHER[o.weather], N = NEG[o.neglect || 0];
+  C = { season: o.season, lit: (o.neglect || 0) < 3, smoke: (o.neglect || 0) < 2, fire: N.fire, glow: Tm.glow, lights: [], fires: [], labels: [], tf: '' };
+  const P = PAL[o.season];
+  const art = draw(P, id, o);
+  const box = `x="${cam.x}" y="${cam.y}" width="${cam.w}" height="${cam.h}"`;
+  let s = `<svg viewBox="${cam.x} ${cam.y} ${cam.w} ${cam.h}" role="img" aria-label="${o.label || ''}">`;
+  s += `<g${o.neglect ? ` filter="url(#sat${o.neglect})"` : ''}>${art}</g>`;
+  if (Tm.tint) s += `<rect ${box} fill="${Tm.tint}" opacity="${Tm.op}" style="mix-blend-mode:multiply"/>`;
+  if (Wt.dim) s += `<rect ${box} fill="${Wt.dim[0]}" opacity="${Wt.dim[1]}" style="mix-blend-mode:multiply"/>`;
+  const r = rng(SID * 31 + 7), clearish = !Wt.grey;
+  if (o.time === 'night' && clearish && o.hz !== undefined) {
+    s += '<g fill="#f3eedb">';
+    for (let i = 0; i < 26; i++) s += `<circle cx="${R(cam.x + r() * cam.w)}" cy="${R(cam.y + r() * (o.hz - cam.y) * .85)}" r="${R(.4 + r() * .6)}" opacity="${R(.5 + r() * .5)}"/>`;
+    const mx = cam.x + cam.w * .2, my = cam.y + (o.hz - cam.y) * .3, mr = Math.max(4, (o.hz - cam.y) * .1);
+    s += `<path d="M${R(mx)} ${R(my - mr)}A${R(mr)} ${R(mr)} 0 1 0 ${R(mx)} ${R(my + mr)}A${R(mr * .75)} ${R(mr * .75)} 0 1 1 ${R(mx)} ${R(my - mr)}Z"/></g>`;
+  }
+  if (Tm.lights) s += `<g opacity="${Tm.lights}">${C.lights.join('')}</g>`;
+  s += C.fires.join('');
+  if (Wt.rain) { s += `<g stroke="${Tm.rain}" stroke-width=".8" stroke-linecap="round" opacity=".7">`; const n = Math.round(Wt.rain * cam.w / 360); for (let i = 0; i < n; i++) s += `<path class="fall" style="animation-delay:-${R(r() * .8)}s" d="M${R(cam.x + r() * (cam.w + 20))} ${R(cam.y + r() * cam.h)}l-2.2 7.5"/>`; s += '</g>'; }
+  if (Wt.snow) { s += `<g fill="${Tm.snow}">`; const n = Math.round(Wt.snow * cam.w / 360); for (let i = 0; i < n; i++) s += `<circle class="flake" style="animation-delay:-${R(r() * 6)}s;animation-duration:${R(5 + r() * 3)}s" cx="${R(cam.x + r() * cam.w)}" cy="${R(cam.y + r() * cam.h)}" r="${R(.7 + r() * .9)}"/>`; s += '</g>'; }
+  if (Wt.fog) {
+    s += `<defs><linearGradient id="${id}fog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${Tm.fog}" stop-opacity="0"/><stop offset=".5" stop-color="${Tm.fog}"/><stop offset="1" stop-color="${Tm.fog}" stop-opacity="0"/></linearGradient></defs>`;
+    const hz = o.hz ?? cam.y + cam.h * .3;
+    [[hz - cam.h * .14, cam.h * .32, 1], [cam.y + cam.h * .5, cam.h * .3, .7], [cam.y + cam.h * .72, cam.h * .34, .55]].forEach(([y, h, k]) => { s += `<rect x="${cam.x}" y="${R(y)}" width="${cam.w}" height="${R(h)}" fill="url(#${id}fog)" opacity="${R(Wt.fog * k * 100) / 100}"/>`; });
+  }
+  if (Wt.flash) s += `<rect class="flash" ${box} fill="#f4f6ff" opacity="0"/>`;
+  s += C.labels.join('');
+  return s + '</svg>';
+}
+
+/* Общий фон долины: небо, гора с тропой, лес по горизонту */
+function valleyBack(P, id, o, cam, hz) {
+  const bot = cam.y + cam.h, W = WEATHER[o.weather], r = rng(cam.w * 13);
+  let s = `<defs><linearGradient id="${id}sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${W.grey ? '#c3c8ca' : P.sky[0]}"/><stop offset="1" stop-color="${W.grey ? '#dfe2e1' : P.sky[1]}"/></linearGradient><linearGradient id="${id}gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${P.ground[0]}"/><stop offset="1" stop-color="${P.ground[1]}"/></linearGradient></defs>`;
+  s += `<rect x="${cam.x}" y="${cam.y}" width="${cam.w}" height="${R(hz - cam.y + 2)}" fill="url(#${id}sky)"/>`;
+  const sh = hz - cam.y;
+  if (o.time !== 'night' && !W.grey) { const sx = o.time === 'dawn' ? cam.x + cam.w * .14 : o.time === 'dusk' ? cam.x + cam.w * .88 : cam.x + cam.w * .82, sy = o.time === 'day' ? cam.y + sh * .28 : hz - sh * .2; s += `<circle cx="${R(sx)}" cy="${R(sy)}" r="${R(Math.max(5, sh * .13))}" fill="#f7d77e"/>`; }
+  for (let i = 0; i < W.clouds; i++) s += cloud(cam.x + (i + .5) * cam.w / W.clouds + (r() - .5) * 30, cam.y + sh * (.18 + r() * .38), sh / 70 * (W.grey ? 1.4 : 1), W.grey ? '#d3d8da' : '#ffffff', i);
+  const top = cam.y + sh * .1, H = hz - top, x0 = cam.x, w = cam.w, pk = x0 + w * .6;
+  s += `<path d="M${x0} ${hz}V${R(hz - H * .35)}L${R(x0 + w * .15)} ${R(hz - H * .55)}L${R(x0 + w * .3)} ${R(hz - H * .4)}L${R(x0 + w * .42)} ${R(hz - H * .62)}L${R(pk)} ${R(top)}L${R(x0 + w * .78)} ${R(hz - H * .5)}L${R(x0 + w * .9)} ${R(hz - H * .62)}L${x0 + w} ${R(hz - H * .38)}V${hz}Z" fill="${P.far}"/>`;
+  s += `<path d="M${R(x0 + w * .34)} ${hz}L${R(pk)} ${R(top)}L${R(pk + w * .03)} ${hz}Z" fill="${P.mtn[0]}"/><path d="M${R(pk)} ${R(top)}L${R(x0 + w * .88)} ${hz}H${R(pk + w * .03)}Z" fill="${P.mtn[1]}"/>`;
+  s += `<path d="M${R(pk - w * .045)} ${R(top + H * .24)}L${R(pk)} ${R(top)}L${R(pk + w * .05)} ${R(top + H * .26)}L${R(pk + w * .015)} ${R(top + H * .2)}L${R(pk - w * .01)} ${R(top + H * .28)}Z" fill="${P.snowcap}"/>`;
+  s += `<path d="M${R(pk - w * .1)} ${hz - 1}L${R(pk + w * .05)} ${R(hz - H * .3)}L${R(pk - w * .05)} ${R(hz - H * .52)}L${R(pk + w * .02)} ${R(hz - H * .74)}" stroke="${P.path}" stroke-width=".9" stroke-dasharray="2 2" fill="none"/>`;
+  s += `<rect x="${cam.x}" y="${hz}" width="${cam.w}" height="${R(bot - hz)}" fill="url(#${id}gr)"/>`;
+  for (let x = cam.x - 4; x < cam.x + cam.w + 6; x += 7 + r() * 6) s += conifer(x, hz + 2 + r() * 2, .42 + r() * .2, P);
+  return s;
+}
+
+/* ============ Город ============ */
+const ROW_Y = [0, -50, -96, -138], ROW_S = [1, .9, .81, .73], TERRACE = { y: -174, s: .64 };
+const CAMS = { camp: { x: -92, y: -88, w: 184, h: 134, hz: -46 }, village: { x: -172, y: -252, w: 344, h: 300, hz: -190 }, city: { x: -180, y: -262, w: 360, h: 316, hz: -190 } };
+const STREAM = 'M150 -190C140 -150 172 -100 162 -60S128 22 40 30S-110 36 -200 28';
+
+function placeB(p) {
+  const s = ROW_S[p.r] * (p.k || 1), x = p.c * 62 * ROW_S[p.r] + (p.dx || 0), y = ROW_Y[p.r];
+  const broken = p.state === 'broken', build = p.state === 'build';
+  const tf = T(x, y, s, broken ? -3.5 : 0); C.tf = tf;
+  const keep = [C.lit, C.smoke]; if (broken || build) { C.lit = false; C.smoke = false; }
+  let r;
+  if (p.type === 'central') r = central(p.lvl);
+  else if (build) {
+    const tgt = B[p.type](p.lvl);
+    let inner = p.from ? B[p.type](p.from).s : `<g opacity=".3">${tgt.s}</g><rect x="${R(-tgt.w / 2 + 2)}" y="-2" width="${R(tgt.w - 4)}" height="2" fill="${STONE}"/>`;
+    inner += scaffold(tgt.w - 4, tgt.top + 4) + `<rect x="${R(tgt.w / 2 + 1)}" y="-2.4" width="10" height="1.2" fill="${MAT.plank.l}"/><rect x="${R(tgt.w / 2 + 1.5)}" y="-1.2" width="10" height="1.2" fill="${MAT.plank.d}"/>`;
+    r = { s: inner, top: tgt.top, w: tgt.w };
+  } else r = B[p.type](p.lvl);
+  if (broken) r.s += brokenMarks(r);
+  [C.lit, C.smoke] = keep;
+  let g = `<g transform="${tf}"${broken ? ' filter="url(#broken)"' : ''}>${shadow(r.w)}${r.s}</g>`;
+  if (build) g += person(x + (r.w / 2 + 7) * s, y + 1, s * .95, CLOTH[1], { tool: 'hammer' });
+  if (build) C.labels.push(tag(x, y + r.top * s - 3, 'timer', p.timer));
+  if (broken) C.labels.push(tag(x, y + r.top * s - 3, 'repair', 'ремонт'));
+  C.tf = '';
+  return g;
+}
+
+function drawTown(cfg) {
+  return (P, id, o) => {
+    const cam = CAMS[cfg.stage], hz = cam.hz, bot = cam.y + cam.h, r = rng(cfg.seed || 5), N = NEG[o.neglect || 0];
+    let s = valleyBack(P, id, o, cam, hz);
+    if (cfg.terrace) {
+      s += `<path d="M${cam.x} ${hz + 2}Q0 ${hz - 4} ${cam.x + cam.w} ${hz + 2}V-162H${cam.x}Z" fill="${P.terrace}"/><rect x="${cam.x}" y="-163" width="${cam.w}" height="3.4" fill="#a8a296"/>`;
+      let d = ''; for (let x = cam.x + 4; x < cam.x + cam.w; x += 9) d += `M${x} -163v3.4`; s += `<path d="${d}" stroke="#8f897d" stroke-width=".5"/>`;
+    }
+    s += `<path d="${STREAM}" stroke="${P.water}" stroke-width="7" fill="none" stroke-linecap="round"/><path d="${STREAM}" stroke="${P.water2}" stroke-width="1.2" fill="none" stroke-dasharray="5 9" opacity=".8"/>`;
+    const rows = cfg.rows;
+    let roads = `<path d="M-11 ${bot}L-5 6H5L11 ${bot}Z"/>`;
+    if (cfg.stage === 'camp') roads = `<ellipse cx="0" cy="3" rx="44" ry="9"/><path d="M-6 ${bot}L-3 10H3L6 ${bot}Z"/>`;
+    else { for (let i = 0; i < rows; i++) { const sc = ROW_S[i], w = 2.6 * 62 * sc; roads += `<rect x="${R(-w)}" y="${R(ROW_Y[i] + 1.5)}" width="${R(2 * w)}" height="${R(5 * sc)}" rx="2"/>`; } const yt = ROW_Y[rows - 1] + 2; roads += `<path d="M-33 6L${R(-31 * ROW_S[rows - 1] - 2)} ${yt}H${R(-31 * ROW_S[rows - 1] + 1.5)}L-29 6ZM29 6L${R(31 * ROW_S[rows - 1] - 1.5)} ${yt}H${R(31 * ROW_S[rows - 1] + 2)}L33 6Z"/>`; }
+    s += `<g fill="${P.path}" opacity="${N.road}">${roads}</g>`;
+    if (cfg.terrace) s += `<path d="M0 ${ROW_Y[rows - 1]}V-162" stroke="${P.path}" stroke-width="3" opacity="${N.road}"/>`;
+    for (let i = 0; i < N.tufts; i++) { const ry = cfg.stage === 'camp' ? r() * 12 - 4 : ROW_Y[Math.floor(r() * rows)] + 3 + r() * 3; s += tuft((r() - .5) * (cfg.stage === 'camp' ? 120 : 300), ry, P.tuft); }
+    if (cfg.terrace) cfg.landmarks.forEach((m, i) => { const n = cfg.landmarks.length, x = (i - (n - 1) / 2) * (cfg.slot || 31); C.tf = T(x, TERRACE.y, TERRACE.s); const lm = landmark(m.kind, m.track, m.st); s += `<g transform="${C.tf}">${shadow(lm.w)}${lm.s}</g>`; C.tf = ''; });
+    for (let ri = 3; ri >= 0; ri--) {
+      const sc = ROW_S[ri];
+      if (ri >= rows && cfg.stage !== 'camp') for (let j = 0; j < 14; j++) { const x = (r() - .5) * 340, y = ROW_Y[ri] + (r() - .5) * 18; s += (r() > .5 ? conifer : (a, b, c, d) => decid(a, b, c, d, r))(x, y, sc * (.9 + r() * .4), P); }
+      if (ri < rows) { [-1, 1].forEach(side => { for (let j = 0; j < 3; j++) { const x = side * (cam.w / 2 - 6 - r() * 16), y = (cfg.stage === 'camp' ? -40 + j * 22 : ROW_Y[ri] - 6 + j * 6); s += (j % 2 ? conifer : (a, b, c, d) => decid(a, b, c, d, r))(x, y, sc * (cfg.stage === 'camp' ? 1.15 : .95), P); } }); }
+      if (ri < rows) for (let c = -2; c <= 2; c++) if (!cfg.plots.some(p => p.r === ri && p.c === c) && cfg.stage !== 'camp') { const x = c * 62 * sc; s += `<ellipse cx="${R(x)}" cy="${R(ROW_Y[ri] - 3)}" rx="${R(18 * sc)}" ry="${R(4 * sc)}" fill="none" stroke="#5d5a4c" stroke-opacity=".45" stroke-width=".8" stroke-dasharray="2.5 2"/><path d="M${R(x - 16 * sc)} ${R(ROW_Y[ri] - 3)}v-5" stroke="${MAT.log.line}" stroke-width=".9"/>`; }
+      cfg.plots.filter(p => p.r === ri).sort((a, b) => a.c - b.c).forEach(p => { s += placeB(p); });
+      (cfg.people || []).filter(p => p.r === ri).forEach((p, k) => { s += person(p.x, ROW_Y[ri] + 5, sc * (p.s || 1), CLOTH[(k + ri * 2) % CLOTH.length], { walk: true, delay: k * 3 + ri, basket: p.basket, hair: p.hair }); });
+    }
+    (cfg.decor || []).forEach(d => {
+      if (d.t === 'lamp') s += lamp(d.x, d.y, d.s); if (d.t === 'bench') s += bench(d.x, d.y, d.s); if (d.t === 'sign') s += signpost(d.x, d.y, d.s);
+      if (d.t === 'flag') s += flagpole(d.x, d.y, d.s); if (d.t === 'bridge') s += bridge(d.x, d.y, d.s); if (d.t === 'fountain') s += fountain(d.x, d.y, d.s, P);
+      if (d.t === 'tent') { C.tf = T(d.x, d.y, d.s); s += `<g transform="${C.tf}">${shadow(26)}${B.house(1).s}</g>`; C.tf = ''; }
+    });
+    if (cfg.player) s += player(cfg.player.x, cfg.player.y, cfg.player.s, cfg.player.sit);
+    return s;
+  };
+}
+
+const LANDMARKS = [
+  { id: 'hq', title: 'prep-basic', kind: 'hall', track: 'none', st: 3 }, { id: 'layers', title: 'Схема слоёв', kind: 'cabin', track: 'B', st: 3 },
+  { id: 'cheatsheet', title: 'Шпаргалка Kotlin', kind: 'cabin', track: 'A', st: 3 }, { id: 'solutions', title: 'Решения задач', kind: 'hall', track: 'A', st: 2 },
+  { id: 'baseline', title: 'Замер', kind: 'tower', track: 'A', st: 2 }, { id: 'gradle', title: 'Анатомия Gradle', kind: 'cabin', track: 'C1', st: 2 },
+  { id: 'workflow', title: 'CI workflow', kind: 'tower', track: 'C2', st: 2 }, { id: 'tutor', title: 'Промпты репетитора', kind: 'cabin', track: 'E', st: 2 },
+  { id: 'data', title: 'Слой данных', kind: 'cabin', track: 'B', st: 1 }, { id: 'tests', title: 'Тесты', kind: 'cabin', track: 'E', st: 0 },
+];
+const ST_NAME = ['участок', 'стройка', 'построен', 'с пристройкой'];
+
+const TOWNS = {
+  camp: { stage: 'camp', rows: 1, seed: 3, plots: [{ r: 0, c: 0, type: 'central', lvl: 0 }], decor: [{ t: 'tent', x: -40, y: -6, s: 1.1 }], player: { x: 24, y: 6, s: 1.05, sit: true } },
+  village: {
+    stage: 'village', rows: 3, terrace: true, seed: 11, slot: 36,
+    landmarks: [LANDMARKS[2], LANDMARKS[1], LANDMARKS[5], { ...LANDMARKS[4], st: 1 }, { ...LANDMARKS[7], st: 0 }],
+    plots: [
+      { r: 0, c: -2, type: 'farm', lvl: 3 }, { r: 0, c: -1, type: 'house', lvl: 4 }, { r: 0, c: 0, type: 'central', lvl: 3 }, { r: 0, c: 1, type: 'bakery', lvl: 2, state: 'build', timer: '45 мин' }, { r: 0, c: 2, type: 'house', lvl: 3 },
+      { r: 1, c: -2, type: 'barn', lvl: 2 }, { r: 1, c: -1, type: 'house', lvl: 3 }, { r: 1, c: 0, type: 'well', lvl: 2 }, { r: 1, c: 1, type: 'woodshed', lvl: 2, state: 'broken' }, { r: 1, c: 2, type: 'sawmill', lvl: 2 },
+      { r: 2, c: -1, type: 'house', lvl: 2 }, { r: 2, c: 1, type: 'house', lvl: 2 },
+    ],
+    people: [{ r: 0, x: -95 }, { r: 0, x: 60, basket: true }, { r: 1, x: -30 }, { r: 1, x: 88 }, { r: 2, x: 8 }, { r: 2, x: -70, hair: '#a58a5a' }],
+    decor: [{ t: 'sign', x: -20, y: 22, s: 1 }, { t: 'bench', x: 22, y: 14, s: 1 }, { t: 'lamp', x: -14, y: 12, s: 1 }],
+    player: { x: 16, y: 26, s: 1.1 },
+  },
+  city: {
+    stage: 'city', rows: 4, terrace: true, seed: 23, slot: 33,
+    landmarks: LANDMARKS,
+    plots: [
+      { r: 0, c: -2, type: 'house', lvl: 5 }, { r: 0, c: -1, type: 'tavern', lvl: 5 }, { r: 0, c: 0, type: 'central', lvl: 5 }, { r: 0, c: 1, type: 'market', lvl: 4 }, { r: 0, c: 2, type: 'bakery', lvl: 4 },
+      { r: 1, c: -2, type: 'barn', lvl: 4 }, { r: 1, c: -1, type: 'house', lvl: 4 }, { r: 1, c: 0, type: 'well', lvl: 5 }, { r: 1, c: 1, type: 'workshop', lvl: 5, state: 'broken' }, { r: 1, c: 2, type: 'warehouse', lvl: 3 },
+      { r: 2, c: -2, type: 'farm', lvl: 4 }, { r: 2, c: -1, type: 'house', lvl: 4, from: 3, state: 'build', timer: '3 ч 12 мин' }, { r: 2, c: 0, type: 'mill', lvl: 5 }, { r: 2, c: 1, type: 'sawmill', lvl: 4 }, { r: 2, c: 2, type: 'woodshed', lvl: 3 },
+      { r: 3, c: -2, type: 'quarry', lvl: 4 }, { r: 3, c: -1, type: 'farm', lvl: 3 }, { r: 3, c: 0, type: 'watchtower', lvl: 5 }, { r: 3, c: 1, type: 'house', lvl: 4 }, { r: 3, c: 2, type: 'house', lvl: 3 },
+    ],
+    people: [{ r: 0, x: -70 }, { r: 0, x: 62, basket: true }, { r: 0, x: -128 }, { r: 0, x: 100 }, { r: 1, x: -40 }, { r: 1, x: 75 }, { r: 1, x: 130, hair: '#a58a5a' }, { r: 2, x: -100 }, { r: 2, x: 20 }, { r: 2, x: -55 }, { r: 3, x: -20 }, { r: 3, x: 110 }],
+    decor: [{ t: 'fountain', x: 0, y: 17, s: 1 }, { t: 'lamp', x: -22, y: 10, s: 1 }, { t: 'lamp', x: 22, y: 10, s: 1 }, { t: 'bench', x: -40, y: 18, s: 1 }, { t: 'flag', x: 44, y: 6, s: 1 }, { t: 'bridge', x: 0, y: 31, s: 1 }, { t: 'sign', x: -18, y: 40, s: 1 }],
+    player: { x: 26, y: 24, s: 1.1 },
+  },
+};
+/* Огород и поле: грядки — отдельный тип без корпуса на ур. 1 */
+B.farm = l => {
+  let s = ''; const rows = Math.min(l + 1, 4);
+  for (let i = 0; i < rows; i++) { const y = -1 - i * 3.2, w = 44 - i * 4; s += `<rect x="${R(-w / 2 - 6)}" y="${R(y - 2.2)}" width="${R(w)}" height="2.2" rx="1" fill="#7a6248"/>`; for (let x = -w / 2 - 4; x < w / 2 - 8; x += 4) s += `<circle cx="${R(x)}" cy="${R(y - 2.8)}" r="1.3" fill="${C.season === 'winter' ? '#e8ecea' : C.season === 'autumn' ? '#b39a4f' : '#5f8f4c'}"/>`; }
+  s += `<path d="M-30 0V-${R(rows * 3.2 + 3)}M24 0V-${R(rows * 3.2 + 3)}" stroke="${MAT.log.line}" stroke-width=".8"/>`;
+  if (l >= 2) { const r = sub(24, 0, .62, () => hut(22, 13, Math.min(l, 4), { storeys: 1, chimney: false, roofH: 9 })); s += r.s; }
+  return { s, top: l >= 2 ? -22 : -14, w: 60 };
+};
+
+/* ============ Маршрут ============ */
+function routeDraw(P, id, o) {
+  const W = WEATHER[o.weather], r = rng(77);
+  let s = `<defs><linearGradient id="${id}sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${W.grey ? '#c3c8ca' : P.sky[0]}"/><stop offset="1" stop-color="${W.grey ? '#dfe2e1' : P.sky[1]}"/></linearGradient><linearGradient id="${id}sl" gradientUnits="userSpaceOnUse" x1="0" y1="30" x2="0" y2="440"><stop offset="0" stop-color="${P.mtn[0]}"/><stop offset=".3" stop-color="${P.mtn[0]}"/><stop offset=".48" stop-color="${P.ground[0]}"/><stop offset="1" stop-color="${P.ground[1]}"/></linearGradient></defs>`;
+  s += `<rect width="360" height="440" fill="url(#${id}sky)"/>`;
+  if (o.time !== 'night' && !W.grey) s += `<circle cx="${o.time === 'dawn' ? 40 : o.time === 'dusk' ? 330 : 310}" cy="${o.time === 'day' ? 28 : 70}" r="10" fill="#f7d77e"/>`;
+  for (let i = 0; i < W.clouds; i++) s += cloud(30 + i * 60, 30 + r() * 40, 1, W.grey ? '#d3d8da' : '#fff', i);
+  s += `<path d="M0 440V210L70 160L130 120L190 72L232 34L262 52L300 96L360 150V440Z" fill="url(#${id}sl)"/><path d="M232 34L262 52L300 96L360 150V232L292 150Z" fill="#1c1a16" opacity=".07"/><path d="M214 50L232 34L250 45L241 47L233 43L224 53Z" fill="${P.snowcap}"/>`;
+  s += `<path d="M300 104C290 160 340 220 320 300S350 400 340 440" stroke="${P.water}" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+  for (let i = 0; i < 16; i++) { const x = 20 + r() * 320, y = 110 + r() * 90; if (y > 250 - x * .3) continue; s += `<g transform="${T(x, y, .7 + r() * .5)}"><path d="M-7 0L-4 -6L2 -8L7 -3L8 0Z" fill="${MAT.stone.l}"/><path d="M2 -8L7 -3L8 0L3 0Z" fill="${MAT.stone.d}"/></g>`; }
+  const trees = []; for (let i = 0; i < 46; i++) trees.push({ x: r() * 360, y: 200 + r() * 230 });
+  const nodes = [[66, 388], [176, 362], [284, 330], [236, 282], [128, 262], [58, 226], [150, 186], [262, 160], [304, 112]];
+  trees.filter(t => nodes.every(([x, y]) => Math.hypot(t.x - x, (t.y - y) * 1.6) > 30) && Math.hypot(t.x - 60, t.y - 425) > 50).sort((a, b) => a.y - b.y).forEach(t => { s += (t.y < 300 || r() > .5 ? conifer : (a, b, c, d) => decid(a, b, c, d, r))(t.x, t.y, .8 + (t.y - 200) / 400, P); });
+  [[12, 438], [34, 444], [58, 436], [84, 446], [104, 440]].forEach(([x, y], i) => { C.tf = T(x, y, .5); s += `<g transform="${C.tf}">${hut(30, 16, 3 + (i % 2)).s}</g>`; C.tf = ''; });
+  const pts = [[40, 426], ...nodes, [232, 40]];
+  let d = `M${pts[0][0]} ${pts[0][1]}`, walked = '';
+  for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; d += `Q${R((x0 + x1) / 2 + (i % 2 ? 18 : -18))} ${R((y0 + y1) / 2 + 8)} ${x1} ${y1}`; if (i === 3) walked = d; }
+  s += `<path d="${d}" stroke="${P.path}" stroke-width="5" fill="none" stroke-linecap="round" stroke-dasharray="1 9" opacity="${NEG[o.neglect || 0].road}"/><path d="${walked}" stroke="#8a6440" stroke-width="3.6" fill="none" stroke-linecap="round"/>`;
+  s += `<path d="M118 384q-6 10 -2 18" stroke="${P.path}" stroke-width="2" stroke-dasharray="1 4" fill="none"/>`;
+  C.tf = T(108, 408, .8); s += `<g transform="${C.tf}">${B.house(1).s}</g>`; C.tf = '';
+  const keep = C.fire; C.fire = 3; s += fire(126, 410, .6); C.fire = keep;
+  s += `<g transform="translate(150 186)"><ellipse cx="-14" cy="4" rx="6" ry="2.5" fill="${MAT.stone.d}"/><ellipse cx="-14" cy="1" rx="4" ry="2.2" fill="${MAT.stone.l}"/></g>` + flagpole(136, 190, .7) + flagpole(232, 40, .8);
+  s += player(296, 336, 1.15);
+  const node = ([x, y], n, st) => {
+    let t = `<g transform="translate(${x} ${y})">`;
+    if (st === 'current') t += `<circle r="10" fill="none" stroke="#b5432f" stroke-width="2" class="pulse"/><circle r="10.5" fill="#fbfaf6" stroke="#b5432f" stroke-width="2.6"/>`;
+    else if (st === 'core') t += `<circle r="10" fill="#2e5a46" stroke="#fbfaf6" stroke-width="1.6"/>`;
+    else t += `<circle r="9.5" fill="#fbfaf6" fill-opacity=".92" stroke="#5f665f" stroke-width="1.2"/>`;
+    return t + `<text y="3.8" text-anchor="middle" font-size="11" font-weight="650" fill="${st === 'core' ? '#fbfaf6' : '#1f2420'}">${n}</text></g>`;
+  };
+  nodes.forEach((p, i) => C.labels.push(node(p, i + 1, i < 2 ? 'core' : i === 2 ? 'current' : 'ahead')));
+  C.labels.push(`<path d="M176 351v-11" stroke="#4b4640" stroke-width="1"/><path d="M176.5 340l7 2.4-7 2.4Z" fill="#b8903a"/>`);
+  C.labels.push(tag(150, 172, 'name', 'Перевал · первый зелёный CI'), tag(232, 26, 'name', 'Вершина цикла 1'));
+  C.labels.push(`<g font-size="10.5" font-weight="650" letter-spacing=".08em" fill="#1f2420" stroke="#fbfaf6" stroke-width="3" paint-order="stroke"><text x="8" y="356">НЕДЕЛЯ 1</text><text x="8" y="206">НЕДЕЛЯ 2</text><text x="128" y="430">привал · 2 недели</text></g>`);
+  return s;
+}
+
+/* ============ Миниатюры для грамматики и листа постройки ============ */
+function mini(fn, o = {}) {
+  const cam = { x: -42, y: -74, w: 84, h: 84 };
+  return compose({ cam, season: o.season || 'summer', time: o.time || 'day', weather: 'clear', neglect: 0, label: o.label || '' }, (P) => {
+    let s = `<rect x="-42" y="-74" width="84" height="76" fill="${o.time === 'night' ? P.sky[0] : P.sky[1]}"/><rect x="-42" y="0" width="84" height="12" fill="${P.ground[0]}"/>`;
+    C.tf = '';
+    const r = fn(); return s + `<g>${shadow(r.w)}${r.s}</g>`;
+  });
+}
+
+/* ============ Страница ============ */
+function render() {
+  document.querySelectorAll('[data-kit]').forEach(p => {
+    p.appendChild(document.getElementById('kit-tpl').content.cloneNode(true));
+    p.querySelector('[data-theme-name]').textContent = p.classList.contains('th-dark') ? 'Тёмная тема' : 'Светлая тема';
+  });
+  const hud = [['i-coin', '412', 'монеты', 'ic-coin'], ['i-gem', '3', 'камни', 'ic-gem'], ['i-food', '24', 'еда'], ['i-wood', '18', 'дерево'], ['i-stone', '8', 'камень'], ['i-people', '6<small>/8</small>', 'жители'], ['i-hammer', '1<small>/2</small>', 'строители'], ['i-level', '3', 'уровень']];
+  document.querySelectorAll('[data-hud]').forEach(h => { h.setAttribute('aria-label', 'Ресурсы'); h.innerHTML = hud.map(([i, v, l, c]) => `<div><svg class="ic ${c || ''}" aria-hidden="true"><use href="#${i}"/></svg><b>${v}</b><span>${l}</span></div>`).join(''); });
+  document.querySelectorAll('[data-mini]').forEach(el => { const [t, l] = el.dataset.mini.split(':'); el.innerHTML = mini(() => B[t](+l), { label: `${t} ${l}` }); });
+
+  const scene = (key, o) => compose({ cam: CAMS[key], hz: CAMS[key].hz, label: `${LABEL.stage[key]}: ${LABEL.season[o.season]}, ${LABEL.time[o.time]}, ${LABEL.weather[o.weather]}`, ...o }, drawTown(TOWNS[key]));
+  document.getElementById('st-0').innerHTML = scene('camp', { season: 'summer', time: 'dusk', weather: 'clear', neglect: 0 });
+  document.getElementById('st-1').innerHTML = scene('village', { season: 'autumn', time: 'day', weather: 'cloudy', neglect: 0 });
+  document.getElementById('st-2').innerHTML = scene('city', { season: 'winter', time: 'day', weather: 'clear', neglect: 0 });
+  document.getElementById('today-town').innerHTML = scene('village', { season: 'autumn', time: 'dusk', weather: 'clear', neglect: 0 }) + '<figcaption>Город на «Сегодня»: тот же рисунок, без меток, по нажатию — вкладка «Город».</figcaption>';
+  document.getElementById('lm-list').innerHTML = LANDMARKS.map(m => `<span class="chip chip-track" style="--tc:var(--t-${m.track === 'none' ? 'A' : m.track})">${m.track === 'none' ? '' : `<svg class="ic"><use href="#em-${m.track}"/></svg>`}${m.title} · ${ST_NAME[m.st]}</span>`).join('');
+
+  document.getElementById('route').innerHTML = compose({ cam: { x: 0, y: 0, w: 360, h: 440 }, hz: 90, season: 'autumn', time: 'day', weather: 'clear', neglect: 0, label: 'Фрагмент маршрута: дни 1–9' }, routeDraw);
+  const ln = (inner) => `<svg viewBox="-12 -12 24 24" aria-hidden="true">${inner}</svg>`;
+  document.getElementById('route-legend').innerHTML = [
+    [ln('<circle r="10" fill="#2e5a46"/><path d="M-4.5 0l3 3 6-6" stroke="#fbfaf6" stroke-width="2" fill="none"/>'), 'сделан ядром'],
+    [ln('<circle r="11" fill="none" stroke="#2e5a46" stroke-width="1.2"/><circle r="8" fill="#2e5a46"/>'), 'с расширением'],
+    [ln('<circle r="9.5" fill="#fbfaf6" stroke="#2e5a46" stroke-width="1.6"/><path d="M-9.5 0A9.5 9.5 0 0 0 9.5 0Z" fill="#2e5a46"/>'), 'на минимуме'],
+    [ln('<circle r="10" fill="#fbfaf6" stroke="#b5432f" stroke-width="2.6"/>'), 'текущий'],
+    [ln('<circle r="9.5" fill="#fbfaf6" stroke="#5f665f" stroke-width="1.2"/>'), 'впереди'],
+    [ln('<circle r="9.5" fill="none" stroke="#5f665f" stroke-width="1.2" stroke-dasharray="2.5 2"/><path d="M-4 0h8" stroke="#5f665f" stroke-width="1.6"/>'), 'пропущен'],
+  ].map(([svg, t]) => `<span>${svg}${t}</span>`).join('');
+
+  const g = [];
+  const add = (fn, cap, o) => g.push(`<figure>${mini(fn, { ...o, label: cap })}<figcaption>${cap}</figcaption></figure>`);
+  ['палатка', 'шалаш', 'хижина', 'дом', 'двухэтажный дом'].forEach((n, i) => add(() => B.house(i + 1), `Жильё ${i + 1} · ${n}`));
+  [1, 2, 3, 4, 5].forEach(l => add(() => B.barn(l), `Амбар ${l}`));
+  [1, 2, 3, 4, 5].forEach(l => add(() => B.mill(l), `Мельница ${l}`));
+  [['tavern', 'Таверна'], ['bakery', 'Пекарня'], ['workshop', 'Мастерская'], ['market', 'Рынок'], ['warehouse', 'Склад'], ['sawmill', 'Лесопилка'], ['quarry', 'Каменоломня'], ['woodshed', 'Дровник'], ['well', 'Колодец'], ['watchtower', 'Башня'], ['farm', 'Огород']].forEach(([t, n]) => add(() => B[t](3), `${n} 3`));
+  [0, 1, 2, 3].forEach(st => add(() => landmark('cabin', 'B', st), `Ориентир · ${ST_NAME[st]}`));
+  add(() => landmark('hall', 'A', 2), 'Ориентир-зал, трек A'); add(() => landmark('tower', 'C2', 2), 'Ориентир-башня, трек C2');
+  ['Костёр', 'Костёр со скамьями', 'Очаг с навесом', 'Дом собраний', 'Ратуша', 'Ратуша с часами'].forEach((n, i) => add(() => { const r = central(i); return r; }, `Центр · ${n}`));
+  add(() => { const t = B.house(4); return { s: B.house(3).s + scaffold(t.w - 4, t.top + 4), top: t.top, w: t.w }; }, 'Дом 3 → 4 · стройка');
+  add(() => { C.lit = false; const r = B.house(4); r.s = `<g transform="rotate(-3.5)" filter="url(#broken)">${r.s}${brokenMarks(r)}</g>`; return r; }, 'Дом 4 · сломан');
+  add(() => B.house(4), 'Дом 4 · ночь', { time: 'night' });
+  add(() => B.house(4), 'Дом 4 · зима', { season: 'winter' });
+  document.getElementById('grammar').innerHTML = g.join('');
+}
+
+/* Живая сцена */
+const LIVE = { stage: 'village', season: 'autumn', time: 'day', weather: 'clear', neglect: '0' };
+function nowState() { const d = new Date(), h = d.getHours() + d.getMinutes() / 60, m = d.getMonth(); const season = m <= 1 || m === 11 ? 'winter' : m <= 4 ? 'spring' : m <= 7 ? 'summer' : 'autumn'; const [rise, set] = season === 'winter' ? [8.5, 16.5] : season === 'summer' ? [5, 21] : [7, 18.5]; const time = h < rise - 1 || h >= set + 1 ? 'night' : h < rise + 1 ? 'dawn' : h >= set - 1 ? 'dusk' : 'day'; return { season, time }; }
+function renderLive() {
+  const o = { ...LIVE, neglect: +LIVE.neglect };
+  document.getElementById('live').innerHTML = compose({ cam: CAMS[o.stage], hz: CAMS[o.stage].hz, label: 'Живая сцена', ...o }, drawTown(TOWNS[o.stage]));
+  document.getElementById('live-cap').textContent = `${LABEL.stage[o.stage]} · ${LABEL.season[o.season]} · ${LABEL.time[o.time]} · ${LABEL.weather[o.weather]} · запустение ${LABEL.neglect[o.neglect]}`;
+  document.querySelectorAll('.seg input').forEach(i => { i.checked = String(LIVE[i.name]) === i.value; });
+}
+function setupLive() {
+  document.querySelectorAll('.seg').forEach(fs => {
+    const k = fs.dataset.k;
+    Object.entries(LABEL[k]).forEach(([v, t]) => { fs.insertAdjacentHTML('beforeend', `<label><input type="radio" name="${k}" value="${v}"><span>${t}</span></label>`); });
+    fs.addEventListener('change', e => { LIVE[k] = e.target.value; renderLive(); });
+  });
+  document.getElementById('now-btn').addEventListener('click', () => { Object.assign(LIVE, nowState()); renderLive(); });
+  Object.assign(LIVE, nowState());
+  renderLive();
+}
+
+/* Тема интерфейса: авто по системе, или выбор вручную */
+function applyTheme(mode) {
+  const dark = mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.querySelectorAll('[data-theme-set]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeSet === mode)));
+  try { localStorage.setItem('mockup-theme', mode); } catch (e) {}
+}
+let mode = 'auto'; try { mode = localStorage.getItem('mockup-theme') || 'auto'; } catch (e) {}
+applyTheme(mode);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { let m = 'auto'; try { m = localStorage.getItem('mockup-theme') || 'auto'; } catch (e) {} if (m === 'auto') applyTheme('auto'); });
+document.querySelectorAll('[data-theme-set]').forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themeSet)));
+
+render();
+setupLive();
+</script>
+</body>
+</html>

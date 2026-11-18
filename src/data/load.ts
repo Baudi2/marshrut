@@ -1,0 +1,34 @@
+import type { OffplanEntry, Plan, Progress, Purchase, RawCycle } from './types'
+import offplanFile from '../../data/offplan.json'
+import purchasesFile from '../../data/purchases.json'
+import townFile from '../../data/town.json'
+import type { TownAction } from '../game/town'
+
+// Каждая папка data/cycles/<NN-id>/ — один цикл. Новый цикл подхватывается сам.
+const plans = import.meta.glob<Plan>('../../data/cycles/*/plan.json', {
+  eager: true,
+  import: 'default',
+})
+const progresses = import.meta.glob<Progress>('../../data/cycles/*/progress.json', {
+  eager: true,
+  import: 'default',
+})
+
+export const rawCycles: RawCycle[] = Object.keys(plans)
+  .sort()
+  .flatMap((path) => {
+    const progress = progresses[path.replace('plan.json', 'progress.json')]
+    if (!progress) return []
+    return [{ dir: path.split('/').slice(-2)[0], plan: plans[path], progress }]
+  })
+
+export const offplan = (offplanFile as { entries: OffplanEntry[] }).entries
+
+/** Покупки, уже записанные в репозиторий. */
+export const repoPurchases = (purchasesFile as { purchases: Purchase[] }).purchases
+
+/** Действия в городе, уже записанные в репозиторий. */
+export const repoTownActions = (townFile as { actions: TownAction[] }).actions
+
+/** Ремонты, уже записанные в репозиторий. */
+export const repoRepairs = (purchasesFile as { repairs?: Purchase[] }).repairs ?? []

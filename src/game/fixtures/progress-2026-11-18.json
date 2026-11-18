@@ -1,0 +1,402 @@
+{
+  "meta": {
+    "updatedAt": "2026-11-18",
+    "source": "чат с Claude: занятия 27.10, 11.11, 12.11, 17.11, 18.11",
+    "note": "Факты записаны со слов пользователя. Поля со значением null — данных пока нет; confirmed=false — в чате не подтверждено."
+  },
+  "position": {
+    "currentDay": 3,
+    "currentStep": 2,
+    "currentStepTitle": "команды Gradle в терминале (нумерация шагов — как в plan.json)",
+    "daysDone": 2,
+    "daysTotal": 30,
+    "startedAt": "2026-10-27",
+    "pauses": [
+      {
+        "from": "2026-10-28",
+        "to": "2026-11-10",
+        "days": 14,
+        "note": "пауза после дня 1; вернулся и продолжил с дня 2"
+      }
+    ]
+  },
+  "days": [
+    {
+      "day": 1,
+      "status": "core",
+      "dates": [
+        "2026-10-27"
+      ],
+      "confirmed": false,
+      "summary": "Старт: репозиторий prep-basic с папками algo/, design/, build/, notes/; новый pet-проект Empty Activity; шаги про архитектуру и схему слоёв в чате не подтверждались.",
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "(репозиторий и папки)",
+          "state": "created"
+        },
+        {
+          "repo": "pet-project",
+          "path": "(новый проект Empty Activity)",
+          "state": "created"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "design/00-layers.md",
+          "state": "unknown"
+        }
+      ]
+    },
+    {
+      "day": 2,
+      "status": "core",
+      "dates": [
+        "2026-11-11",
+        "2026-11-12"
+      ],
+      "confirmed": true,
+      "plannedMinutes": 45,
+      "wallClockMinutes": 100,
+      "summary": "Baseline. 11.11 — разбор формата занятий и шпаргалки; 12.11 — задача 1512 на таймере (14 мин, перебор), разбор решения через HashMap, переписывание с подглядыванием.",
+      "stepsDone": [
+        1,
+        2
+      ],
+      "stepsOpen": [
+        {
+          "n": 3,
+          "what": "сохранить algo/1512-number-of-good-pairs.kt, notes/baseline.md, algo/mistakes.md, коммит; самооценка 1–5 по пяти трекам"
+        }
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "algo/kotlin-cheatsheet.md",
+          "state": "given-by-tutor"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "algo/1512-number-of-good-pairs.kt",
+          "state": "not-saved"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "notes/baseline.md",
+          "state": "not-saved"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "algo/mistakes.md",
+          "state": "not-saved"
+        }
+      ]
+    },
+    {
+      "day": 3,
+      "status": "in_progress",
+      "dates": [
+        "2026-11-17",
+        "2026-11-18"
+      ],
+      "confirmed": true,
+      "plannedMinutes": 60,
+      "summary": "Gradle 1. Сделан шаг 1 из трёх: обзор сборки (task, фазы, плагины) и разбор файлов сборки своего проекта.",
+      "stepsDone": [
+        1
+      ],
+      "stepsOpen": [
+        {
+          "n": 2,
+          "what": "команды в терминале: tasks, assembleDebug, testDebugUnitTest, dependencies"
+        },
+        {
+          "n": 3,
+          "what": "заметка build/gradle-anatomy.md и коммит"
+        }
+      ],
+      "note": "Нумерация шагов — как в plan.json. В чате шаг 1 был разбит на три подшага: обзор сборки, четыре коротких файла, app/build.gradle.kts."
+    }
+  ],
+  "sessions": [
+    {
+      "date": "2026-10-27",
+      "from": "15:28",
+      "to": "18:25",
+      "day": 1,
+      "topics": [
+        "выбор pet-проекта",
+        "лимит GitHub Actions",
+        "два репозитория",
+        "создание папок в cmd",
+        "схема слоёв"
+      ]
+    },
+    {
+      "date": "2026-11-11",
+      "from": "17:48",
+      "to": "18:10",
+      "day": 2,
+      "topics": [
+        "что делать в день 2",
+        "новый формат: Claude ведёт планер и даёт по одному шагу",
+        "что такое шпаргалка"
+      ]
+    },
+    {
+      "date": "2026-11-12",
+      "from": "18:50",
+      "to": "20:12",
+      "day": 2,
+      "topics": [
+        "counts[c - 'a']++",
+        "getOrPut",
+        "задача 1512 на таймере",
+        "счётчик в HashMap"
+      ]
+    },
+    {
+      "date": "2026-11-17",
+      "from": "16:41",
+      "to": "17:53",
+      "day": 3,
+      "topics": [
+        "task, фазы сборки, плагины",
+        "settings.gradle.kts, корневой build.gradle.kts, wrapper, gradle.properties"
+      ]
+    },
+    {
+      "date": "2026-11-18",
+      "from": "15:30",
+      "to": null,
+      "day": 3,
+      "topics": [
+        "app/build.gradle.kts",
+        "идея сайта с геймификацией"
+      ]
+    }
+  ],
+  "leetcode": [
+    {
+      "id": 1512,
+      "title": "Number of Good Pairs",
+      "status": "solved-with-walkthrough",
+      "attempts": [
+        {
+          "date": "2026-11-12",
+          "kind": "timed-20",
+          "minutes": 14,
+          "result": "solved",
+          "selfSolved": true,
+          "approach": "перебор двумя циклами, O(n²) время, O(1) память",
+          "notes": "подсмотрел синтаксис цикла for; перепутал .length и .size; сначала не понял условие (индексы и значения)"
+        },
+        {
+          "date": "2026-11-12",
+          "kind": "optimal-10",
+          "minutes": 10,
+          "result": "not-solved",
+          "selfSolved": false,
+          "approach": "один проход, счётчик в HashMap",
+          "notes": "идею понял наполовину: не догадался, что ответ копится в отдельной переменной"
+        },
+        {
+          "date": "2026-11-12",
+          "kind": "rewrite-after-walkthrough",
+          "minutes": 8,
+          "result": "solved",
+          "selfSolved": false,
+          "notes": "переписал с подглядыванием; по памяти воспроизвести не смог"
+        }
+      ],
+      "nextRepeat": {
+        "day": 5,
+        "kind": "from-empty-editor"
+      }
+    },
+    {
+      "id": 1,
+      "title": "Two Sum",
+      "url": "https://leetcode.com/problems/two-sum/",
+      "status": "solved-before-plan",
+      "attempts": [],
+      "notes": "решал раньше, вне плана; поэтому baseline заменён на 1512"
+    }
+  ],
+  "baseline": {
+    "start": {
+      "day": 2,
+      "date": "2026-11-12",
+      "problemId": 1512,
+      "minutes": 14,
+      "result": "решил перебором; оптимальное решение сам не написал",
+      "selfAssessment": {
+        "algorithms": null,
+        "systemDesign": null,
+        "gradle": null,
+        "cicd": null,
+        "aiTutorAndTests": null
+      }
+    },
+    "final": {
+      "day": 28,
+      "problemId": 349,
+      "minutes": null,
+      "result": null,
+      "selfAssessment": {
+        "algorithms": null,
+        "systemDesign": null,
+        "gradle": null,
+        "cicd": null,
+        "aiTutorAndTests": null
+      }
+    }
+  },
+  "mistakes": [
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "problemId": 1512,
+      "text": "забыл синтаксис for (i in 0 until nums.size)"
+    },
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "problemId": 1512,
+      "text": "путал .length (строка) и .size (массив, список)"
+    },
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "problemId": 1512,
+      "text": "не знал приём «счётчик в HashMap + отдельная переменная для ответа»"
+    },
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "problemId": 1512,
+      "text": "в условии спутал индексы i, j и значения nums[i], nums[j]"
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "problemId": null,
+      "text": "спутал configuration cache с пропуском неизменившихся задач (UP-TO-DATE)"
+    }
+  ],
+  "knowledgeChecks": [
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "question": "Что делает counts[c - 'a']++ ?",
+      "firstAnswer": "не понял: что такое c, что значит ++",
+      "verdict": "wrong",
+      "answer": "В цикле for (c in s): c — очередная буква; c - 'a' — её номер в алфавите (0..25); ++ прибавляет 1 в ячейку этой буквы. Итог — счётчик букв."
+    },
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "question": "Что делает map.getOrPut(key) { default } ?",
+      "firstAnswer": "не знал",
+      "verdict": "wrong",
+      "answer": "Возвращает значение по ключу, а если ключа нет — кладёт начальное значение и возвращает его. Нужен для группировки и счётчиков."
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "question": "Что такое task в Gradle?",
+      "firstAnswer": "блок кода на DSL, превращает входные данные в выходные; задачи зависят друг от друга",
+      "verdict": "partial",
+      "answer": "Единица работы сборки (скомпилировать, упаковать APK). У задачи есть входы и выходы; если входы не менялись, она пропускается (UP-TO-DATE). DSL задачи настраивает, а не является ими."
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "question": "Три фазы сборки Gradle?",
+      "firstAnswer": "инициализация — читается settings (дальше не понял); конфигурация — строится граф задач; выполнение — задачи по графу",
+      "verdict": "partial",
+      "answer": "Инициализация: settings.gradle.kts → список модулей и репозитории. Конфигурация: выполняются build.gradle.kts, регистрируются задачи, строится граф. Выполнение: запускаются только задачи, нужные для запрошенной."
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "question": "Зачем нужны плагины (com.android.application)?",
+      "firstAnswer": "приносят задачи, нужные для сборки APK",
+      "verdict": "correct",
+      "answer": "Плагин приносит задачи и свой блок настроек (android { }). application — для модуля-приложения, library — для библиотеки."
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "question": "Что делает org.gradle.jvmargs=-Xmx2048m ?",
+      "firstAnswer": "не знаю",
+      "verdict": "wrong",
+      "answer": "Настройки процесса Gradle: до 2 ГБ памяти. При OutOfMemoryError на сборке увеличивают это число."
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "question": "Что делает org.gradle.configuration-cache=true ?",
+      "firstAnswer": "пропуск пересборки задач, которые не менялись",
+      "verdict": "wrong",
+      "answer": "Кэширует результат фазы конфигурации (граф задач): при следующей сборке build.gradle.kts не выполняются заново. Пропуск неизменившихся задач — отдельный механизм."
+    },
+    {
+      "date": "2026-11-18",
+      "track": "C1",
+      "question": "Чем отличаются compileSdk, minSdk и targetSdk?",
+      "firstAnswer": "назвал значения (37, 28, 37), различия не объяснил",
+      "verdict": "partial",
+      "answer": "compileSdk — с какой версией API компилируется код; minSdk — минимальная версия Android для установки; targetSdk — под поведение какой версии приложение заявлено и проверено."
+    },
+    {
+      "date": "2026-11-18",
+      "track": "C1",
+      "question": "implementation, testImplementation, androidTestImplementation?",
+      "firstAnswer": "implementation — зависимости модуля; testImplementation — юнит-тесты; androidTestImplementation — тесты в среде Android",
+      "verdict": "correct",
+      "answer": "testImplementation — локальные тесты в src/test на JVM; androidTestImplementation — тесты в src/androidTest на устройстве или эмуляторе."
+    },
+    {
+      "date": "2026-11-18",
+      "track": "C1",
+      "question": "Откуда берётся libs в libs.androidx.core.ktx?",
+      "firstAnswer": "версии библиотек переехали в один файл gradle/libs.versions.toml",
+      "verdict": "correct",
+      "answer": "Это каталог версий: Gradle генерирует типобезопасные ссылки libs.* из gradle/libs.versions.toml (секции versions, libraries, plugins)."
+    }
+  ],
+  "petProject": {
+    "kind": "новый Android-проект Empty Activity (Compose), один модуль app",
+    "onGitHub": null,
+    "gradleVersion": "9.5.0",
+    "compileSdk": 37,
+    "minSdk": 28,
+    "targetSdk": 37,
+    "rootPlugins": [
+      "Android application",
+      "Compose"
+    ],
+    "gradleProperties": [
+      "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8",
+      "org.gradle.configuration-cache=true",
+      "kotlin.code.style=official"
+    ],
+    "ci": {
+      "helloWorldWorkflow": null,
+      "buildWorkflow": null
+    },
+    "note": "Есть ещё личный KMP-проект (многомодульный, сделан через Claude Code) — отложен до цикла 2; там же закончился лимит минут GitHub Actions в приватных репозиториях."
+  },
+  "openItems": [
+    "День 2: сохранить файлы решения 1512, baseline.md и mistakes.md, сделать коммит.",
+    "День 2: самооценка 1–5 по пяти трекам (нужна для сравнения с днём 28).",
+    "День 3: шаги 2 и 3 (команды в терминале, заметка gradle-anatomy.md).",
+    "Подтвердить, что pet-проект лежит на GitHub (нужен публичный репозиторий для CI)."
+  ],
+  "observations": [
+    "Занятия идут дольше плана: день 2 занял около 100 минут в двух заходах при плане 45; три шага дня 3 — больше 70 минут.",
+    "Непонятная формулировка шага стоит больше времени, чем сама задача. Работает формат: что открыть → что сделать → когда готово → что написать.",
+    "Перебором задачу решает сам; приёмы на HashMap пока новые. Запоминание проверяется повтором с пустого редактора в следующем занятии.",
+    "Теорию по Gradle пересказывает своими словами в целом верно, пробелы точечные."
+  ]
+}

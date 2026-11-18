@@ -1,0 +1,1432 @@
+<title>Город в 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f3f0e8; --surface: #fbfaf6; --surface-2: #ece8dd;
+  --ink: #1d221f; --ink-2: #454c46; --muted: #5f665f;
+  --line: #dcd7c9; --line-strong: #bdb6a4; --focus: #1d221f;
+  --accent: #2e6a4e; --accent-hover: #255a41; --accent-soft: #dde9e0; --accent-ink: #1e4d37; --on-accent: #ffffff;
+  --warm: #8f5c0e; --warm-soft: #f4e8cd; --rust: #9e432c; --rust-soft: #f5e1d8;
+  --coin: #b8891f; --gem: #2f7fa3;
+  --t-A: #2f6db5; --t-B: #b65a2c; --t-C1: #2b7d5c; --t-C2: #9a7012; --t-E: #b0507a; --t-none: #5f6870;
+  --scene-bg: #cfd8d2;
+  /* Метки сцены светлые в обеих темах: они висят над картинкой, а не над интерфейсом */
+  --plate-bg: #fbfaf6; --plate-ink: #1f2420; --plate-line: #6d726c; --plate-warm: #8f5c0e; --plate-rust: #9e432c;
+  --icon-cut: #ffffff;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121614; --surface: #1a1f1c; --surface-2: #232a26;
+    --ink: #e9ece6; --ink-2: #c3c9c1; --muted: #9aa29a;
+    --line: #2d3530; --line-strong: #46514a; --focus: #e9ece6;
+    --accent: #7cc29d; --accent-hover: #93d0af; --accent-soft: #1f3529; --accent-ink: #b2e0c6; --on-accent: #0e1612;
+    --warm: #e2ad55; --warm-soft: #382c15; --rust: #e58d6f; --rust-soft: #3b231b;
+    --coin: #e0b44f; --gem: #7cc3e0;
+    --t-A: #6fa3e0; --t-B: #e08a5c; --t-C1: #5fbf94; --t-C2: #d9b04f; --t-E: #e08fb0; --t-none: #a3acb3;
+    --scene-bg: #1d2421;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121614; --surface: #1a1f1c; --surface-2: #232a26;
+  --ink: #e9ece6; --ink-2: #c3c9c1; --muted: #9aa29a;
+  --line: #2d3530; --line-strong: #46514a; --focus: #e9ece6;
+  --accent: #7cc29d; --accent-hover: #93d0af; --accent-soft: #1f3529; --accent-ink: #b2e0c6; --on-accent: #0e1612;
+  --warm: #e2ad55; --warm-soft: #382c15; --rust: #e58d6f; --rust-soft: #3b231b;
+  --coin: #e0b44f; --gem: #7cc3e0;
+  --t-A: #6fa3e0; --t-B: #e08a5c; --t-C1: #5fbf94; --t-C2: #d9b04f; --t-E: #e08fb0; --t-none: #a3acb3;
+  --scene-bg: #1d2421;
+}
+* { box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--sans); -webkit-text-size-adjust: 100%; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: 1.75rem; line-height: 1.2; font-weight: 650; }
+h2 { font-size: 1.375rem; line-height: 1.25; font-weight: 650; }
+h3 { font-size: 1.0625rem; line-height: 1.3; font-weight: 650; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 16px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.page-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; justify-content: space-between; padding: 8px 0 18px; border-bottom: 1px solid var(--line); }
+.page-head p { color: var(--ink-2); max-width: 62ch; margin-top: 6px; }
+section { padding: 24px 0 8px; display: grid; gap: 14px; }
+section > p { color: var(--ink-2); max-width: 70ch; }
+
+.btn { font: inherit; font-size: .9375rem; font-weight: 600; min-height: 44px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn:hover { background: var(--surface-2); }
+.btn-primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn[disabled] { background: var(--surface-2); color: var(--muted); border-color: transparent; cursor: not-allowed; }
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.ic { width: 20px; height: 20px; flex: none; color: var(--ink-2); }
+.ic-coin { color: var(--coin); } .ic-gem { color: var(--gem); }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: .8125rem; font-weight: 600; padding: 4px 10px 4px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); white-space: nowrap; }
+.chip .ic { width: 14px; height: 14px; color: var(--tc, var(--ink-2)); }
+.chip-warm { background: var(--warm-soft); border-color: transparent; color: var(--warm); }
+.chip-rust { background: var(--rust-soft); border-color: transparent; color: var(--rust); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; align-content: start; }
+
+/* HUD: значок и число, без подписей; полное название — для чтения с экрана и по нажатию */
+.hud { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.hud button { font: inherit; border: 0; background: var(--surface); color: var(--ink); min-height: 48px; padding: 6px 2px; display: grid; justify-items: center; align-content: center; gap: 2px; cursor: pointer; min-width: 0; }
+.hud button:hover { background: var(--surface-2); }
+.hud b { font-size: .875rem; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hud b small { font-weight: 500; color: var(--muted); font-size: .75rem; }
+.hud-say { min-height: 1.4em; font-size: .8125rem; color: var(--ink-2); padding: 2px 4px; }
+
+.live { display: grid; gap: 16px; }
+@media (min-width: 960px) { .live { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; } }
+.viewport { position: relative; height: min(64vh, 520px); min-height: 320px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--scene-bg); touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+@media (min-width: 960px) { .viewport { height: 600px; } }
+.viewport.dragging { cursor: grabbing; }
+.viewport canvas { display: block; width: 100%; height: 100%; }
+.plates { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.plate { position: absolute; transform: translate(-50%, calc(-100% - 6px)); display: inline-flex; align-items: center; gap: 4px; background: var(--plate-bg); color: var(--plate-ink); border: 1px solid var(--plate-line); border-radius: 999px; padding: 3px 9px 3px 7px; font: 600 12px/1.2 var(--sans); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.plate svg { width: 13px; height: 13px; }
+.plate.timer { border-color: var(--plate-warm); } .plate.timer svg { color: var(--plate-warm); }
+.plate.repair { border-color: var(--plate-rust); } .plate.repair svg { color: var(--plate-rust); }
+.plate.name { padding-left: 9px; }
+.map-tools { position: absolute; right: 8px; top: 8px; display: grid; gap: 6px; }
+.map-tools .btn { min-height: 40px; min-width: 40px; padding: 6px 10px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); border: 0; }
+.map-hint { position: absolute; left: 8px; bottom: 8px; right: 60px; font-size: .75rem; color: var(--plate-ink); background: color-mix(in srgb, var(--plate-bg) 88%, transparent); border-radius: 8px; padding: 4px 8px; width: fit-content; max-width: calc(100% - 70px); }
+.vp-msg { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--ink-2); }
+
+.controls { gap: 10px; }
+.seg { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.seg legend { font-size: .75rem; font-weight: 600; color: var(--muted); padding: 0; margin-bottom: 4px; width: 100%; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg span { display: inline-block; padding: 7px 10px; min-height: 36px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); font-size: .875rem; font-weight: 600; color: var(--ink-2); }
+.seg input:checked + span { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.seg input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.sheet-head { display: flex; justify-content: space-between; gap: 8px; align-items: start; }
+.pips { display: flex; gap: 3px; margin-top: 4px; }
+.pips i { width: 14px; height: 6px; border-radius: 2px; border: 1px solid var(--accent); }
+.pips i.on { background: var(--accent); }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: .875rem; }
+.facts dt { color: var(--muted); } .facts dd { margin: 0; }
+.cost { display: flex; flex-wrap: wrap; gap: 6px; }
+.cost span { display: inline-flex; align-items: center; gap: 4px; font-size: .875rem; font-variant-numeric: tabular-nums; padding: 3px 8px; border-radius: 8px; background: var(--surface-2); }
+.cost span .ic { width: 16px; height: 16px; }
+.cost span.short { background: var(--rust-soft); color: var(--rust); }
+.build { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--warm-soft); }
+.build-head { display: flex; gap: 8px; align-items: center; font-size: .875rem; font-weight: 600; }
+.build-head .ic { color: var(--warm); width: 18px; height: 18px; }
+.build-left { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--warm); white-space: nowrap; }
+.bar { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--warm) 22%, transparent); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--warm); border-radius: 999px; }
+.build.rust { background: var(--rust-soft); } .build.rust .ic, .build.rust .build-left { color: var(--rust); }
+
+.stages { display: grid; gap: 16px; }
+@media (min-width: 900px) { .stages { grid-template-columns: repeat(3, 1fr); } }
+.stages figure { margin: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.snap { position: relative; aspect-ratio: 4 / 3; background: var(--scene-bg); }
+.snap canvas { display: block; width: 100%; height: 100%; }
+.snap .plate { font-size: 11px; }
+.stages figcaption { font-size: .8125rem; color: var(--ink-2); padding: 8px 12px; border-top: 1px solid var(--line); }
+.notes { display: grid; gap: 8px; padding-left: 1.1em; margin: 0; color: var(--ink-2); max-width: 75ch; }
+</style>
+<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="currentColor"/><circle cx="12" cy="12" r="5.5" fill="none" style="stroke:var(--icon-cut)" stroke-opacity=".55" stroke-width="1.5"/></symbol>
+  <symbol id="i-gem" viewBox="0 0 24 24"><path d="M12 3 20 9 12 21 4 9Z" fill="currentColor"/><path d="M4 9H20M12 3 9 9l3 12 3-12-3-6" fill="none" style="stroke:var(--icon-cut)" stroke-opacity=".5" stroke-width="1"/></symbol>
+  <symbol id="i-food" viewBox="0 0 24 24"><path d="M3.5 16c0-5.2 3.8-8.5 8.5-8.5s8.5 3.3 8.5 8.5v2.5h-17Z" fill="currentColor"/><path d="M8.5 10.5 7.6 14M12 9.5V14M15.5 10.5l.9 3.5" style="stroke:var(--icon-cut)" stroke-opacity=".5" stroke-width="1.4" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="i-wood" viewBox="0 0 24 24"><rect x="2.5" y="8" width="14" height="9" rx="1.5" fill="currentColor"/><ellipse cx="17" cy="12.5" rx="4.2" ry="4.6" fill="currentColor"/><ellipse cx="17" cy="12.5" rx="2.2" ry="2.5" fill="none" style="stroke:var(--icon-cut)" stroke-opacity=".5" stroke-width="1.2"/></symbol>
+  <symbol id="i-brick" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="1.5" fill="currentColor"/><path d="M2.5 12h19M9 5v7M15 12v7" style="stroke:var(--icon-cut)" stroke-opacity=".5" stroke-width="1.3"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="3.6" fill="currentColor"/><path d="M4.5 20.5c.6-5.2 3.5-7.8 7.5-7.8s6.9 2.6 7.5 7.8Z" fill="currentColor"/></symbol>
+  <symbol id="i-hammer" viewBox="0 0 24 24"><path d="M4 5.5h9.5l2.5 2.5-2.5 2.5H4Z" fill="currentColor"/><rect x="8.5" y="10" width="3.2" height="11" rx="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="em-A" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></symbol>
+  <symbol id="em-B" viewBox="0 0 24 24"><path d="M12 3.5 21 20H3Z" fill="currentColor"/></symbol>
+  <symbol id="em-C1" viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="1.5" fill="currentColor"/></symbol>
+  <symbol id="em-C2" viewBox="0 0 24 24"><path d="M12 2.5 21.5 12 12 21.5 2.5 12Z" fill="currentColor"/></symbol>
+  <symbol id="em-E" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z" fill="currentColor"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="page-head">
+    <div>
+      <div class="eyebrow">Маршрут · город · черновик 2</div>
+      <h1>Город в 3D</h1>
+      <p>Тот же «полевой дневник», только объёмный: матовые фигуры из простых тел, один источник солнца, свет и тени по настоящему времени суток. Карту можно двигать и приближать.</p>
+    </div>
+    <div class="btn-row" role="group" aria-label="Тема интерфейса">
+      <button class="btn" data-theme-set="auto">Авто</button>
+      <button class="btn" data-theme-set="light">Светлая</button>
+      <button class="btn" data-theme-set="dark">Тёмная</button>
+    </div>
+  </header>
+
+  <section aria-labelledby="h-live">
+    <h2 id="h-live">Живая сцена</h2>
+    <div class="hud" id="hud" role="group" aria-label="Ресурсы"></div>
+    <p class="hud-say" id="hud-say" aria-live="polite"></p>
+    <div class="live">
+      <div>
+        <div class="viewport" id="vp" tabindex="0" role="application" aria-roledescription="карта" aria-label="Карта города. Перетащите, чтобы сдвинуть; щипок или кнопки — масштаб; стрелки и плюс-минус на клавиатуре тоже работают. Нажатие на постройку открывает её лист.">
+          <canvas id="cv"></canvas>
+          <div class="plates" id="plates"></div>
+          <div class="map-tools">
+            <button class="btn" id="z-in" aria-label="Приблизить">+</button>
+            <button class="btn" id="z-out" aria-label="Отдалить">−</button>
+            <button class="btn" id="z-home">к центру</button>
+            <button class="btn" id="z-slob">слобода</button>
+          </div>
+          <div class="map-hint" id="map-hint">Тяните карту пальцем. Страница листается за пределами карты.</div>
+          <p class="vp-msg" id="vp-msg" hidden></p>
+        </div>
+      </div>
+      <aside class="side" style="display:grid;gap:16px">
+        <div class="card" id="sheet" aria-live="polite"></div>
+        <div class="card controls">
+          <fieldset class="seg" data-k="stage"><legend>Стадия</legend></fieldset>
+          <fieldset class="seg" data-k="season"><legend>Сезон</legend></fieldset>
+          <fieldset class="seg" data-k="time"><legend>Время суток</legend></fieldset>
+          <fieldset class="seg" data-k="weather"><legend>Погода</legend></fieldset>
+          <fieldset class="seg" data-k="neglect"><legend>Запустение</legend></fieldset>
+          <div class="btn-row">
+            <button class="btn" id="now-btn"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Как сейчас</button>
+            <button class="btn" id="motion-btn" aria-pressed="true">Движение</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-stages">
+    <h2 id="h-stages">Три стадии</h2>
+    <p>Один и тот же участок земли. Карта не сжимается под экран: город растёт кварталами, а камера остаётся близкой. Обзорные снимки ниже сделаны с отдалённой камерой; нажатие открывает стадию в живой сцене.</p>
+    <div class="stages" id="stages"></div>
+  </section>
+
+  <section aria-labelledby="h-notes">
+    <h2 id="h-notes">Что смотреть</h2>
+    <ul class="notes">
+      <li>Кварталы: площадь с ратушей и рынком; жилой квартал на западе; поля и мельница на востоке; ремёсла в глубине у леса; причалы на ручье; слобода ориентиров за мостом, памятники прошлых циклов на берегу.</li>
+      <li>Ориентиры светлее всего в городе: тёсаный камень, крыша и стяг цвета трека, на стяге — фигура трека.</li>
+      <li>Ночь — это свет, а не тонировка: солнце садится, остаётся голубой рассеянный свет, окна, фонари и костёр.</li>
+      <li>Запустение без тумана: трава на улицах, блёклые краски, угли вместо огня, тёмные окна, жители дома.</li>
+    </ul>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- Мир: без DOM, поэтому его можно собрать и проверить в Node -->
+<script id="world-src">
+function createWorld(THREE) {
+  'use strict';
+  const D2R = Math.PI / 180;
+  const YAW = 20 * D2R, PITCH = 55 * D2R;
+  const DIR = new THREE.Vector3(Math.sin(YAW) * Math.cos(PITCH), Math.sin(PITCH), Math.cos(YAW) * Math.cos(PITCH));
+  const FWD = new THREE.Vector3(-Math.sin(YAW), 0, -Math.cos(YAW));
+  const RIGHT = new THREE.Vector3(Math.cos(YAW), 0, -Math.sin(YAW));
+  const BOUNDS = { x0: -44, x1: 44, z0: -46, z1: 30 };
+
+  /* ---------- Палитры ---------- */
+  const FIX = {
+    canvas: '#e2d9c2', log: '#8f6a4a', logD: '#7a5a3e', plank: '#b08659', batten: '#8d6a47', brick: '#b0644a', brickD: '#94523d',
+    stone: '#b5afa2', plaster: '#e6dfcd', timber: '#5e4632', thatch: '#c4a262', shingle: '#7a5f4e', tile: '#a5603f', door: '#4a3a2c',
+    glass: '#454d55', dark: '#3b3129', ashlar: '#dcd5c6', ashlarD: '#bdb6a6', cream: '#efe8d8', metal: '#5d6466', hay: '#d2b26a',
+    scaffold: '#bf9c6e', rope: '#d9cdb0', awn1: '#a5684f', awn2: '#5f7f86', awn3: '#9a8a4f', clock: '#efe9da', bronze: '#8a6a3a',
+    boat: '#8a5e3c', ash: '#8f8b84', flower1: '#c96f6a', flower2: '#d9b44a', flower3: '#8a76b0', snow: '#f6f8f8',
+    trk_A: '#4a78ad', trk_B: '#b9693f', trk_C1: '#3d8a6a', trk_C2: '#b8903a', trk_E: '#ad6888', trk_none: '#6b7378',
+  };
+  const SEASON = {
+    spring: { ground: '#b2c386', ground2: '#a3b87a', road: '#d9caa0', plaza: '#cec3a7', bank: '#bcbc90', water: '#77afbf', soil: '#7a6248', crop: '#79a85a', hedge: '#557a4a', rock: '#a7a398', mountain: '#94a08a', conifer: '#517c55', trunk: '#6a4e37', tuft: '#6f8f40', leaves: ['#93b86e', '#7ea860', '#e3c1c9', '#8db36a'] },
+    summer: { ground: '#a9b97f', ground2: '#9aae73', road: '#d6c59a', plaza: '#cbbfa3', bank: '#b4b48a', water: '#6fa7b8', soil: '#7a6248', crop: '#5f8f4c', hedge: '#4f6b45', rock: '#a39f95', mountain: '#8f9a86', conifer: '#4c7650', trunk: '#6a4e37', tuft: '#5f7f36', leaves: ['#6e9a5a', '#557f4a', '#7aa363'] },
+    autumn: { ground: '#bdb07c', ground2: '#ad9f6e', road: '#d3bf92', plaza: '#c9bc9e', bank: '#b5a679', water: '#6f9aa6', soil: '#76604a', crop: '#b39a4f', hedge: '#62704a', rock: '#a09d93', mountain: '#9a9a84', conifer: '#4b6a50', trunk: '#6a4e37', tuft: '#7f7a3c', leaves: ['#c88d44', '#a8642f', '#b9a24a', '#7f8a4a'] },
+    winter: { ground: '#e6ebeb', ground2: '#dbe2e2', road: '#c9c2b3', plaza: '#d2ccc0', bank: '#d8dedd', water: '#8eaab3', soil: '#a39a8e', crop: '#d9dedc', hedge: '#6f7f74', rock: '#b4b9ba', mountain: '#c9d0d2', conifer: '#46634f', trunk: '#5e4836', tuft: '#8c9a86', leaves: ['#8a7a6a', '#7d6f62'] },
+  };
+  const TIME = {
+    dawn:  { az: 110, el: 12, sun: '#ffc79a', si: .72, sky: '#e7c7bd', gnd: '#6a6050', hi: .5, bg: '#e6cfc4', win: .55, lamp: .5, fog: '#efddd2' },
+    day:   { az: 200, el: 55, sun: '#fff3e0', si: .8, sky: '#dde8ee', gnd: '#8b8a6f', hi: .52, bg: '#cfdbdf', win: 0, lamp: 0, fog: '#e9ecea' },
+    dusk:  { az: 250, el: 10, sun: '#ff9b66', si: .62, sky: '#d6a28c', gnd: '#4f463e', hi: .44, bg: '#d4a68e', win: .8, lamp: .8, fog: '#e2c9b7' },
+    night: { az: 160, el: 45, sun: '#9fb4dc', si: .17, sky: '#3a4a72', gnd: '#151a26', hi: .4, bg: '#1b2236', win: 1, lamp: 1, fog: '#3a4660' },
+  };
+  const WEATHER = {
+    clear: { sk: 1, hk: 1 }, cloudy: { sk: .72, hk: 1.06 }, overcast: { sk: .3, hk: 1.15, grey: .5 },
+    fog: { sk: .5, hk: 1.1, grey: .4, fog: true }, rain: { sk: .35, hk: 1, grey: .45, rain: 1 },
+    snow: { sk: .45, hk: 1.1, grey: .35, snow: 1 }, storm: { sk: .15, hk: .85, grey: .55, rain: 1.6, flash: true },
+  };
+  const NEGLECT = [
+    { fade: 0, tufts: 0, fire: 0, lit: true, smoke: true, people: true },
+    { fade: .22, tufts: 50, fire: 1, lit: true, smoke: true, people: true },
+    { fade: .48, tufts: 120, fire: 2, lit: true, smoke: false, people: false },
+    { fade: .7, tufts: 220, fire: 3, lit: false, smoke: false, people: false },
+  ];
+  function fadeColor(c, k) {
+    if (!k) return c;
+    const hsl = {}; c.getHSL(hsl);
+    c.setHSL(hsl.h, hsl.s * (1 - k), hsl.l + (0.8 - hsl.l) * k * .35);
+    return c;
+  }
+  let PAL = {}, LEAVES = [];
+  function makePalette(season, neglect) {
+    const src = Object.assign({}, FIX, SEASON[season]);
+    PAL = {};
+    for (const k in src) if (typeof src[k] === 'string') PAL[k] = fadeColor(new THREE.Color(src[k]), NEGLECT[neglect].fade);
+    LEAVES = SEASON[season].leaves.map(h => fadeColor(new THREE.Color(h), NEGLECT[neglect].fade));
+  }
+  const missingKeys = new Set();
+  function colorOf(ud) {
+    let c = PAL[ud.key];
+    if (!c) { missingKeys.add(ud.key); c = new THREE.Color('#ff00ff'); }
+    if (ud.broken) { c = fadeColor(c.clone(), .85).multiplyScalar(.82); }
+    return c;
+  }
+
+  /* ---------- Части ---------- */
+  const DUMMY = new THREE.MeshBasicMaterial();
+  let CTX = { winter: false, lit: true, smoke: true };
+  function mesh(g, geo, key, x, y, z, o) {
+    const m = new THREE.Mesh(geo, DUMMY);
+    m.position.set(x, y, z);
+    if (o) { if (o.rx) m.rotation.x = o.rx; if (o.ry) m.rotation.y = o.ry; if (o.rz) m.rotation.z = o.rz; if (o.s) m.scale.set(o.s[0], o.s[1], o.s[2]); }
+    m.userData.key = key; m.userData.bucket = (o && o.b) || 'solid';
+    g.add(m); return m;
+  }
+  function geoBox(w, h, d) { const q = new THREE.BoxGeometry(w, h, d); q.translate(0, h / 2, 0); return q; }
+  const box = (g, w, h, d, key, x, y, z, o) => mesh(g, geoBox(w, h, d), key, x, y, z, o);
+  function cyl(g, rt, rb, h, seg, key, x, y, z, o) { const q = new THREE.CylinderGeometry(rt, rb, h, seg); q.translate(0, h / 2, 0); return mesh(g, q, key, x, y, z, o); }
+  function cone(g, r, h, seg, key, x, y, z, o) { const q = new THREE.ConeGeometry(r, h, seg); q.translate(0, h / 2, 0); return mesh(g, q, key, x, y, z, o); }
+  function pyramid(g, w, h, d, key, x, y, z, o) { const q = new THREE.ConeGeometry(Math.SQRT1_2, 1, 4); q.rotateY(Math.PI / 4); q.translate(0, .5, 0); q.scale(w, h, d); return mesh(g, q, key, x, y, z, o); }
+  function ball(g, r, key, x, y, z, o) { return mesh(g, new THREE.IcosahedronGeometry(r, 0), key, x, y, z, o); }
+  function prismGeo(w, h, d) {
+    const a = w / 2, b = d / 2;
+    const v = [-a, 0, b, a, 0, b, a, h, 0, -a, 0, b, a, h, 0, -a, h, 0,
+      a, 0, -b, -a, 0, -b, -a, h, 0, a, 0, -b, -a, h, 0, a, h, 0,
+      a, 0, b, a, 0, -b, a, h, 0,
+      -a, 0, -b, -a, 0, b, -a, h, 0,
+      -a, 0, -b, a, 0, -b, a, 0, b, -a, 0, -b, a, 0, b, -a, 0, b];
+    const q = new THREE.BufferGeometry(); q.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); q.computeVertexNormals(); return q;
+  }
+  const prism = (g, w, h, d, key, x, y, z, o) => mesh(g, prismGeo(w, h, d), key, x, y, z, o);
+  /* Брус между двумя точками в плоскости XY (для раскосов, крестов на воротах) */
+  function beam(g, x1, y1, x2, y2, z, key, t = .08) {
+    const L = Math.hypot(x2 - x1, y2 - y1), q = new THREE.BoxGeometry(L, t, .05);
+    return mesh(g, q, key, (x1 + x2) / 2, (y1 + y2) / 2, z, { rz: Math.atan2(y2 - y1, x2 - x1) });
+  }
+  function anchor(g, type, x, y, z, data) { const a = new THREE.Object3D(); a.position.set(x, y, z); a.userData.anchor = type; Object.assign(a.userData, data || {}); g.add(a); return a; }
+  function snowPrism(g, w, h, d, y, o) { if (CTX.winter) prism(g, w + .04, h * .34, d * .34, 'snow', 0, y + h * .66 + .05, 0, Object.assign({ b: 'snow' }, o)); }
+  function win(g, x, y, z, side, w = .5, h = .6) {
+    const lit = CTX.lit, key = 'glass', b = lit ? 'win' : 'solid';
+    if (side) { box(g, .06, h, w, key, x, y, z, { b }); box(g, .1, .07, w + .12, 'timber', x, y - .07, z); }
+    else { box(g, w, h, .06, key, x, y, z, { b }); box(g, w + .12, .07, .1, 'timber', x, y - .07, z); }
+  }
+  const door = (g, x, y, z, w = .8, h = 1.45) => box(g, w, h, .06, 'door', x, y, z);
+  function bigDoor(g, y, z, w, h) {
+    box(g, w, h, .06, 'logD', 0, y, z);
+    beam(g, -w / 2, y + .05, w / 2, y + h - .05, z + .05, 'door'); beam(g, -w / 2, y + h - .05, w / 2, y + .05, z + .05, 'door');
+  }
+
+  /* ---------- Стены по материалу ---------- */
+  function wallBlock(g, kind, w, h, d, y) {
+    if (kind === 'log') {
+      const n = Math.max(3, Math.round(h / .34)), lh = h / n;
+      for (let i = 0; i < n; i++) { const k = i % 2 ? .07 : 0; box(g, w - k, lh, d - k, i % 2 ? 'logD' : 'log', 0, y + i * lh, 0); }
+      return;
+    }
+    box(g, w, h, d, kind, 0, y, 0);
+    if (kind === 'plank') {
+      for (let x = -w / 2 + .35; x < w / 2 - .2; x += .55) box(g, .07, h, .05, 'batten', x, y, d / 2 + .02);
+      for (let z = -d / 2 + .35; z < d / 2 - .2; z += .55) box(g, .05, h, .07, 'batten', w / 2 + .02, y, z);
+    }
+    if (kind === 'brick') for (let yy = y + .3; yy < y + h - .1; yy += .3) box(g, w + .02, .03, d + .02, 'brickD', 0, yy, 0);
+    if (kind === 'plaster') {
+      const z = d / 2 + .02;
+      [-w / 2 + .06, w / 2 - .06].forEach(x => box(g, .12, h, .06, 'timber', x, y, z));
+      box(g, w, .12, .06, 'timber', 0, y + h - .12, z); box(g, w, .1, .06, 'timber', 0, y, z);
+      beam(g, -w / 2 + .1, y + .1, -w / 2 + .9, y + h - .15, z + .02, 'timber', .1); beam(g, w / 2 - .1, y + .1, w / 2 - .9, y + h - .15, z + .02, 'timber', .1);
+    }
+  }
+
+  /* ---------- Корпус по уровню ----------
+     1 — навес из жердей и холста; 2 — сруб, солома; 3 — сруб, дранка, труба;
+     4 — доски на кирпичном цоколе; 5 — кирпичный низ, штукатурка с брусом, черепица, флажок */
+  const LV = { 2: { wall: 'log', roof: 'thatch' }, 3: { wall: 'log', roof: 'shingle' }, 4: { wall: 'plank', roof: 'shingle', plinth: 1 }, 5: { wall: 'plaster', roof: 'tile', plinth: 1 } };
+  function hut(g, lvl, o = {}) {
+    const L = LV[Math.max(2, lvl)], w = o.w || 3.6, d = o.d || 3, h = o.h || 2.1;
+    let y = 0;
+    if (L.plinth) { box(g, w + .24, .35, d + .24, 'brick', 0, 0, 0); y = .35; }
+    const storeys = o.storeys || (lvl === 5 ? 2 : 1);
+    let H;
+    if (storeys === 2) { const h1 = h * .95, h2 = h * .85; wallBlock(g, lvl >= 5 ? 'brick' : 'log', w, h1, d, y); wallBlock(g, L.wall, w, h2, d, y + h1); box(g, w + .1, .1, d + .1, 'timber', 0, y + h1 - .05, 0); H = h1 + h2; }
+    else { wallBlock(g, L.wall, w, h, d, y); H = h; }
+    const top = y + H, fz = d / 2 + .03;
+    if (o.door === 'big') bigDoor(g, y, fz, Math.min(1.7, w * .4), Math.min(1.9, h * .85));
+    else if (o.door === 'open') box(g, w * .5, h * .72, .05, 'dark', 0, y, fz);
+    else if (o.door !== 'none') door(g, o.dx || 0, y, fz);
+    const nw = lvl === 2 ? 1 : lvl >= 3 ? 2 : 0, wy = y + h * .45;
+    if (nw >= 1) win(g, -w * .3, wy, fz);
+    if (nw >= 2 && o.door !== 'open') win(g, w * .3, wy, fz);
+    if (lvl >= 3) win(g, w / 2 + .03, wy, 0, true);
+    if (storeys === 2) [-w * .32, 0, w * .32].forEach(x => win(g, x, y + h * .95 + h * .3, fz));
+    const ov = .28, rw = w + 2 * ov, rd = d + 2 * ov, rh = o.rh || d * .45, rk = o.roofKey || L.roof;
+    if (lvl >= 3 && o.chimney !== false) { box(g, .42, rh + .5, .42, 'brick', w * .25, top, -d * .15); anchor(g, 'smoke', w * .25, top + rh + .6, -d * .15); }
+    if (o.roof === 'hip') { pyramid(g, rw, rh, rd, rk, 0, top, 0); if (CTX.winter) pyramid(g, rw * .36, rh * .36, rd * .36, 'snow', 0, top + rh * .64 + .05, 0, { b: 'snow' }); }
+    else { prism(g, rw, rh, rd, rk, 0, top, 0); snowPrism(g, rw, rh, rd, top); }
+    let peak = top + rh;
+    if (lvl === 5 && o.flag !== false) { box(g, .06, 1.1, .06, 'timber', w * .42, top + rh * .5, 0); anchor(g, 'pennant', w * .42, top + rh * .5 + 1.05, 0, { color: '#9c4a35' }); peak += .9; }
+    return { top: peak, wallTop: top, rh };
+  }
+  function shelter(g, w = 3, d = 2.4, h = 1.9) {
+    [[-w / 2 + .15, d / 2 - .15, h], [w / 2 - .15, d / 2 - .15, h], [-w / 2 + .15, -d / 2 + .15, h * .6], [w / 2 - .15, -d / 2 + .15, h * .6]]
+      .forEach(([x, z, hh]) => cyl(g, .06, .07, hh, 5, 'log', x, 0, z));
+    const ang = Math.atan2(h * .4, d), len = Math.hypot(d, h * .4) + .3;
+    box(g, w + .2, .05, len, 'canvas', 0, h * .8 - .03, 0, { rx: -ang });
+    if (CTX.winter) box(g, w + .16, .05, len * .9, 'snow', 0, h * .8 + .02, 0, { rx: -ang, b: 'snow' });
+    return { top: h + .1 };
+  }
+  function logPile(g, x, z, n, len = 1.4) {
+    const rows = n >= 6 ? [3, 2, 1] : n >= 3 ? [2, 1] : [1];
+    rows.forEach((k, j) => { for (let i = 0; i < k; i++) cyl(g, .17, .17, len, 6, 'log', x + (i - (k - 1) / 2) * .36, .17 + j * .3, z - len / 2, { rx: Math.PI / 2 }); });
+  }
+  const crate = (g, x, z, y = 0) => { box(g, .5, .5, .5, 'plank', x, y, z); beam(g, x - .25, y + .02, x + .25, y + .48, z + .26, 'batten', .05); };
+  const barrel = (g, x, z) => { cyl(g, .26, .26, .7, 8, 'log', x, 0, z); cyl(g, .27, .27, .05, 8, 'metal', x, .15, z); cyl(g, .27, .27, .05, 8, 'metal', x, .52, z); };
+  const bale = (g, x, z) => cyl(g, .38, .38, .9, 8, 'hay', x, .38, z - .45, { rx: Math.PI / 2 });
+  const anvil = (g, x, z) => { box(g, .3, .45, .3, 'metal', x, 0, z); box(g, .6, .15, .3, 'metal', x, .45, z); };
+  function hangSign(g, x, y, z, key) { box(g, .06, .06, .7, 'timber', x, y, z + .35); box(g, .5, .36, .05, 'plank', x, y - .45, z + .62); box(g, .22, .14, .07, key || 'dark', x, y - .33, z + .62); }
+
+  /* ---------- Типы ---------- */
+  const B = {
+    house(g, l) {
+      if (l === 1) { prism(g, 2.6, 1.7, 2.4, 'canvas', 0, 0, 0, { ry: Math.PI / 2 }); prism(g, .05, .95, .7, 'door', 0, 0, 1.22, { ry: Math.PI / 2 }); if (CTX.winter) prism(g, 2.64, .58, .82, 'snow', 0, 1.17, 0, { ry: Math.PI / 2, b: 'snow' }); cyl(g, .03, .03, .5, 4, 'log', 0, 1.6, 1.25); return { top: 2.1 }; }
+      if (l === 2) { prism(g, 2.8, 2.3, 3, 'thatch', 0, 0, 0, { ry: Math.PI / 2 }); prism(g, .05, 1, .8, 'door', 0, 0, 1.42, { ry: Math.PI / 2 }); cyl(g, .05, .05, 1, 5, 'log', -.2, 2, 1.3, { rz: .5 }); cyl(g, .05, .05, 1, 5, 'log', .2, 2, 1.3, { rz: -.5 }); if (CTX.winter) prism(g, 2.84, .78, 1.02, 'snow', 0, 1.57, 0, { ry: Math.PI / 2, b: 'snow' }); return { top: 2.9 }; }
+      return hut(g, l, l === 3 ? { w: 3.2, d: 2.8, h: 2 } : l === 4 ? { w: 3.6, d: 3, h: 2.2 } : { w: 3.6, d: 3.2, h: 2.1 });
+    },
+    garden(g, l) {
+      const shed = l >= 3, rows = Math.min(l + 2, 5), bl = shed ? 3.2 : 4.2, bx = shed ? -.7 : 0;
+      for (let i = 0; i < rows; i++) { const z = 1.9 - i * .85; box(g, bl, .18, .5, 'soil', bx, 0, z); for (let x = bx - bl / 2 + .3; x < bx + bl / 2 - .1; x += .5) ball(g, .17, 'crop', x, .3, z); }
+      if (l >= 2) { for (let x = -2.6; x <= 2.61; x += 1.3) cyl(g, .05, .05, .7, 4, 'log', x, 0, 2.6); box(g, 5.3, .06, .05, 'log', 0, .55, 2.6); }
+      if (shed) { const s = new THREE.Group(); s.position.set(1.9, 0, -1.3); s.scale.setScalar(.5); g.add(s); hut(s, Math.min(l, 4), { w: 2.6, d: 2.4, h: 2, chimney: false }); }
+      if (l >= 4) { cyl(g, .04, .04, 1.6, 4, 'log', bx + 1.1, 0, .4); box(g, .8, .06, .06, 'log', bx + 1.1, 1.2, .4); ball(g, .16, 'hay', bx + 1.1, 1.6, .4); }
+      if (l >= 5) barrel(g, 2.4, 1.5);
+      return { top: shed ? 2.4 : 1.6 };
+    },
+    barn(g, l) {
+      if (l === 1) { const r = shelter(g, 3, 2.4); bale(g, -.6, .3); bale(g, .5, .3); return r; }
+      const r = hut(g, l, { w: 4, d: 3.4, h: 2.4, door: 'big', chimney: false, storeys: 1, rh: 1.9 });
+      if (l >= 3) box(g, .06, .6, .6, 'dark', 2.31, r.wallTop + .35, 0);
+      if (l <= 3) bale(g, -1.5, 2.6);
+      return r;
+    },
+    sawmill(g, l) {
+      if (l === 1) { const r = shelter(g, 2.8, 2.2); logPile(g, 0, .6, 3, 1.2); return r; }
+      const r = hut(g, l, { w: 3.2, d: 2.6, h: 2, door: 'open', chimney: false, storeys: 1 });
+      logPile(g, 2.35, 1.6, l >= 3 ? 6 : 3, 1.6);
+      if (l >= 3) { box(g, 1, .7, .5, 'plank', -1, 0, 1.9); cyl(g, .42, .42, .04, 10, 'metal', -1, .9, 1.9, { rx: Math.PI / 2 }); }
+      if (l >= 5) crate(g, -2.3, 2.2);
+      return r;
+    },
+    woodshed(g, l) {
+      if (l === 1) { const r = shelter(g, 2.6, 2); logPile(g, 0, .5, 3, 1); return r; }
+      const w = [0, 0, 3, 3.4, 3.8, 4][l], d = 1.8, h = 1.6 + .15 * l, L = LV[l];
+      wallBlock(g, L.wall === 'plaster' ? 'plank' : L.wall, w, h, .3, 0);
+      [-w / 2 + .1, w / 2 - .1].forEach(x => cyl(g, .07, .07, h * .75, 5, 'log', x, 0, d - .2));
+      const rows = Math.min(l, 4);
+      for (let j = 0; j < rows; j++) { box(g, w - .4, .3, 1.1, 'logD', 0, j * .32, .75); for (let x = -w / 2 + .35; x < w / 2 - .3; x += .32) cyl(g, .14, .14, .04, 6, 'log', x, j * .32 + .15, 1.31, { rx: Math.PI / 2 }); }
+      const ang = Math.atan2(h * .25, d + .4);
+      box(g, w + .4, .08, d + .7, L.roof, 0, h * .87, d / 2 - .1, { rx: ang });
+      if (CTX.winter) box(g, w + .36, .06, d + .6, 'snow', 0, h * .87 + .07, d / 2 - .1, { rx: ang, b: 'snow' });
+      return { top: h + .3 };
+    },
+    well(g, l) {
+      const ring = l === 1 ? 'stone' : l <= 3 ? 'log' : 'brick';
+      cyl(g, .75, .8, .7, 8, ring, 0, 0, 0); cyl(g, .62, .62, .02, 8, 'water', 0, .66, 0);
+      if (l >= 2) { cyl(g, .06, .06, 1.9, 5, 'log', -.78, 0, 0); cyl(g, .06, .06, 1.9, 5, 'log', .78, 0, 0); box(g, 1.7, .08, .08, 'log', 0, 1.6, 0); box(g, .25, .25, .25, 'plank', 0, 1.1, 0); }
+      if (l >= 3) { prism(g, 2, .75, 1.7, l >= 5 ? 'tile' : l >= 4 ? 'shingle' : 'thatch', 0, 1.9, 0); snowPrism(g, 2, .75, 1.7, 1.9); }
+      if (l >= 5) { box(g, 1.4, .35, .5, 'brick', 1.7, 0, .6); box(g, .3, .06, .06, 'metal', 1, 1.6, 0); }
+      return { top: l >= 3 ? 2.8 : l >= 2 ? 2 : .8 };
+    },
+    warehouse(g, l) {
+      if (l === 1) { const r = shelter(g, 3.2, 2.4); crate(g, -.7, .2); crate(g, 0, .2); crate(g, .7, .2); crate(g, -.35, .2, .5); return r; }
+      const r = hut(g, l, { w: 4, d: 3.2, h: 2.2, roof: 'hip', door: 'big', chimney: false, storeys: 1, rh: 1.3 });
+      crate(g, -1.5, 2.4); crate(g, -.9, 2.4); if (l >= 3) crate(g, -1.2, 2.4, .5);
+      return r;
+    },
+    brickyard(g, l) {
+      const kh = 1.4 + .25 * l;
+      cyl(g, .55, .9, kh, 8, 'brick', -1.3, 0, -.8); cyl(g, .22, .26, 1, 6, 'brickD', -1.3, kh, -.8); anchor(g, 'smoke', -1.3, kh + 1.1, -.8);
+      for (let i = 0; i < Math.min(l + 1, 5); i++) box(g, .7, .3 + (i % 2) * .1, .45, 'brick', .3 + (i % 3) * .85, 0, .6 + Math.floor(i / 3) * .9);
+      if (l >= 2) { [[-.2, -.2], [2.4, -.2], [-.2, 2], [2.4, 2]].forEach(([x, z]) => cyl(g, .06, .06, 1.7, 5, 'log', x, 0, z)); box(g, 3, .07, 2.7, l >= 4 ? 'tile' : 'thatch', 1.1, 1.7, .9); }
+      if (l >= 4) { cyl(g, .45, .7, 1.6, 8, 'brick', -1.6, 0, 1.6); }
+      return { top: kh + 1.2 };
+    },
+    workshop(g, l) {
+      if (l === 1) { const r = shelter(g, 2.8, 2.2); anvil(g, 0, .3); return r; }
+      const r = hut(g, l, { w: 3.4, d: 2.8, h: 2.1, door: 'open', storeys: l >= 5 ? 2 : 1 });
+      anvil(g, 2.3, 1.6);
+      if (l >= 3) hangSign(g, -1.75, r.wallTop - .2, 1.4, 'metal');
+      return r;
+    },
+    pier(g, l) {
+      /* Перед участка смотрит на воду (+z) */
+      const len = 3 + .4 * l;
+      box(g, 1.6, .15, len, 'plank', .6, .35, 1 + len / 2 - .5);
+      for (let z = 1; z < len + .5; z += 1.2) { cyl(g, .08, .08, .7, 5, 'log', -.12, -.2, z); cyl(g, .08, .08, .7, 5, 'log', 1.32, -.2, z); }
+      if (l >= 2) { box(g, .7, .3, 1.8, 'boat', 2.1, .02, 3.4); box(g, .5, .08, 1.5, 'dark', 2.1, .3, 3.4); }
+      if (l >= 3) { [-1.8, -.6].forEach(x => cyl(g, .05, .05, 1.4, 4, 'log', x, 0, 1.6)); box(g, 1.4, .05, .05, 'log', -1.2, 1.3, 1.6); for (let i = 0; i < 4; i++) box(g, .1, .35, .05, 'metal', -1.7 + i * .3, .9, 1.6); }
+      if (l >= 4) { const s = new THREE.Group(); s.position.set(-1.2, 0, -1.2); s.scale.setScalar(.62); g.add(s); hut(s, Math.min(l, 5), { w: 2.8, d: 2.4, h: 2 }); }
+      else box(g, .5, .5, .5, 'plank', -1.4, 0, -.6);
+      return { top: l >= 4 ? 3.2 : 1.5 };
+    },
+    mill(g, l) {
+      if (l === 1) { const r = shelter(g, 2.6, 2.2); cyl(g, .55, .55, .25, 10, 'stone', 0, 0, 0); cyl(g, .55, .55, .2, 10, 'stone', 0, .3, 0); return r; }
+      const rb = 1.2 + .08 * l, rt = rb * .7, h = 2.6 + .5 * l, key = l >= 5 ? 'plaster' : l >= 4 ? 'plank' : 'log';
+      let y = 0;
+      if (l >= 4) { cyl(g, rb + .12, rb + .12, .35, 8, 'brick', 0, 0, 0); y = .35; }
+      cyl(g, rt, rb, h, 8, key, 0, y, 0);
+      if (key === 'log') for (let yy = y + .4; yy < y + h; yy += .45) { const k = (yy - y) / h, r = rb + (rt - rb) * k + .02; cyl(g, r, r, .05, 8, 'logD', 0, yy, 0); }
+      door(g, 0, y, rb - .05, .7, 1.3);
+      if (l >= 3) win(g, 0, y + h * .55, (rb + rt) / 2 - .02, false, .4, .5);
+      cone(g, rt + .25, 1 + .1 * l, 8, LV[l].roof, 0, y + h, 0);
+      if (CTX.winter) cone(g, (rt + .25) * .4, (1 + .1 * l) * .4, 8, 'snow', 0, y + h + (1 + .1 * l) * .6 + .04, 0, { b: 'snow' });
+      const hubY = y + h - .25, len = 1.5 + .24 * l;
+      box(g, .2, .2, .5, 'timber', 0, hubY - .1, rt + .1);
+      anchor(g, 'sails', 0, hubY, rt + .4, { len });
+      return { top: Math.max(y + h + 1 + .1 * l, hubY + len) };
+    },
+    tavern(g, l) {
+      if (l === 1) { const r = shelter(g, 2.8, 2.2); barrel(g, -.5, .3); barrel(g, .3, .3); return r; }
+      const r = hut(g, l, { w: 3.6, d: 3, h: 2.1, storeys: l >= 4 ? 2 : 1 });
+      hangSign(g, 1.85, r.wallTop - .3, 1.3, 'hay'); barrel(g, -2.3, 1.9); if (l >= 3) barrel(g, -2.3, 1.2);
+      return r;
+    },
+    market(g, l) {
+      const n = [1, 2, 2, 3, 3][l - 1], xs = n === 1 ? [0] : n === 2 ? [-.95, .95] : [-1.8, 0, 1.8], aw = ['awn1', 'awn2', 'awn3'];
+      let top = 2;
+      if (l >= 4) { const s = new THREE.Group(); s.position.set(0, 0, -1.6); s.scale.setScalar(.7); g.add(s); const r = hut(s, l, { w: 4, d: 2.6, h: 2, roof: 'hip', chimney: false, storeys: 1, rh: 1.2, flag: false }); top = r.top * .7; }
+      xs.forEach((x, i) => {
+        [[-.6, .5], [.6, .5], [-.6, 1.6], [.6, 1.6]].forEach(([dx, z]) => cyl(g, .04, .04, 1.6, 4, 'log', x + dx, 0, z));
+        box(g, 1.3, .7, .45, 'plank', x, 0, 1.75);
+        for (let k = 0; k < 4; k++) box(g, .33, .05, 1.4, k % 2 ? 'cream' : aw[i], x - .49 + k * .33, 1.62, 1.05, { rx: -.25 });
+        if (CTX.winter) box(g, 1.3, .04, 1.3, 'snow', x, 1.69, 1.05, { rx: -.25, b: 'snow' });
+        ball(g, .12, 'crop', x - .3, .78, 1.75); ball(g, .12, 'flower2', x + .2, .78, 1.75);
+      });
+      return { top };
+    },
+    bakery(g, l) {
+      const oven = x => { const q = new THREE.SphereGeometry(.7, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2); mesh(g, q, 'brick', x, 0, .4); box(g, .3, 1.2, .3, 'brick', x + .2, .5, .1); anchor(g, 'smoke', x + .2, 1.85, .1); };
+      if (l === 1) { const r = shelter(g, 2.4, 2); oven(1.9); return r; }
+      const r = hut(g, l, { w: 3.2, d: 2.8, h: 2, chimney: false });
+      oven(2.15);
+      if (l >= 3) hangSign(g, -1.65, r.wallTop - .2, 1.3, 'hay');
+      return r;
+    },
+    tower(g, l) {
+      if (l === 1) {
+        [[-.6, -.6], [.6, -.6], [-.6, .6], [.6, .6]].forEach(([x, z]) => cyl(g, .07, .09, 3, 5, 'log', x, 0, z));
+        box(g, 1.7, .12, 1.7, 'plank', 0, 3, 0); [[0, .8], [0, -.8]].forEach(([x, z]) => box(g, 1.7, .06, .06, 'log', x, 3.7, z));
+        return { top: 3.9 };
+      }
+      const bw = l >= 5 ? 1.8 : 1.6, bh = l >= 5 ? 4.6 : 3.4;
+      if (l === 4) { wallBlock(g, 'brick', bw, 1.4, bw, 0); wallBlock(g, 'plank', bw, bh - 1.4, bw, 1.4); }
+      else wallBlock(g, l >= 5 ? 'brick' : 'log', bw, bh, bw, 0);
+      door(g, 0, 0, bw / 2 + .03, .6, 1.2); win(g, 0, bh * .6, bw / 2 + .03, false, .22, .5);
+      const pw = bw + .6;
+      box(g, pw, .15, pw, 'plank', 0, bh, 0);
+      if (l === 2) { box(g, pw, .5, .06, 'log', 0, bh + .15, pw / 2); box(g, .06, .5, pw, 'log', pw / 2, bh + .15, 0); return { top: bh + .7 }; }
+      if (l <= 4) { [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => cyl(g, .05, .05, 1.2, 4, 'log', sx * (pw / 2 - .1), bh + .15, sz * (pw / 2 - .1))); prism(g, pw + .3, .9, pw + .3, LV[l].roof, 0, bh + 1.35, 0); snowPrism(g, pw + .3, .9, pw + .3, bh + 1.35); return { top: bh + 2.3 }; }
+      box(g, pw, .5, pw, 'brick', 0, bh + .15, 0);
+      cone(g, pw * .72, 2, 4, 'tile', 0, bh + .65, 0, { ry: Math.PI / 4 });
+      if (CTX.winter) cone(g, pw * .72 * .35, .7, 4, 'snow', 0, bh + .65 + 1.34, 0, { ry: Math.PI / 4, b: 'snow' });
+      box(g, .05, .9, .05, 'timber', 0, bh + 2.6, 0); anchor(g, 'pennant', 0, bh + 3.45, 0, { color: '#9c4a35' });
+      return { top: bh + 3.6 };
+    },
+  };
+
+  /* ---------- Центр ---------- */
+  function fireRing(g, x, z, s) {
+    for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; ball(g, .2 * s, 'stone', x + Math.cos(a) * .8 * s, .1 * s, z + Math.sin(a) * .8 * s); }
+    cyl(g, .07 * s, .07 * s, 1.1 * s, 5, 'log', x - .45 * s, .08, z, { rz: Math.PI / 2 - .2 }); cyl(g, .07 * s, .07 * s, 1.1 * s, 5, 'log', x + .45 * s, .08, z, { rz: -Math.PI / 2 + .2 });
+    anchor(g, 'fire', x, .15, z, { s });
+  }
+  function centre(g, stage) {
+    if (stage === 0) { fireRing(g, 0, 0, 1); cyl(g, .2, .2, 1.4, 6, 'log', -1.7, .2, .7, { rx: Math.PI / 2, ry: .4 }); return { top: 1.4 }; }
+    if (stage === 1) { box(g, 1.4, .5, 1.2, 'stone', 0, 0, 0); const fr = new THREE.Group(); fr.position.y = .5; g.add(fr); fireRing(fr, 0, 0, .55); [[-1.4, -1.2], [1.4, -1.2], [-1.4, 1.2], [1.4, 1.2]].forEach(([x, z]) => cyl(g, .08, .08, 2.4, 5, 'log', x, 0, z)); prism(g, 3.4, 1, 3, 'shingle', 0, 2.4, 0); snowPrism(g, 3.4, 1, 3, 2.4); anchor(g, 'smoke', 0, 3.5, 0); return { top: 3.5 }; }
+    if (stage === 2) { const r = hut(g, 3, { w: 5.6, d: 3.8, h: 2.4, storeys: 1, rh: 1.8 }); [[-.9, 2.3], [.9, 2.3]].forEach(([x, z]) => cyl(g, .08, .08, 2, 5, 'log', x, 0, z)); prism(g, 2.4, .6, 1.2, 'shingle', 0, 2, 2.1); return r; }
+    const hall = hut(g, stage === 3 ? 4 : 5, { w: 6, d: 4, h: 2.2, storeys: 2, roof: 'hip', rh: 1.6, chimney: false, flag: false });
+    if (stage === 3) { box(g, .06, 1.4, .06, 'timber', 2.6, hall.wallTop + .4, 0); anchor(g, 'pennant', 2.6, hall.wallTop + 1.75, 0, { color: '#9c4a35' }); return hall; }
+    const th = stage === 4 ? 6.2 : 8, tw = stage === 4 ? 1.9 : 2.2, tz = 1.9;
+    const t = new THREE.Group(); t.position.set(0, 0, tz); g.add(t);
+    wallBlock(t, 'brick', tw, 2.6, tw, 0); wallBlock(t, 'plaster', tw, th - 2.6, tw, 2.6);
+    door(t, 0, 0, tw / 2 + .03, .9, 1.7); win(t, 0, th * .5, tw / 2 + .03, false, .4, .7);
+    if (stage === 5) { [[0, tw / 2 + .05, 0], [tw / 2 + .05, 0, Math.PI / 2]].forEach(([x, z, ry]) => { const c = new THREE.Group(); c.position.set(x, th - .9, z); c.rotation.y = ry; t.add(c); cyl(c, .55, .55, .06, 12, 'clock', 0, 0, 0, { rx: Math.PI / 2 }); box(c, .05, .38, .04, 'timber', 0, 0, .05); box(c, .3, .05, .04, 'timber', .13, 0, .06); }); }
+    pyramid(t, tw + .4, 1.8, tw + .4, 'tile', 0, th, 0); if (CTX.winter) pyramid(t, (tw + .4) * .35, .63, (tw + .4) * .35, 'snow', 0, th + 1.21, 0, { b: 'snow' });
+    if (stage === 5) { box(t, .05, 1, .05, 'timber', 0, th + 1.75, 0); anchor(t, 'pennant', 0, th + 2.7, 0, { color: '#9c4a35' }); }
+    return { top: th + (stage === 5 ? 2.8 : 1.9) };
+  }
+
+  /* ---------- Ориентиры и памятник ---------- */
+  const LMK = { cabin: { w: 2.2, h: 2, d: 2 }, hall: { w: 3, h: 1.6, d: 2.2 }, tower: { w: 1.4, h: 3.6, d: 1.4 } };
+  function landmark(g, kind, track, st) {
+    const k = LMK[kind], tk = 'trk_' + track, ox = st === 3 ? -.5 : 0;
+    if (st === 0) {
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([x, z]) => box(g, .08, .5, .08, 'log', x, 0, z));
+      box(g, 2, .03, .03, 'rope', 0, .42, 1); box(g, .03, .03, 2, 'rope', 1, .42, 0);
+      cyl(g, .05, .05, 1.3, 4, 'log', -1.4, 0, 1.2); box(g, .8, .5, .06, tk, -1.4, 1.1, 1.24); anchor(g, 'emblem', -1.4, 1.35, 1.29, { track });
+      return { top: 1.7 };
+    }
+    const full = (gg, half) => {
+      box(gg, k.w + .5, .3, k.d + .5, 'ashlarD', 0, 0, 0); box(gg, .9, .15, .3, 'ashlarD', 0, 0, k.d / 2 + .35);
+      wallBlock(gg, 'ashlar', k.w, half ? k.h * .5 : k.h, k.d, .3);
+      if (half) return;
+      const top = .3 + k.h;
+      door(gg, 0, .3, k.d / 2 + .03, .6, 1.1);
+      if (kind === 'cabin') { prism(gg, 2.5, 1.7, 2.7, tk, 0, top, 0, { ry: Math.PI / 2 }); if (CTX.winter) prism(gg, 2.54, .58, .92, 'snow', 0, top + 1.17, 0, { ry: Math.PI / 2, b: 'snow' }); cyl(gg, .26, .26, .05, 10, 'glass', 0, top + .6, 1.36, { rx: Math.PI / 2, b: CTX.lit ? 'win' : 'solid' }); win(gg, k.w / 2 + .03, .3 + k.h * .4, 0, true, .4, .5); }
+      if (kind === 'hall') { box(gg, k.w - .4, k.h - .1, .1, 'dark', 0, .3, k.d / 2 + .02); for (let i = 0; i < 4; i++) cyl(gg, .11, .11, k.h, 6, 'cream', -k.w / 2 + .35 + i * (k.w - .7) / 3, .3, k.d / 2 + .25); box(gg, k.w + .2, .15, .6, 'ashlar', 0, top - .02, k.d / 2 + .2); prism(gg, k.d + .9, .9, k.w + .3, tk, 0, top + .12, .15, { ry: Math.PI / 2 }); anchor(gg, 'emblem', 0, top + .45, k.d / 2 + .62, { track }); if (CTX.winter) prism(gg, k.d + .94, .31, (k.w + .3) * .34, 'snow', 0, top + .12 + .63, .15, { ry: Math.PI / 2, b: 'snow' }); }
+      if (kind === 'tower') { win(gg, 0, .3 + k.h * .45, k.d / 2 + .03, false, .22, .5); win(gg, 0, .3 + k.h * .75, k.d / 2 + .03, false, .22, .5); pyramid(gg, 1.9, 1.5, 1.9, tk, 0, top, 0); if (CTX.winter) pyramid(gg, .66, .53, .66, 'snow', 0, top + .99, 0, { b: 'snow' }); }
+      cyl(gg, .04, .04, 2.6, 4, 'timber', -k.w / 2 - .25, 0, k.d / 2 + .1); anchor(gg, 'banner', -k.w / 2 - .25, 2.5, k.d / 2 + .1, { track });
+    };
+    const body = new THREE.Group(); body.position.x = ox; g.add(body);
+    if (st === 1) { full(body, true); scaffold(body, k.w + .3, k.d + .3, k.h + 1.4); anchor(body, 'pennant', k.w / 2 + .3, 2.6, k.d / 2 + .3, { color: FIX[tk] }); return { top: k.h + 1.8 }; }
+    full(body, false);
+    if (st === 3) {
+      const ax = ox + k.w / 2 + .6; box(g, 1.2, .25, 1.8, 'ashlarD', ax, 0, 0); wallBlock(g, 'ashlar', 1, 1.1, 1.6, .25); g.children.slice(-1)[0].position.x = ax;
+      prism(g, 1.4, .6, 1.9, tk, ax, 1.35, 0); ball(g, .45, 'hedge', -1.5, .3, -1.2); ball(g, .35, 'hedge', -1, .25, -1.5);
+    }
+    return { top: k.h + (kind === 'cabin' ? 2.1 : kind === 'tower' ? 1.9 : 1.4) + .3 };
+  }
+  function monument(g) {
+    box(g, 1.6, .25, 1.6, 'ashlarD', 0, 0, 0); box(g, 1.1, .25, 1.1, 'ashlar', 0, .25, 0);
+    const q = new THREE.CylinderGeometry(.22, .4, 2.4, 4); q.rotateY(Math.PI / 4); q.translate(0, 1.2, 0); mesh(g, q, 'ashlar', 0, .5, 0);
+    pyramid(g, .32, .3, .32, 'ashlarD', 0, 2.9, 0); box(g, .5, .35, .05, 'bronze', 0, .75, .3);
+    return { top: 3.3 };
+  }
+
+  /* ---------- Стройка ---------- */
+  function scaffold(g, w, d, h) {
+    const xs = [-w / 2 - .15, 0, w / 2 + .15], zs = [-d / 2 - .15, d / 2 + .15];
+    xs.forEach(x => zs.forEach(z => cyl(g, .05, .05, h, 4, 'scaffold', x, 0, z)));
+    for (let y = 1.1; y < h - .2; y += 1.1) { zs.forEach(z => box(g, w + .4, .05, .05, 'scaffold', 0, y, z)); box(g, .05, .05, d + .4, 'scaffold', w / 2 + .15, y, 0); box(g, w + .4, .04, .35, 'plank', 0, y, d / 2 + .3); }
+    beam(g, -w / 2 - .15, .1, 0, Math.min(h - .2, 2.2), d / 2 + .17, 'scaffold', .05);
+  }
+
+  /* ---------- Мелочи ---------- */
+  const DECOR = {
+    lamp(g) { cyl(g, .05, .07, 2.2, 5, 'timber', 0, 0, 0); box(g, .3, .36, .3, 'glass', 0, 2.2, 0, { b: CTX.lit ? 'win' : 'solid' }); pyramid(g, .4, .2, .4, 'timber', 0, 2.56, 0); anchor(g, 'lamp', 0, 2.38, 0); },
+    bench(g) { box(g, 1.4, .08, .4, 'plank', 0, .42, 0); box(g, 1.4, .3, .06, 'plank', 0, .55, -.2); [-.55, .55].forEach(x => box(g, .08, .42, .35, 'timber', x, 0, 0)); },
+    sign(g) { cyl(g, .05, .05, 2, 5, 'log', 0, 0, 0); box(g, .9, .22, .05, 'plank', .35, 1.6, .05); box(g, .8, .22, .05, 'plank', -.3, 1.25, .05, { ry: .3 }); },
+    flag(g) { cyl(g, .04, .05, 4.5, 5, 'metal', 0, 0, 0); anchor(g, 'pennant', 0, 4.4, 0, { color: '#9c4a35', big: true }); },
+    fountain(g) { cyl(g, 1.3, 1.4, .45, 10, 'ashlar', 0, 0, 0); cyl(g, 1.1, 1.1, .02, 10, 'water', 0, .42, 0); cyl(g, .18, .25, 1.2, 6, 'ashlarD', 0, .4, 0); cyl(g, .5, .3, .15, 8, 'ashlar', 0, 1.5, 0); },
+    bed(g) { box(g, 2, .25, .8, 'soil', 0, 0, 0); for (let i = 0; i < 6; i++) ball(g, .14, ['flower1', 'flower2', 'flower3'][i % 3], -.8 + i * .32, .35, (i % 2 - .5) * .3); },
+    bridge(g) { for (let i = 0; i < 5; i++) { const z = -2.4 + i * 1.2, y = .35 + Math.sin(i / 4 * Math.PI) * .45; box(g, 2.4, .15, 1.25, 'plank', 0, y, z); } [-1.15, 1.15].forEach(x => { for (let i = 0; i < 5; i++) cyl(g, .05, .05, .8, 4, 'log', x, .35 + Math.sin(i / 4 * Math.PI) * .45, -2.4 + i * 1.2); box(g, .06, .06, 5.2, 'log', x, 1.15 + .3, 0); }); },
+    pit(g) { fireRing(g, 0, 0, .8); [[-1.5, 0, Math.PI / 2], [1.5, 0, Math.PI / 2]].forEach(([x, z, ry]) => { const b = new THREE.Group(); b.position.set(x, 0, z); b.rotation.y = ry; g.add(b); DECOR.bench(b); }); },
+  };
+
+  /* ---------- План местности ---------- */
+  const ROWZ = [-11, -20, -29, -38];
+  const PLOTS = {};
+  const grid = [
+    ['house3', 'house2', 'tavern', 'house1', null, 'market', 'bakery', 'well1', 'garden1'],
+    ['house4', 'house5', 'well2', 'house6', 'garden2', 'workshop', 'barn1', 'garden3', 'garden4'],
+    ['house7', 'house8', 'park1', 'house9', 'warehouse1', 'brickyard1', 'barn2', 'park2', 'woodshed'],
+    ['house10', 'sawmill1', 'sawmill2', 'warehouse2', 'brickyard2', 'park3', 'tower', 'park4', 'mill'],
+  ];
+  grid.forEach((row, r) => row.forEach((id, c) => { if (id) PLOTS[id] = { id, x: (c - 4) * 9, z: ROWZ[r], row: r, park: id.startsWith('park') }; }));
+  PLOTS.pier1 = { id: 'pier1', x: 22, z: 5, row: -1, bank: true }; PLOTS.pier2 = { id: 'pier2', x: 31, z: 5, row: -1, bank: true };
+  PLOTS.centre = { id: 'centre', x: 0, z: -11, row: 0, centre: true };
+  const typeOf = id => id.replace(/\d+$/, '');
+  const SLOTS = []; [14.5, 20, 25.5].forEach(z => [-18.5, -13.5, -8.5, -3.5, 3.5, 8.5, 13.5, 18.5].forEach(x => SLOTS.push({ x, z })));
+  const MONUMENT_X = [-11, -15, -19, -23, -27];
+  const streamPts = [[-70, 10], [-40, 9], [-15, 10.2], [0, 9.4], [14, 8.8], [26, 9.8], [40, 8.6], [70, 10]].map(([x, z]) => new THREE.Vector3(x, 0, z));
+  const stream = new THREE.CatmullRomCurve3(streamPts);
+  function streamZ(x) { let best = 1e9, bz = 0; for (let i = 0; i <= 200; i++) { const p = stream.getPoint(i / 200); const dd = Math.abs(p.x - x); if (dd < best) { best = dd; bz = p.z; } } return bz; }
+
+  function streets(stage) {
+    const R = [];
+    if (stage === 'camp') { R.push([-4, 4, -10.5, 1.5]); R.push([-.8, .8, 1.5, 9]); return R; }
+    R.push([-7.5, 7.5, -6.5, 6]);                         // площадь
+    R.push([-41, 41, -8, -5]);                            // улица перед первым рядом
+    [-15.5, -24.5, -33.5].forEach(z => R.push([-41, 41, z - 1.5, z + 1.5]));
+    R.push([-41, 41, -43.5, -41.5]);
+    [-40.5, -31.5, -22.5, -13.5, 13.5, 22.5, 31.5, 40.5].forEach(x => R.push([x - 1.5, x + 1.5, -43.5, x > 0 && x < 35 ? 2.2 : -5]));
+    [-4.5, 4.5].forEach(x => R.push([x - 1.5, x + 1.5, -43.5, -14]));
+    R.push([7.5, 41, 1.2, 3.2]);                          // береговая дорога к причалам
+    R.push([-1, 1, 6, 12.5]); R.push([-21, 21, 11.8, 12.8]); R.push([-1, 1, 12.5, 28]); R.push([-21, 21, 17, 17.6]); R.push([-21, 21, 22.5, 23.1]);
+    return R;
+  }
+
+  /* ---------- Сцена, свет, материалы ---------- */
+  const scene = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 1, 600);
+  const hemi = new THREE.HemisphereLight('#ffffff', '#888888', .5); scene.add(hemi);
+  const sun = new THREE.DirectionalLight('#ffffff', .8);
+  sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); sun.shadow.bias = -0.0006; sun.shadow.normalBias = .04;
+  scene.add(sun); scene.add(sun.target);
+  const pool = [0, 1, 2, 3, 4].map(() => { const l = new THREE.PointLight('#ffb15e', 0, 12, 2); scene.add(l); return l; });
+  const M = {
+    solid: new THREE.MeshLambertMaterial({ vertexColors: true }),
+    win: new THREE.MeshBasicMaterial({ color: '#454d55' }),
+    snow: new THREE.MeshLambertMaterial({ color: '#f6f8f8' }),
+    ground: new THREE.MeshLambertMaterial({ color: '#a9b97f' }),
+    flameO: new THREE.MeshBasicMaterial({ color: '#ec7a22' }), flameY: new THREE.MeshBasicMaterial({ color: '#ffd25e' }),
+    ember: new THREE.MeshBasicMaterial({ color: '#e8742a' }),
+    smoke: new THREE.MeshLambertMaterial({ color: '#f0efeb', transparent: true, opacity: .5, depthWrite: false }),
+    body: new THREE.MeshLambertMaterial({ vertexColors: true }), head: new THREE.MeshLambertMaterial({ vertexColors: true }),
+    prop: new THREE.MeshLambertMaterial({ color: '#ffffff' }), player: new THREE.MeshLambertMaterial({ vertexColors: true }),
+    trunk: new THREE.MeshLambertMaterial({ color: '#6a4e37' }), conifer: new THREE.MeshLambertMaterial({ color: '#4c7650' }),
+    leaf: new THREE.MeshLambertMaterial({ color: '#ffffff' }), treeSnow: new THREE.MeshLambertMaterial({ color: '#f6f8f8' }),
+    tuft: new THREE.MeshLambertMaterial({ color: '#5f7f36' }), glint: new THREE.MeshLambertMaterial({ color: '#f1f7f8' }),
+    flag: new THREE.MeshLambertMaterial({ color: '#ffffff', side: THREE.DoubleSide }), banner: new THREE.MeshLambertMaterial({ color: '#ffffff', side: THREE.DoubleSide }),
+    emblem: new THREE.MeshBasicMaterial({ color: '#f6f3ea' }), sails: new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
+    ring: new THREE.MeshBasicMaterial({ color: '#fbfaf6', transparent: true, opacity: .85, depthWrite: false }),
+    rain: new THREE.LineBasicMaterial({ color: '#7d8a94', transparent: true, opacity: .55 }),
+    snowfall: new THREE.PointsMaterial({ color: '#ffffff', size: 3, sizeAttenuation: false }),
+  };
+
+  /* Земля и горы — один раз */
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 220), M.ground); ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0, -15); ground.receiveShadow = true; scene.add(ground);
+
+  /* Осадки: следуют за камерой */
+  const precip = new THREE.Group(); scene.add(precip);
+  const RAIN_N = 900, SNOW_N = 700, PR = { w: 70, d: 70, h: 26 };
+  const rainPos = new Float32Array(RAIN_N * 6), rainSeed = [];
+  for (let i = 0; i < RAIN_N; i++) rainSeed.push([Math.random() * PR.w - PR.w / 2, Math.random() * PR.h, Math.random() * PR.d - PR.d / 2]);
+  const rainGeo = new THREE.BufferGeometry(); rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+  const rain = new THREE.LineSegments(rainGeo, M.rain); rain.frustumCulled = false; precip.add(rain);
+  const snowPos = new Float32Array(SNOW_N * 3), snowSeed = [];
+  for (let i = 0; i < SNOW_N; i++) snowSeed.push([Math.random() * PR.w - PR.w / 2, Math.random() * PR.h, Math.random() * PR.d - PR.d / 2, Math.random() * 6]);
+  const snowGeo = new THREE.BufferGeometry(); snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+  const snowfall = new THREE.Points(snowGeo, M.snowfall); snowfall.frustumCulled = false; precip.add(snowfall);
+
+  /* ---------- Сборка и запекание ---------- */
+  let dyn = new THREE.Group(); scene.add(dyn);
+  let LIVE = null; // всё, что движется
+  const report = { meshes: 0, verts: 0, drawObjects: 0 };
+
+  function bakeGroups(groups) {
+    /* groups: [{root, chunk}] → меши по (кусок карты, корзина) */
+    const acc = {};
+    groups.forEach(({ root, chunk }) => {
+      root.updateMatrixWorld(true);
+      root.traverse(o => {
+        if (!o.isMesh) return;
+        const key = chunk + '|' + o.userData.bucket;
+        (acc[key] || (acc[key] = [])).push(o);
+      });
+    });
+    const out = [];
+    for (const k in acc) {
+      const [chunk, bucket] = k.split('|');
+      const pos = [], nor = [], col = [];
+      acc[k].forEach(o => {
+        let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+        g.applyMatrix4(o.matrixWorld); g.computeVertexNormals();
+        const p = g.attributes.position.array, n = g.attributes.normal.array, c = colorOf(o.userData);
+        for (let i = 0; i < p.length; i++) { pos.push(p[i]); nor.push(n[i]); }
+        for (let i = 0; i < p.length / 3; i++) col.push(c.r, c.g, c.b);
+        g.dispose(); o.geometry.dispose();
+        report.meshes++;
+      });
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      if (bucket === 'solid' || bucket === 'sails' || bucket === 'body' || bucket === 'head' || bucket === 'player') geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      geo.computeBoundingSphere(); geo.computeBoundingBox();
+      report.verts += pos.length / 3;
+      out.push({ chunk, bucket, geo });
+    }
+    return out;
+  }
+  function bakeOne(root, bucket) { root.traverse(o => { if (o.isMesh) o.userData.bucket = bucket; }); const r = bakeGroups([{ root, chunk: 'x' }]); return r.length ? r[0].geo : new THREE.BufferGeometry(); }
+
+  function dispose(group) { group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); scene.remove(group); }
+
+  function rng(seed) { let a = seed | 0; return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+  /* Человек: ноги тёмные, туловище белое (красится цветом экземпляра), голова отдельно */
+  function personGeos() {
+    const b = new THREE.Group(); box(b, .4, .8, .26, 'legs', 0, 0, 0); cyl(b, .27, .33, .85, 6, 'torso', 0, .8, 0);
+    const h = new THREE.Group(); ball(h, .27, 'skin', 0, 0, 0); const cap = new THREE.SphereGeometry(.29, 6, 3, 0, Math.PI * 2, 0, Math.PI / 2.2); mesh(h, cap, 'hair', 0, .02, 0);
+    const save = PAL; PAL = Object.assign({}, PAL, { legs: new THREE.Color(.33, .33, .35), torso: new THREE.Color(1, 1, 1), skin: new THREE.Color('#dcae8a'), hair: new THREE.Color('#4b3f35') });
+    const r = { body: bakeOne(b, 'body'), head: bakeOne(h, 'head') }; PAL = save; return r;
+  }
+  function playerGeo() {
+    const p = new THREE.Group();
+    box(p, .44, .85, .28, 'trousers', 0, 0, 0); cyl(p, .3, .36, .95, 6, 'jacket', 0, .85, 0); box(p, .5, .6, .3, 'pack', 0, 1, -.32); cyl(p, .13, .13, .55, 6, 'bedroll', 0, 1.68, -.32, { rz: Math.PI / 2 });
+    ball(p, .29, 'skin', 0, 2.08, 0); cyl(p, .42, .42, .05, 10, 'hat', 0, 2.22, 0); cyl(p, .2, .24, .24, 8, 'hat', 0, 2.24, 0);
+    cyl(p, .035, .035, 2, 4, 'timber', .45, 0, .2, { rz: -.08 }); box(p, .5, .12, .3, 'scarf', 0, 1.72, .02);
+    const save = PAL; PAL = Object.assign({}, PAL, { trousers: new THREE.Color('#2f3640'), jacket: new THREE.Color('#b5432f'), pack: new THREE.Color('#7a5a3e'), bedroll: new THREE.Color('#5f7f9a'), skin: new THREE.Color('#dcae8a'), hat: new THREE.Color('#5c4632'), scarf: new THREE.Color('#d9a441') });
+    const g = bakeOne(p, 'player'); PAL = save; return g;
+  }
+  function sailGeo(len) {
+    const s = new THREE.Group();
+    for (let i = 0; i < 4; i++) { const a = new THREE.Group(); a.rotation.z = i * Math.PI / 2 + .3; s.add(a); box(a, .08, len, .06, 'timber', 0, 0, 0); box(a, len * .28, len * .78, .03, 'cream', len * .16, len * .2, .04); }
+    return bakeOne(s, 'sails');
+  }
+  function emblemGeo(track) {
+    let q;
+    if (track === 'A') { q = new THREE.CylinderGeometry(.15, .15, .02, 12); q.rotateX(Math.PI / 2); }
+    else if (track === 'B') { q = new THREE.CylinderGeometry(.18, .18, .02, 3); q.rotateX(Math.PI / 2); q.rotateZ(Math.PI / 2); }
+    else if (track === 'C1') q = new THREE.BoxGeometry(.25, .25, .02);
+    else if (track === 'C2') { q = new THREE.BoxGeometry(.22, .22, .02); q.rotateZ(Math.PI / 4); }
+    else if (track === 'E') { const g = new THREE.Group(); box(g, .3, .09, .02, 'x', 0, -.045, 0); box(g, .09, .3, .02, 'x', 0, -.15, 0); const save = PAL; PAL = Object.assign({}, PAL, { x: new THREE.Color(1, 1, 1) }); q = bakeOne(g, 'emblem'); PAL = save; }
+    else { q = new THREE.CylinderGeometry(.07, .07, .02, 8); q.rotateX(Math.PI / 2); }
+    return q;
+  }
+  const EMBLEM_GEOS = {}; ['A', 'B', 'C1', 'C2', 'E', 'none'].forEach(t => { EMBLEM_GEOS[t] = emblemGeo(t); });
+  let PERSON = null, PLAYER = null;
+
+  function routeFront(id) {
+    if (id === 'PLAZA') return [0, 1.5];
+    const p = PLOTS[id]; if (p.bank) return [p.x, 2.2]; if (p.centre) return [0, -4];
+    return [p.x, p.z + 4.5];
+  }
+  const VSTREETS = [[-40.5, -43.5, -5], [-31.5, -43.5, -5], [-22.5, -43.5, -5], [-13.5, -43.5, -5], [-4.5, -43.5, -14], [4.5, -43.5, -14], [13.5, -43.5, 2.2], [22.5, -43.5, 2.2], [31.5, -43.5, 2.2], [40.5, -43.5, -5], [0, -6.5, 12]];
+  function route(a, b) {
+    const pa = routeFront(a), pb = routeFront(b);
+    if (Math.abs(pa[1] - pb[1]) < .1) return [pa, pb];
+    const lo = Math.min(pa[1], pb[1]), hi = Math.max(pa[1], pb[1]);
+    const ok = VSTREETS.filter(([, z0, z1]) => lo >= z0 - .01 && hi <= z1 + .01).map(v => v[0]);
+    let vx = ok[0], best = 1e9; ok.forEach(x => { const c = Math.abs(pa[0] - x) + Math.abs(pb[0] - x); if (c < best) { best = c; vx = x; } });
+    return [pa, [vx, pa[1]], [vx, pb[1]], pb];
+  }
+
+  /* ---------- Построение стадии ---------- */
+  let STATE = {}, HITS = [], PLATES = [], INFO = {};
+  function buildStage(cfg, st) {
+    dispose(dyn); dyn = new THREE.Group(); scene.add(dyn);
+    report.meshes = 0; report.verts = 0; missingKeys.clear();
+    makePalette(st.season, st.neglect);
+    const N = NEGLECT[st.neglect];
+    CTX = { winter: st.season === 'winter', lit: N.lit, smoke: N.smoke };
+    if (!PERSON) PERSON = personGeos();
+    if (!PLAYER) PLAYER = playerGeo();
+    HITS = []; PLATES = []; INFO = {}; report.drawObjects = 0;
+    const groups = [], anchors = [], occupied = [];
+    const chunkOf = (x, z) => Math.floor((x + 60) / 24) + '_' + Math.floor((z + 60) / 24);
+    const place = (id, x, z, ry, fn, meta) => {
+      const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry || 0;
+      const keepLit = CTX.lit, keepSmoke = CTX.smoke;
+      if (meta.state === 'build' || meta.state === 'broken') { CTX.lit = false; CTX.smoke = false; }
+      const r = fn(g) || { top: 2 };
+      CTX.lit = keepLit; CTX.smoke = keepSmoke;
+      if (meta.state === 'broken') { g.traverse(o => { if (o.isMesh) o.userData.broken = true; }); g.rotation.z = -.06; box(g, .9, .06, .7, 'dark', .5, r.top * .62, .2, { rx: .5 }); beam(g, -.5, .3, .5, 1.1, (meta.d || 3) / 2 + .12, 'plank', .14); }
+      groups.push({ root: g, chunk: chunkOf(x, z) });
+      g.updateMatrixWorld(true);
+      g.traverse(o => { if (o.userData.anchor) { const p = new THREE.Vector3(); o.getWorldPosition(p); const q = new THREE.Quaternion(); o.getWorldQuaternion(q); const e = new THREE.Euler().setFromQuaternion(q, 'YXZ'); if (!(meta.state === 'broken' || meta.state === 'build') || ['banner', 'emblem', 'pennant'].includes(o.userData.anchor)) anchors.push(Object.assign({ type: o.userData.anchor, pos: p, ry: e.y, owner: id }, o.userData)); } });
+      const bb = new THREE.Box3().setFromObject(g);
+      HITS.push({ id, box: bb }); occupied.push({ id, box: bb, meta });
+      INFO[id] = Object.assign({ id, x, z, top: r.top }, meta);
+      if (meta.state === 'build') PLATES.push({ id, kind: 'timer', text: meta.timer, pos: new THREE.Vector3(x, r.top + .5, z) });
+      if (meta.state === 'broken') PLATES.push({ id, kind: 'repair', text: 'ремонт', pos: new THREE.Vector3(x, r.top + .5, z) });
+      return r;
+    };
+
+    /* Дороги, площадь, ручей, берег — в отдельную группу без кусков */
+    const land = new THREE.Group();
+    streets(cfg.stage).forEach(([x0, x1, z0, z1]) => box(land, x1 - x0, .04, z1 - z0, 'road', (x0 + x1) / 2, 0, (z0 + z1) / 2));
+    if (cfg.stage !== 'camp') box(land, 15, .06, 19.5, 'plaza', 0, 0, -3.75);
+    const sp = [], N_ = 90;
+    for (let i = 0; i <= N_; i++) sp.push(stream.getPoint(i / N_));
+    const ribbon = (wd, y, key) => {
+      const v = [];
+      for (let i = 0; i < N_; i++) {
+        const a = sp[i], b = sp[i + 1], t = new THREE.Vector3().subVectors(b, a).normalize(), n = new THREE.Vector3(-t.z, 0, t.x).multiplyScalar(wd / 2);
+        const a1 = [a.x + n.x, y, a.z + n.z], a2 = [a.x - n.x, y, a.z - n.z], b1 = [b.x + n.x, y, b.z + n.z], b2 = [b.x - n.x, y, b.z - n.z];
+        v.push(...a1, ...b1, ...b2, ...a1, ...b2, ...a2);
+      }
+      const q = new THREE.BufferGeometry(); q.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); q.computeVertexNormals();
+      mesh(land, q, key, 0, 0, 0);
+    };
+    ribbon(4.4, .02, 'bank'); ribbon(2.6, .05, 'water');
+    const rr = rng(7);
+    for (let i = 0; i < 26; i++) { const x = rr() * 180 - 90, z = rr() * 150 - 110, r = 2 + rr() * 4; cyl(land, r, r, .02, 9, 'ground2', x, .01, z); }
+    [[-30, -88, 34, 26], [8, -96, 44, 34], [45, -84, 30, 22], [-62, -80, 26, 18]].forEach(([x, z, r, h]) => { cone(land, r, h, 7, 'mountain', x, 0, z); cone(land, r * .3, h * .3, 7, 'snow', x, h * .7 + .05, z); });
+    groups.push({ root: land, chunk: 'land' });
+
+    /* Центр */
+    const C = cfg.centre;
+    place('centre', 0, C <= 1 ? -5 : -11, 0, g => centre(g, C), { type: 'centre', lvl: C, d: 4 });
+    if (C >= 2) place('pit', 4, .8, 0, g => { DECOR.pit(g); return { top: 1 }; }, { type: 'decor', name: 'Костровище' });
+
+    /* Стандартные постройки */
+    const built = new Set();
+    (cfg.plots || []).forEach(p => {
+      const P = PLOTS[p.id], type = typeOf(p.id); built.add(p.id);
+      place(p.id, P.x, P.z, 0, g => {
+        if (p.state === 'build') {
+          const tgt = new THREE.Group();
+          const cur = p.from ? B[type](g, p.from) : (box(g, 3.6, .2, 3, 'stone', 0, 0, 0), { top: .2 });
+          const tg = B[type](tgt, p.lvl); tgt.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+          scaffold(g, 3.6, 3, Math.max(2.5, tg.top - .4)); box(g, 1, .12, .3, 'plank', 2.2, 0, 2.2); box(g, 1, .12, .3, 'plank', 2.2, .12, 2.15);
+          return { top: Math.max(cur.top, tg.top - .2) };
+        }
+        return B[type](g, p.lvl);
+      }, { type, lvl: p.lvl, state: p.state, timer: p.timer, from: p.from });
+    });
+
+    /* Свободные и закрытые участки */
+    const trees = [];
+    Object.values(PLOTS).forEach(P => {
+      if (P.centre || P.bank || built.has(P.id)) return;
+      const r = rng(Math.round(P.x * 31 + P.z * 7));
+      if (P.park && cfg.stage === 'city') {
+        place(P.id, P.x, P.z, 0, g => { DECOR.bed(g); const b = new THREE.Group(); b.position.set(1.4, 0, 1.8); g.add(b); DECOR.bench(b); const l = new THREE.Group(); l.position.set(-2.2, 0, 2.2); g.add(l); DECOR.lamp(l); return { top: 2.6 }; }, { type: 'park', name: 'Сквер' });
+        trees.push({ x: P.x - 1.6, z: P.z - 1.5, s: 1, kind: 1 }, { x: P.x + 1.8, z: P.z - 1.2, s: .9, kind: 1 }, { x: P.x + .2, z: P.z - 2.3, s: .8, kind: 0 });
+        return;
+      }
+      if (cfg.stage === 'camp' || (P.row >= 2 && r() > .35) || cfg.locked.includes(P.id)) { for (let i = 0; i < 3; i++) trees.push({ x: P.x + (r() - .5) * 4.5, z: P.z + (r() - .5) * 4.5, s: .8 + r() * .5, kind: r() > .5 ? 1 : 0 }); return; }
+      place(P.id, P.x, P.z, 0, g => { [[-2.6, -2.6], [2.6, -2.6], [-2.6, 2.6], [2.6, 2.6]].forEach(([x, z]) => box(g, .08, .45, .08, 'log', x, 0, z)); return { top: .5 }; }, { type: 'free', name: 'Свободный участок' });
+    });
+
+    /* Слобода, памятники, убранство */
+    (cfg.landmarks || []).forEach((m, i) => { const s = SLOTS[i]; place('lm' + i, s.x, s.z, 0, g => landmark(g, m.kind, m.track, m.st), { type: 'landmark', title: m.title, file: m.file, track: m.track, st: m.st }); });
+    if (cfg.landmarks) SLOTS.slice(cfg.landmarks.length).forEach(s => box(land, 2.6, .05, 2.6, 'ashlarD', s.x, 0, s.z));
+    (cfg.monuments || []).forEach((t, i) => place('mon' + i, MONUMENT_X[i], 4.6, 0, g => monument(g), { type: 'monument', title: t }));
+    (cfg.decor || []).forEach(([t, x, z, ry], i) => place('d' + i + t, x, z, ry || 0, g => { DECOR[t](g); return { top: 2 }; }, { type: 'decor', name: { lamp: 'Фонарь', bench: 'Скамья', sign: 'Указатель', flag: 'Флагшток', fountain: 'Фонтан', bridge: 'Мост', bed: 'Клумба' }[t] }));
+
+    /* Деревья: лес вокруг и на закрытых участках */
+    const rt = rng(cfg.stage.length * 101 + 3);
+    const clear = (x, z) => {
+      if (x > -44 && x < 44 && z > -46 && z < 7.5 && cfg.stage !== 'camp') return false;
+      if (cfg.stage === 'camp' && x > -14 && x < 6 && z > -16 && z < 8) return false;
+      if (Math.abs(z - streamZ(x)) < 3.5) return false;
+      if (cfg.landmarks && x > -23 && x < 23 && z > 11 && z < 29) return false;
+      if (x > -2 && x < 2 && z > 6 && z < 30) return false;
+      return true;
+    };
+    for (let i = 0; i < 520 && trees.length < 380; i++) { const x = rt() * 130 - 65, z = rt() * 110 - 72; if (clear(x, z)) trees.push({ x, z, s: .8 + rt() * .6, kind: rt() > .45 ? 0 : 1 }); }
+    if (cfg.stage === 'camp') for (let i = 0; i < 160; i++) { const x = rt() * 90 - 45, z = rt() * 50 - 46; if (clear(x, z) && (Math.abs(x) > 3 || z < -20)) trees.push({ x, z, s: .8 + rt() * .6, kind: rt() > .5 ? 0 : 1 }); }
+
+    /* Запекание */
+    const baked = bakeGroups(groups);
+    baked.forEach(({ bucket, geo }) => {
+      const m = new THREE.Mesh(geo, bucket === 'win' ? M.win : bucket === 'snow' ? M.snow : M.solid);
+      m.castShadow = bucket !== 'win'; m.receiveShadow = bucket === 'solid';
+      dyn.add(m); report.drawObjects++;
+    });
+
+    /* Живое */
+    LIVE = { anchors, trees, people: [], fires: [], smoke: [], flags: [], banners: [], sails: [], glints: null, tufts: null };
+    const WHITE = new THREE.Color(1, 1, 1);
+    const inst = (geo, mat, n, shadow, colored) => { const m = new THREE.InstancedMesh(geo, mat, Math.max(1, n)); m.count = n; if (colored) m.setColorAt(0, WHITE); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.castShadow = !!shadow; dyn.add(m); report.drawObjects++; return m; };
+    const tmp = new THREE.Object3D();
+
+    // деревья
+    const winterT = CTX.winter;
+    const trunkG = new THREE.CylinderGeometry(.12, .16, 1, 5); trunkG.translate(0, .5, 0);
+    const conG = new THREE.ConeGeometry(1, 1, 6); conG.translate(0, .5, 0);
+    const ballG = new THREE.IcosahedronGeometry(1, 0);
+    const capG = new THREE.ConeGeometry(1, 1, 6); capG.translate(0, .5, 0);
+    M.trunk.color.copy(PAL.trunk); M.conifer.color.copy(PAL.conifer); M.tuft.color.copy(PAL.tuft);
+    const T = trees.length;
+    LIVE.trunks = inst(trunkG, M.trunk, T, true);
+    const cons = trees.filter(t => t.kind === 0), decs = trees.filter(t => t.kind === 1);
+    LIVE.cons = inst(conG, M.conifer, cons.length, true); LIVE.decs = inst(ballG, M.leaf, decs.length, true, true); LIVE.caps = inst(capG, M.treeSnow, winterT ? cons.length : 0, false);
+    trees.forEach((t, i) => { t.ph = (t.x * 1.3 + t.z * .7) % 6.28; tmp.position.set(t.x, 0, t.z); tmp.rotation.set(0, 0, 0); tmp.scale.set(t.s, (t.kind ? 1.4 : 1.1) * t.s, t.s); tmp.updateMatrix(); LIVE.trunks.setMatrixAt(i, tmp.matrix); });
+    decs.forEach((t, i) => LIVE.decs.setColorAt(i, LEAVES[i % LEAVES.length]));
+    LIVE.cons.list = cons; LIVE.decs.list = decs;
+
+    // трава запустения
+    const tuftG = new THREE.ConeGeometry(.12, .45, 4); tuftG.translate(0, .22, 0);
+    const SR = streets(cfg.stage), rtu = rng(55);
+    LIVE.tufts = inst(tuftG, M.tuft, N.tufts, false);
+    for (let i = 0; i < N.tufts; i++) { const s = SR[Math.floor(rtu() * SR.length)]; tmp.position.set(s[0] + rtu() * (s[1] - s[0]), 0, s[2] + rtu() * (s[3] - s[2])); tmp.scale.setScalar(.8 + rtu() * .8); tmp.rotation.set(0, rtu() * 3, 0); tmp.updateMatrix(); LIVE.tufts.setMatrixAt(i, tmp.matrix); }
+
+    // огонь, дым, флаги, стяги, крылья, фонари
+    anchors.forEach(a => {
+      if (a.type === 'fire') {
+        const f = new THREE.Group(); f.position.copy(a.pos); dyn.add(f);
+        const st = N.fire, s = a.s || 1;
+        if (st <= 1) { const k = st === 0 ? 1 : .65; const o = new THREE.Mesh(new THREE.ConeGeometry(.42 * s * k, 1.1 * s * k, 6), M.flameO); o.position.y = .55 * s * k; const y = new THREE.Mesh(new THREE.ConeGeometry(.22 * s * k, .6 * s * k, 6), M.flameY); y.position.y = .3 * s * k; f.add(o, y); }
+        else if (st === 2) { [[-.15, .05], [.18, -.08], [0, .15]].forEach(([x, z]) => { const e = new THREE.Mesh(new THREE.IcosahedronGeometry(.1 * s, 0), M.ember); e.position.set(x * s, .05, z * s); f.add(e); }); }
+        LIVE.fires.push({ g: f, a, st, light: null });
+        if (N.smoke && st <= 1) LIVE.smoke.push({ pos: a.pos.clone().add(new THREE.Vector3(0, 1.2 * s, 0)), k: .8 });
+      }
+      if (a.type === 'smoke' && N.smoke) LIVE.smoke.push({ pos: a.pos.clone(), k: 1 });
+      if (a.type === 'pennant') LIVE.flags.push(a);
+      if (a.type === 'banner') LIVE.banners.push(a);
+      if (a.type === 'emblem') LIVE.banners.push(Object.assign({ fixed: true }, a));
+      if (a.type === 'sails') { const m = new THREE.Mesh(sailGeo(a.len), M.sails); m.position.copy(a.pos); m.rotation.y = a.ry; m.castShadow = true; dyn.add(m); LIVE.sails.push({ m, spin: N.smoke }); report.drawObjects++; }
+    });
+    const puffG = new THREE.IcosahedronGeometry(1, 0);
+    LIVE.puffs = inst(puffG, M.smoke, LIVE.smoke.length * 4, false);
+    const flagG = new THREE.BoxGeometry(.8, .45, .03); flagG.translate(.4, -.22, 0);
+    LIVE.flagMesh = inst(flagG, M.flag, LIVE.flags.length, true, true);
+    LIVE.flags.forEach((f, i) => { LIVE.flagMesh.setColorAt(i, fadeColor(new THREE.Color(f.color), N.fade)); f.ph = i * 1.7; });
+    const banG = new THREE.BoxGeometry(.5, .85, .03); banG.translate(0, -.45, 0);
+    const bans = LIVE.banners.filter(b => !b.fixed);
+    LIVE.banMesh = inst(banG, M.banner, bans.length, true, true);
+    bans.forEach((b, i) => { LIVE.banMesh.setColorAt(i, PAL['trk_' + b.track]); b.ph = i * 1.1; });
+    LIVE.emb = {};
+    ['A', 'B', 'C1', 'C2', 'E', 'none'].forEach(t => { const list = LIVE.banners.filter(b => b.track === t); LIVE.emb[t] = { mesh: inst(EMBLEM_GEOS[t], M.emblem, list.length, false), list }; });
+    LIVE.bans = bans;
+
+    // свет: костры, затем ближайшие к центру фонари
+    const lights = anchors.filter(a => a.type === 'fire' && N.fire <= 2).map(a => ({ a, base: N.fire === 2 ? .5 : 1.6, fire: true }))
+      .concat(anchors.filter(a => a.type === 'lamp' && N.lit).sort((p, q) => p.pos.length() - q.pos.length()).map(a => ({ a, base: 1, fire: false })));
+    LIVE.lights = lights;
+
+    // вода
+    const glG = new THREE.BoxGeometry(.7, .02, .08);
+    LIVE.glints = inst(glG, M.glint, 70, false); LIVE.glintU = Array.from({ length: 70 }, (_, i) => [i / 70 + Math.sin(i * 7.1) * .004, (Math.sin(i * 3.3)) * .8]);
+
+    // люди
+    LIVE.bodies = inst(PERSON.body, M.body, 40, true, true); LIVE.heads = inst(PERSON.head, M.head, 40, false);
+    const propG = new THREE.BoxGeometry(1, 1, 1); LIVE.props = inst(propG, M.prop, 40, false, true);
+    const CLOTH = ['#6f7f8f', '#8a6d4b', '#5f7a5a', '#9a7b6a', '#76698a', '#a58a4a', '#5d6f78'].map(h => fadeColor(new THREE.Color(h), N.fade));
+    const jobs = (cfg.people || []).slice();
+    (cfg.plots || []).filter(p => p.state === 'build').forEach(p => jobs.push({ job: 'hammer', at: p.id }));
+    LIVE.people = jobs.filter(j => N.people || j.job === 'hammer').map((j, i) => {
+      const p = Object.assign({ i, color: CLOTH[i % CLOTH.length], ph: i * 5.3 }, j);
+      if (j.job === 'walk' || j.job === 'carry') { const pts = route(j.from, j.to); p.path = pts; p.len = 0; for (let k = 1; k < pts.length; k++) p.len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]); }
+      return p;
+    });
+    LIVE.bodies.count = LIVE.heads.count = LIVE.people.length;
+    LIVE.people.forEach((p, i) => LIVE.bodies.setColorAt(i, p.color));
+    const PROPC = { crate: '#b08659', log: '#8f6a4a', hammer: '#5d6466', rod: '#6a4e37', basket: '#c4a262' };
+    LIVE.propList = LIVE.people.map(p => ({ crate: 'crate', log: 'log', hammer: 'hammer', fish: 'rod', tend: 'basket' })[p.prop || p.job] || null);
+    LIVE.props.count = LIVE.people.length;
+    LIVE.propList.forEach((k, i) => LIVE.props.setColorAt(i, new THREE.Color(PROPC[k] || '#ffffff')));
+    // путник
+    const pl = new THREE.Mesh(PLAYER, M.player); pl.castShadow = true; dyn.add(pl); LIVE.player = pl; LIVE.playerCfg = cfg.player; report.drawObjects++;
+    // кольцо выбора
+    const ring = new THREE.Mesh(new THREE.RingGeometry(2.9, 3.2, 32), M.ring); ring.rotation.x = -Math.PI / 2; ring.position.y = .08; ring.visible = false; ring.renderOrder = 2; dyn.add(ring); LIVE.ring = ring;
+
+    [LIVE.decs, LIVE.banMesh, LIVE.flagMesh, LIVE.bodies, LIVE.props].forEach(m => { if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+    LIVE.overlaps = checkOverlaps(occupied);
+    tick(0, 0);
+    return report;
+  }
+
+  function checkOverlaps(occ) {
+    const out = [];
+    occ.forEach((a, i) => {
+      const P = PLOTS[a.id];
+      if (P && !P.centre) { const lim = P.bank ? { x0: P.x - 3, x1: P.x + 3, z0: P.z - 3, z1: P.z + 5.5 } : { x0: P.x - 3.05, x1: P.x + 3.05, z0: P.z - 3.05, z1: P.z + 3.05 }; const b = a.box; if (b.min.x < lim.x0 || b.max.x > lim.x1 || b.min.z < lim.z0 || b.max.z > lim.z1) out.push(`${a.id} выходит за участок: x ${b.min.x.toFixed(2)}..${b.max.x.toFixed(2)}, z ${b.min.z.toFixed(2)}..${b.max.z.toFixed(2)}`); }
+      for (let j = i + 1; j < occ.length; j++) {
+        const b = occ[j], A = a.box, Bb = b.box;
+        const ox = Math.min(A.max.x, Bb.max.x) - Math.max(A.min.x, Bb.min.x), oz = Math.min(A.max.z, Bb.max.z) - Math.max(A.min.z, Bb.min.z);
+        if (ox > .02 && oz > .02) out.push(`${a.id} пересекается с ${b.id} (${ox.toFixed(2)} × ${oz.toFixed(2)} м)`);
+      }
+    });
+    return out;
+  }
+
+  /* ---------- Свет, погода ---------- */
+  let FX = { win: 0, lamp: 0, flash: false, rain: 0, snow: false };
+  function applyConditions(st) {
+    const T = TIME[st.time], W = WEATHER[st.weather];
+    const el = T.el * D2R, az = T.az * D2R;
+    const dir = new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
+    sun.userData.dir = dir;
+    sun.color.set(T.sun); sun.intensity = T.si * W.sk;
+    const grey = new THREE.Color('#b9bfc2');
+    hemi.color.set(T.sky); if (W.grey) hemi.color.lerp(grey, W.grey * (st.time === 'night' ? .3 : 1));
+    hemi.groundColor.set(T.gnd); hemi.intensity = T.hi * W.hk;
+    const bg = new THREE.Color(T.bg); if (W.grey) bg.lerp(grey, W.grey * (st.time === 'night' ? .2 : .8));
+    scene.background = bg;
+    M.ground.color.copy(PAL.ground);
+    M.win.color.set('#454d55').lerp(new THREE.Color('#ffcf7a'), NEGLECT[st.neglect].lit ? T.win : 0);
+    scene.fog = W.fog ? new THREE.Fog(new THREE.Color(T.fog), 185, 262) : null;
+    FX = { win: T.win, lamp: T.lamp, flash: !!W.flash, rain: W.rain || 0, snow: !!W.snow };
+    M.rain.color.set(st.time === 'night' ? '#9aa6b8' : '#7d8a94'); M.snowfall.color.set(st.time === 'night' ? '#c9d1de' : '#ffffff');
+    rain.visible = FX.rain > 0; snowfall.visible = FX.snow;
+    rain.geometry.setDrawRange(0, Math.round(RAIN_N * Math.min(1, FX.rain / 1.6) * 2));
+  }
+
+  /* ---------- Камера ---------- */
+  const VIEW = { x: 0, z: -6, w: 30, aspect: 1 };
+  function setView(v) {
+    Object.assign(VIEW, v);
+    VIEW.w = Math.min(110, Math.max(14, VIEW.w));
+    VIEW.x = Math.min(BOUNDS.x1, Math.max(BOUNDS.x0, VIEW.x)); VIEW.z = Math.min(BOUNDS.z1, Math.max(BOUNDS.z0, VIEW.z));
+    const t = new THREE.Vector3(VIEW.x, 0, VIEW.z);
+    camera.position.copy(t).addScaledVector(DIR, 200); camera.up.set(0, 1, 0); camera.lookAt(t);
+    const hw = VIEW.w / 2, hh = hw / VIEW.aspect;
+    camera.left = -hw; camera.right = hw; camera.top = hh; camera.bottom = -hh; camera.near = 1; camera.far = 600;
+    camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    // тень следует за видимой областью
+    const dir = sun.userData.dir || new THREE.Vector3(0, 1, 1);
+    const span = Math.max(hw, hh / Math.sin(PITCH)) * 1.25 + 6;
+    sun.target.position.copy(t); sun.position.copy(t).addScaledVector(dir, 120);
+    const sc = sun.shadow.camera; sc.left = -span; sc.right = span; sc.top = span; sc.bottom = -span; sc.near = 1; sc.far = 300; sc.updateProjectionMatrix();
+    precip.position.set(VIEW.x, 0, VIEW.z);
+  }
+  function panBy(dxPx, dyPx, pxWidth) {
+    const upp = VIEW.w / pxWidth;
+    const nx = VIEW.x - RIGHT.x * dxPx * upp + FWD.x * dyPx * upp / Math.sin(PITCH);
+    const nz = VIEW.z - RIGHT.z * dxPx * upp + FWD.z * dyPx * upp / Math.sin(PITCH);
+    setView({ x: nx, z: nz });
+  }
+
+  /* ---------- Движение ---------- */
+  const tmpO = new THREE.Object3D(), mA = new THREE.Matrix4(), mB = new THREE.Matrix4(), qA = new THREE.Quaternion(), vA = new THREE.Vector3(), sA = new THREE.Vector3(1, 1, 1), eA = new THREE.Euler();
+  function along(path, d) {
+    for (let k = 1; k < path.length; k++) { const [x0, z0] = path[k - 1], [x1, z1] = path[k], L = Math.hypot(x1 - x0, z1 - z0); if (d <= L || k === path.length - 1) { const u = L ? Math.min(1, d / L) : 0; return [x0 + (x1 - x0) * u, z0 + (z1 - z0) * u, Math.atan2(x1 - x0, z1 - z0)]; } d -= L; }
+    return [path[0][0], path[0][1], 0];
+  }
+  function pose(p, t) {
+    const P = p.at ? PLOTS[p.at] : null; let x = 0, y = 0, z = 0, yaw = 0, bend = 0, sway = 0, prop = null;
+    if (p.job === 'walk' || p.job === 'carry') {
+      const v = .9, pause = p.job === 'carry' ? 3 : 6, L = p.len, T = 2 * L / v + 2 * pause, u = (t + p.ph) % T;
+      let back = false, d;
+      if (u < L / v) d = u * v; else if (u < L / v + pause) { d = L; bend = p.job === 'carry' ? .35 * Math.sin((u - L / v) / pause * Math.PI) : 0; } else if (u < 2 * L / v + pause) { d = L - (u - L / v - pause) * v; back = true; } else { d = 0; bend = p.job === 'carry' ? .35 * Math.sin((u - 2 * L / v - pause) / pause * Math.PI) : 0; }
+      const moving = (u < L / v) || (u > L / v + pause && u < 2 * L / v + pause);
+      [x, z, yaw] = along(p.path, d); if (back) yaw += Math.PI;
+      if (!moving) yaw = back ? 0 : Math.PI;
+      sway = moving ? Math.sin(t * 6 + p.ph) * .05 : 0;
+      if (p.job === 'carry' && !back && moving) prop = p.prop;
+    } else if (p.job === 'tend') {
+      const k = Math.floor((t + p.ph) / 7) % 4, u = ((t + p.ph) % 7) / 7;
+      x = P.x - 1.5 + k * .9 + (u < .15 ? u / .15 * .9 - .9 : 0); z = P.z + 1.45; yaw = Math.PI;
+      bend = u < .15 ? 0 : .6 * Math.sin((u - .15) / .85 * Math.PI); prop = 'tend';
+    } else if (p.job === 'hammer') { x = P.x - 1.2; z = P.z + 2.75; yaw = Math.PI; bend = .12 + .06 * Math.sin(t * 3.2 + p.ph); prop = 'hammer'; }
+    else if (p.job === 'fish') { x = P.x + .6; y = .5; z = P.z + 4.1; yaw = 0; bend = .05; prop = 'fish'; }
+    else if (p.job === 'trade') { x = P.x + (p.dx || 0); z = P.z + 2.35; yaw = Math.sin(t * .35 + p.ph) * .6; prop = null; }
+    return { x, y, z, yaw, bend, sway, prop };
+  }
+  let lastT = 0;
+  function tick(dt, t) {
+    if (!LIVE) return;
+    lastT = t;
+    // деревья
+    const sw = (tr, k) => Math.sin(t * .8 + tr.ph) * .025 * k;
+    LIVE.cons.list.forEach((tr, i) => { tmpO.position.set(tr.x, tr.s * 1.1 * .45, tr.z); tmpO.rotation.set(sw(tr, 1), 0, sw(tr, .8)); tmpO.scale.set(1.25 * tr.s, 2.6 * tr.s, 1.25 * tr.s); tmpO.updateMatrix(); LIVE.cons.setMatrixAt(i, tmpO.matrix); if (LIVE.caps.count) { tmpO.position.y += 2.6 * tr.s * .62; tmpO.scale.set(1.25 * tr.s * .4, 2.6 * tr.s * .4, 1.25 * tr.s * .4); tmpO.updateMatrix(); LIVE.caps.setMatrixAt(i, tmpO.matrix); } });
+    const winterK = CTX.winter ? .55 : 1;
+    LIVE.decs.list.forEach((tr, i) => { tmpO.position.set(tr.x + sw(tr, 4), tr.s * 1.4 + 1.05 * tr.s * winterK, tr.z); tmpO.rotation.set(0, tr.ph, 0); tmpO.scale.set(1.15 * tr.s * winterK, 1 * tr.s * winterK, 1.15 * tr.s * winterK); tmpO.updateMatrix(); LIVE.decs.setMatrixAt(i, tmpO.matrix); });
+    [LIVE.trunks, LIVE.cons, LIVE.decs, LIVE.caps, LIVE.tufts].forEach(m => { m.instanceMatrix.needsUpdate = true; });
+    // огонь и свет
+    const flick = a => .85 + .15 * Math.sin(t * 9.1 + a) * Math.sin(t * 5.3 + a * 2);
+    LIVE.fires.forEach((f, i) => { if (f.st <= 1) f.g.scale.set(1, flick(i) * 1.05, 1); });
+    pool.forEach((l, i) => { const L = LIVE.lights[i]; if (!L) { l.intensity = 0; return; } l.position.copy(L.a.pos).add(vA.set(0, L.fire ? .8 : 0, 0)); l.intensity = L.base * (L.fire ? Math.max(.25, FX.lamp) * flick(i) : FX.lamp); });
+    // дым
+    LIVE.smoke.forEach((s, i) => { for (let k = 0; k < 4; k++) { const u = ((t / 6 + k / 4 + i * .13) % 1); tmpO.position.set(s.pos.x + u * .8, s.pos.y + u * 2.6, s.pos.z - u * .3); const sc = (.18 + u * .45) * s.k * (u > .8 ? (1 - u) / .2 : 1); tmpO.scale.setScalar(Math.max(.001, sc)); tmpO.rotation.set(u * 3, u * 2, 0); tmpO.updateMatrix(); LIVE.puffs.setMatrixAt(i * 4 + k, tmpO.matrix); } });
+    LIVE.puffs.instanceMatrix.needsUpdate = true;
+    // флаги и стяги
+    LIVE.flags.forEach((f, i) => { tmpO.position.copy(f.pos); tmpO.rotation.set(0, f.ry + .5 + Math.sin(t * .9 + f.ph) * .3, 0); tmpO.scale.setScalar(f.big ? 1.6 : 1); tmpO.updateMatrix(); LIVE.flagMesh.setMatrixAt(i, tmpO.matrix); });
+    LIVE.flagMesh.instanceMatrix.needsUpdate = true;
+    const counts = {}; Object.keys(LIVE.emb).forEach(k => { counts[k] = 0; });
+    LIVE.bans.forEach((b, i) => { tmpO.position.copy(b.pos); tmpO.rotation.set(Math.sin(t * .7 + b.ph) * .08, b.ry + Math.sin(t * .5 + b.ph) * .1, 0); tmpO.scale.setScalar(1); tmpO.updateMatrix(); LIVE.banMesh.setMatrixAt(i, tmpO.matrix); b.m = tmpO.matrix.clone(); });
+    LIVE.banMesh.instanceMatrix.needsUpdate = true;
+    Object.keys(LIVE.emb).forEach(k => { const E = LIVE.emb[k]; E.list.forEach((b, i) => { if (b.fixed) { tmpO.position.copy(b.pos); tmpO.rotation.set(0, b.ry, 0); tmpO.scale.setScalar(1); tmpO.updateMatrix(); E.mesh.setMatrixAt(i, tmpO.matrix); } else { mA.makeTranslation(0, -.42, .03); mB.multiplyMatrices(b.m, mA); E.mesh.setMatrixAt(i, mB); } }); E.mesh.instanceMatrix.needsUpdate = true; });
+    // крылья
+    LIVE.sails.forEach(s => { s.m.rotation.z = s.spin ? -t * .35 : .3; });
+    // вода
+    LIVE.glintU.forEach(([u0, off], i) => { const u = (u0 + t * .006) % 1, p = stream.getPoint(u), tg = stream.getTangent(u); tmpO.position.set(p.x - tg.z * off, .07, p.z + tg.x * off); tmpO.rotation.set(0, Math.atan2(-tg.z, tg.x), 0); tmpO.scale.set(.6 + .4 * Math.sin(i + t * .5), 1, 1); tmpO.updateMatrix(); LIVE.glints.setMatrixAt(i, tmpO.matrix); });
+    LIVE.glints.instanceMatrix.needsUpdate = true;
+    // люди
+    LIVE.people.forEach((p, i) => {
+      const s = pose(p, t);
+      eA.set(s.bend, s.yaw, s.sway, 'YXZ'); qA.setFromEuler(eA); vA.set(s.x, s.y, s.z); sA.set(1, 1, 1);
+      mA.compose(vA, qA, sA); LIVE.bodies.setMatrixAt(i, mA);
+      mB.makeTranslation(0, 1.92, 0); mB.premultiply(mA); LIVE.heads.setMatrixAt(i, mB);
+      const k = LIVE.propList[i], show = k && (k !== 'crate' && k !== 'log' ? true : s.prop === k);
+      if (!show) { mB.makeScale(0, 0, 0); LIVE.props.setMatrixAt(i, mB); return; }
+      const PS = { crate: [[0, 1.15, .42], [.5, .4, .4], 0], log: [[.3, 1.65, 0], [.22, .22, 1.4], 0], hammer: [[.35, 1.2, .35], [.08, .08, .55], .9 + Math.sin(t * 3.2 + p.ph) * .7], rod: [[.25, 1.3, 1], [.04, .04, 2.4], 1.1 + Math.sin(t * .8) * .05], basket: [[-.38, .75, .1], [.3, .22, .3], 0] }[k];
+      tmpO.position.set(...PS[0]); tmpO.rotation.set(PS[2], 0, 0); tmpO.scale.set(...PS[1]); tmpO.updateMatrix();
+      mB.multiplyMatrices(mA, tmpO.matrix); LIVE.props.setMatrixAt(i, mB);
+    });
+    [LIVE.bodies, LIVE.heads, LIVE.props].forEach(m => { m.instanceMatrix.needsUpdate = true; });
+    // путник
+    const pc = LIVE.playerCfg;
+    if (pc.sit) { LIVE.player.position.set(pc.x, -.35, pc.z); LIVE.player.rotation.set(-.15, pc.yaw || 0, 0); }
+    else { const path = pc.path, L = path.reduce((a, q, k) => k ? a + Math.hypot(q[0] - path[k - 1][0], q[1] - path[k - 1][1]) : 0, 0), T = 2 * L / .7 + 16, u = t % T; let d, back = false; if (u < 8) d = 0; else if (u < 8 + L / .7) d = (u - 8) * .7; else if (u < 16 + L / .7) d = L; else { d = L - (u - 16 - L / .7) * .7; back = true; } const [x, z, yaw] = along(path, d); const moving = (u >= 8 && u < 8 + L / .7) || back; LIVE.player.position.set(x, 0, z); LIVE.player.rotation.set(0, moving ? yaw + (back ? Math.PI : 0) : .35, moving ? Math.sin(t * 5.5) * .04 : 0); }
+    // осадки
+    if (FX.rain) { const sp = 22, n = rain.geometry.drawRange.count / 2; for (let i = 0; i < Math.min(RAIN_N, n); i++) { const [x, y0, z] = rainSeed[i]; const y = ((y0 - t * sp) % PR.h + PR.h) % PR.h; rainPos.set([x, y, z, x - .12, y + .9, z + .05], i * 6); } rainGeo.attributes.position.needsUpdate = true; }
+    if (FX.snow) { for (let i = 0; i < SNOW_N; i++) { const [x, y0, z, ph] = snowSeed[i]; const y = ((y0 - t * 1.3) % PR.h + PR.h) % PR.h; snowPos.set([x + Math.sin(t * .6 + ph) * .6, y, z + Math.cos(t * .5 + ph) * .4], i * 3); } snowGeo.attributes.position.needsUpdate = true; }
+    if (FX.flash) { const u = t % 11; hemi.userData.flash = (u > 10 && u < 10.12) || (u > 10.3 && u < 10.38) ? .9 : 0; } else hemi.userData.flash = 0;
+  }
+
+  /* ---------- Выбор ---------- */
+  const ray = new THREE.Raycaster();
+  function pick(nx, ny) {
+    ray.setFromCamera({ x: nx, y: ny }, camera);
+    let best = null, bd = 1e9; const hit = new THREE.Vector3();
+    HITS.forEach(h => { if (ray.ray.intersectBox(h.box, hit)) { const d = hit.distanceTo(camera.position); if (d < bd) { bd = d; best = h.id; } } });
+    return best;
+  }
+  function select(id) {
+    const I = id && INFO[id];
+    if (!I || !LIVE) { if (LIVE) LIVE.ring.visible = false; return null; }
+    LIVE.ring.visible = true; LIVE.ring.position.set(I.x, .08, I.z); const r = I.type === 'landmark' ? .75 : I.type === 'centre' ? 1.35 : I.type === 'monument' || I.type === 'decor' ? .55 : 1; LIVE.ring.scale.setScalar(r);
+    return I;
+  }
+
+  function set(cfg, st) {
+    const key = [cfg.stage, st.season, st.neglect].join('|');
+    let rep = null;
+    if (key !== STATE.key) { rep = buildStage(cfg, st); STATE.key = key; }
+    STATE.st = st;
+    applyConditions(st); setView({});
+    return rep;
+  }
+  function plates() { return PLATES.concat(); }
+  function flashLevel() { return hemi.userData.flash || 0; }
+  function setFlash(k) { hemi.userData.base = hemi.userData.base || hemi.intensity; }
+
+  return { scene, camera, sun, hemi, set, setView, panBy, VIEW, BOUNDS, tick, pick, select, plates, info: () => INFO, overlaps: () => (LIVE ? LIVE.overlaps : []), missing: () => [...missingKeys], report, PLOTS, live: () => LIVE, flashLevel, route };
+}
+
+/* ---------- Конфигурации стадий ---------- */
+const LANDMARK_LIST = [
+  ['Схема слоёв', 'design/00-layers.md', 'cabin', 'B'], ['Шпаргалка Kotlin', 'algo/kotlin-cheatsheet.md', 'cabin', 'A'], ['Решения задач', 'algo/*.kt', 'hall', 'A'],
+  ['Журнал ошибок', 'algo/mistakes.md', 'cabin', 'A'], ['Замер', 'notes/baseline.md', 'tower', 'A'], ['Анатомия Gradle', 'build/gradle-anatomy.md', 'cabin', 'C1'],
+  ['Промпты репетитора', 'notes/ai-tutor.md', 'cabin', 'E'], ['Правила', 'notes/rules.md', 'cabin', 'E'], ['Слой данных', 'design/data-layer.md', 'cabin', 'B'],
+  ['Заметки CI', 'notes/ci.md', 'cabin', 'C2'], ['Workflow', '.github/workflows/ci.yml', 'tower', 'C2'], ['Тесты', 'notes/tests.md', 'cabin', 'E'],
+  ['Состояние UI', 'design/ui-state.md', 'cabin', 'B'], ['Каталог версий', 'build/catalog.md', 'cabin', 'C1'], ['Разбор чата', 'design/chat-review.md', 'cabin', 'B'],
+  ['Список офлайн', 'design/list-offline.md', 'hall', 'B'],
+];
+const lms = (n, stages) => LANDMARK_LIST.slice(0, n).map(([title, file, kind, track], i) => ({ title, file, kind, track, st: stages[i] ?? 2 }));
+const STAGE_CFG = {
+  camp: {
+    stage: 'camp', centre: 0, locked: [], plots: [{ id: 'house1', lvl: 1 }],
+    player: { sit: true, x: 1.25, z: -4.1, yaw: -1.1 },
+    home: { x: -3, z: -6, w: 18 },
+  },
+  village: {
+    stage: 'village', centre: 3,
+    plots: [
+      { id: 'house1', lvl: 4 }, { id: 'house2', lvl: 3 }, { id: 'house3', lvl: 3 }, { id: 'house4', lvl: 2 },
+      { id: 'tavern', lvl: 1, state: 'build', timer: '45 мин' }, { id: 'well1', lvl: 3 }, { id: 'garden1', lvl: 3 }, { id: 'garden2', lvl: 2 },
+      { id: 'workshop', lvl: 2, state: 'broken' }, { id: 'barn1', lvl: 3 }, { id: 'warehouse1', lvl: 2, from: 1, state: 'build', timer: '3 ч 12 мин' },
+      { id: 'brickyard1', lvl: 2 }, { id: 'woodshed', lvl: 2 }, { id: 'sawmill1', lvl: 3 }, { id: 'pier1', lvl: 2 },
+    ],
+    locked: ['house5', 'house6', 'house7', 'house8', 'house9', 'house10', 'market', 'bakery', 'mill', 'tower', 'garden3', 'garden4', 'barn2', 'sawmill2', 'warehouse2', 'brickyard2', 'well2', 'pier2'],
+    landmarks: lms(9, [3, 3, 2, 2, 2, 2, 1, 0, 0]), monuments: ['Цикл 1 · Базовый месяц'],
+    people: [
+      { job: 'tend', at: 'garden1' }, { job: 'carry', from: 'garden1', to: 'barn1', prop: 'crate' }, { job: 'fish', at: 'pier1' },
+      { job: 'walk', from: 'house1', to: 'PLAZA' }, { job: 'carry', from: 'sawmill1', to: 'woodshed', prop: 'log' }, { job: 'walk', from: 'house2', to: 'well1' },
+    ],
+    decor: [['lamp', -7, 5.4], ['lamp', 7, 5.4], ['bench', -4, 4.6], ['sign', 1.8, 6.2], ['bridge', 0, 9.6], ['flag', 6, -4.6]],
+    player: { path: [[2, 3.5], [-3.5, 3.5], [-3.5, -2.5]] },
+    home: { x: 0, z: -6, w: 30 },
+  },
+  city: {
+    stage: 'city', centre: 5, locked: [],
+    plots: [
+      ['house1', 5], ['house2', 5], ['house3', 4], ['house4', 4], ['house5', 5], ['house6', 4], ['house7', 3], ['house8', 4], ['house9', 4], ['house10', 3],
+      ['tavern', 5], ['market', 4], ['bakery', 4], ['well1', 4], ['well2', 3], ['garden1', 5], ['garden2', 4], ['garden3', 3], ['garden4', 3],
+      ['workshop', 5, 'broken'], ['barn1', 5], ['barn2', 3], ['warehouse1', 4], ['warehouse2', 3], ['brickyard1', 4], ['brickyard2', 3],
+      ['woodshed', 3], ['sawmill1', 4], ['sawmill2', 3], ['tower', 5], ['mill', 5], ['pier1', 4], ['pier2', 3],
+    ].map(([id, lvl, state]) => ({ id, lvl, state })).map(p => p.id === 'house4' ? Object.assign(p, { lvl: 5, from: 4, state: 'build', timer: '3 ч 12 мин' }) : p),
+    landmarks: lms(16, [3, 3, 3, 2, 2, 3, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0]), monuments: ['Цикл 1 · Базовый месяц', 'Цикл 2', 'Цикл 3'],
+    people: [
+      { job: 'tend', at: 'garden1' }, { job: 'tend', at: 'garden3' }, { job: 'carry', from: 'garden1', to: 'barn1', prop: 'crate' }, { job: 'carry', from: 'sawmill1', to: 'woodshed', prop: 'log' },
+      { job: 'fish', at: 'pier1' }, { job: 'fish', at: 'pier2' }, { job: 'trade', at: 'market', dx: -1.6 }, { job: 'trade', at: 'market', dx: .4 },
+      { job: 'walk', from: 'house1', to: 'tavern' }, { job: 'walk', from: 'house5', to: 'bakery' }, { job: 'carry', from: 'brickyard1', to: 'warehouse1', prop: 'crate' },
+      { job: 'walk', from: 'house3', to: 'PLAZA' }, { job: 'walk', from: 'house8', to: 'market' }, { job: 'carry', from: 'garden4', to: 'mill', prop: 'crate' },
+      { job: 'walk', from: 'house9', to: 'well2' },
+    ],
+    decor: [['lamp', -7, 5.4], ['lamp', 7, 5.4], ['lamp', -7, -4.6], ['lamp', 7, -4.6], ['bench', -4.2, 4.6], ['fountain', -3.6, .6], ['sign', 1.8, 6.2], ['bridge', 0, 9.6], ['flag', 6, -4.6], ['bed', -5.5, -2.6], ['lamp', 13.5, 2.2], ['lamp', -13.5, -6.5]],
+    player: { path: [[1.5, 3.5], [-1.2, 3.2], [-1.2, -2.8]] },
+    home: { x: 0, z: -6, w: 30 },
+  },
+};
+</script>
+
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  /* Тема */
+  function applyTheme(mode) {
+    if (mode === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = mode;
+    document.querySelectorAll('[data-theme-set]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeSet === mode)));
+    try { localStorage.setItem('town3d-theme', mode); } catch (e) {}
+  }
+  let tm = 'auto'; try { tm = localStorage.getItem('town3d-theme') || 'auto'; } catch (e) {}
+  applyTheme(tm);
+  document.querySelectorAll('[data-theme-set]').forEach(b => b.addEventListener('click', () => applyTheme(b.dataset.themeSet)));
+
+  /* HUD */
+  const HUD = {
+    camp: [110, 0, 0, 0, 0, '1/2', '1/1'], village: [412, 3, 24, 18, 8, '14/17', '1/2'], city: [1840, 12, 64, 38, 21, '41/50', '1/3'],
+  };
+  const HUD_DEF = [['i-coin', 'Монеты', 'ic-coin'], ['i-gem', 'Камни', 'ic-gem'], ['i-food', 'Еда'], ['i-wood', 'Дерево'], ['i-brick', 'Кирпич'], ['i-people', 'Жители: сейчас из мест'], ['i-hammer', 'Свободные строители']];
+  function renderHud(stage) {
+    $('hud').innerHTML = HUD_DEF.map(([ic, name, cls], i) => { const v = String(HUD[stage][i]); const [a, b] = v.split('/'); return `<button type="button" aria-label="${name}: ${b ? a + ' из ' + b : a}" title="${name}" data-say="${name}: ${b ? a + ' из ' + b : a}"><svg class="ic ${cls || ''}" aria-hidden="true"><use href="#${ic}"/></svg><b>${a}${b ? `<small>/${b}</small>` : ''}</b></button>`; }).join('');
+  }
+  $('hud').addEventListener('click', e => { const b = e.target.closest('button'); if (b) $('hud-say').textContent = b.dataset.say; });
+
+  if (!window.THREE) { $('vp-msg').hidden = false; $('vp-msg').textContent = 'Не удалось загрузить three.js с cdnjs. Сцена появится, когда будет сеть.'; renderHud('city'); return; }
+
+  const LABEL = {
+    stage: { camp: 'Стоянка', village: 'Деревня', city: 'Город' },
+    season: { winter: 'зима', spring: 'весна', summer: 'лето', autumn: 'осень' },
+    time: { dawn: 'рассвет', day: 'день', dusk: 'закат', night: 'ночь' },
+    weather: { clear: 'ясно', cloudy: 'облачно', overcast: 'пасмурно', fog: 'туман', rain: 'дождь', snow: 'снег', storm: 'гроза' },
+    neglect: { 0: '0', 1: '1', 2: '2', 3: '3' },
+  };
+  const NAMES = { house: ['Палатка', 'Шалаш', 'Хижина', 'Дом', 'Двухэтажный дом'], garden: 'Огород', barn: 'Амбар', sawmill: 'Лесопилка', woodshed: 'Дровник', well: 'Колодец', warehouse: 'Склад', brickyard: 'Кирпичный двор', workshop: 'Мастерская', pier: 'Рыбацкий причал', mill: 'Мельница', tavern: 'Таверна', market: 'Рынок', bakery: 'Пекарня', tower: 'Сторожевая башня' };
+  const GIVES = { house: l => `мест: ${[2, 3, 5, 7, 10][l - 1]}`, garden: l => `еда за ход: ${[3, 6, 9, 13, 18][l - 1]}`, barn: l => `запас еды: ${[40, 80, 150, 260, 420][l - 1]}`, sawmill: l => `дерево за ход: ${[2, 4, 6, 9, 13][l - 1]}`, woodshed: l => `запас дров на ${l} раб. ${l === 1 ? 'день' : l < 5 ? 'дня' : 'дней'}`, well: () => 'довольство; без колодца не больше 6 жителей', warehouse: () => 'запас дерева и кирпича', brickyard: l => `кирпич за ход: ${[1, 2, 4, 6, 9][l - 1]}`, workshop: l => `стройка быстрее на ${6 * l}%`, pier: l => `еда за ход: ${[6, 9, 13, 18, 24][l - 1]}`, mill: l => `еда огородов +${10 * l}%`, tavern: () => 'довольство; жители приходят по двое', market: () => 'обмен монет на еду и материалы', bakery: l => `еда за ход: ${[15, 22, 30, 40, 52][l - 1]}`, tower: () => 'после перерыва ломается не больше одной постройки' };
+  const BASE = { house: 20, garden: 30, barn: 40, sawmill: 50, woodshed: 60, well: 80, warehouse: 80, brickyard: 120, workshop: 150, pier: 160, mill: 250, tavern: 300, market: 350, bakery: 500, tower: 600 };
+  const MULT = [1, 1.8, 3.2, 5.8, 10.5], TIMES = ['5 мин', '1 ч', '4 ч', '12 ч', '24 ч'];
+  const CENTRE = ['Костёр', 'Очаг с навесом', 'Дом собраний', 'Ратуша', 'Ратуша с башней', 'Ратуша с часами'];
+  const ST_NAME = ['участок', 'стройка', 'построен', 'с пристройкой'];
+  const TRACK = { A: 'A · Алгоритмы', B: 'B · System Design', C1: 'C1 · Gradle', C2: 'C2 · CI/CD', E: 'E · Репетитор' };
+  const MAXLVL = { camp: 1, village: 4, city: 5 };
+
+  const renderer = new THREE.WebGLRenderer({ canvas: $('cv'), antialias: true, powerPreference: 'low-power' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const world = createWorld(THREE);
+
+  const nowState = () => { const d = new Date(), h = d.getHours() + d.getMinutes() / 60, m = d.getMonth(); const season = m <= 1 || m === 11 ? 'winter' : m <= 4 ? 'spring' : m <= 7 ? 'summer' : 'autumn'; const [r, s] = season === 'winter' ? [8.5, 16.5] : season === 'summer' ? [5, 21] : [7, 18.5]; return { season, time: h < r - 1 || h >= s + 1 ? 'night' : h < r + 1 ? 'dawn' : h >= s - 1 ? 'dusk' : 'day' }; };
+  const S = Object.assign({ stage: 'city', weather: 'clear', neglect: '0' }, nowState());
+  let selected = null;
+  const vp = $('vp');
+  const cond = () => ({ season: S.season, time: S.time, weather: S.weather, neglect: +S.neglect });
+
+  function sizeLive() {
+    const w = vp.clientWidth, h = vp.clientHeight;
+    renderer.setSize(w, h, false);
+    return { w, h };
+  }
+  function pxPerMetreDefault(w) { return Math.min(22, Math.max(10, w / 26)); }
+  function homeView(cfg) { const { w, h } = sizeLive(); const W = cfg.stage === 'camp' ? cfg.home.w : Math.max(24, w / pxPerMetreDefault(w)); world.setView({ x: cfg.home.x, z: cfg.home.z, w: W, aspect: w / h }); }
+
+  /* Метки */
+  const ICON = { timer: 'i-clock', repair: 'i-hammer' };
+  function placePlates(host, w, h, extra) {
+    const list = world.plates().concat(extra || []);
+    host.innerHTML = list.map(p => {
+      const v = p.pos.clone().project(world.camera), x = (v.x + 1) / 2 * w, y = (1 - v.y) / 2 * h;
+      if (x < -40 || x > w + 40 || y < 0 || y > h + 30) return '';
+      return `<span class="plate ${p.kind}" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px">${ICON[p.kind] ? `<svg aria-hidden="true"><use href="#${ICON[p.kind]}"/></svg>` : ''}${p.text}</span>`;
+    }).join('');
+  }
+  function selPlate() {
+    if (!selected) return [];
+    const I = world.info()[selected]; if (!I || ['build', 'broken'].includes(I.state)) return [];
+    return [{ kind: 'name', text: nameOf(I), pos: new THREE.Vector3(I.x, I.top + .5, I.z) }];
+  }
+
+  /* Отрисовка по запросу */
+  let dirty = true, running = false, t0 = performance.now(), last = 0, visible = true;
+  const motionMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let motion = !motionMQ.matches;
+  function draw() {
+    const fl = world.flashLevel(); world.hemi.intensity += fl;
+    renderer.render(world.scene, world.camera);
+    world.hemi.intensity -= fl;
+    placePlates($('plates'), vp.clientWidth, vp.clientHeight, selPlate());
+    dirty = false;
+  }
+  function request() { dirty = true; if (!running) requestAnimationFrame(() => { if (dirty) draw(); }); }
+  function loop(now) {
+    if (!running) return;
+    requestAnimationFrame(loop);
+    if (now - last < 33) return;
+    const dt = Math.min(.1, (now - last) / 1000); last = now;
+    world.tick(dt, (now - t0) / 1000); draw();
+  }
+  function updateRunning() {
+    const want = motion && visible && !document.hidden;
+    if (want && !running) { running = true; last = performance.now(); requestAnimationFrame(loop); }
+    if (!want && running) { running = false; request(); }
+    $('motion-btn').setAttribute('aria-pressed', String(motion));
+  }
+  document.addEventListener('visibilitychange', updateRunning);
+  if ('IntersectionObserver' in window) new IntersectionObserver(es => { visible = es[0].isIntersecting; updateRunning(); }).observe(vp);
+  motionMQ.addEventListener && motionMQ.addEventListener('change', () => { motion = !motionMQ.matches; updateRunning(); });
+  $('motion-btn').addEventListener('click', () => { motion = !motion; updateRunning(); });
+
+  function apply(rebuildView) {
+    const cfg = STAGE_CFG[S.stage];
+    world.set(cfg, cond());
+    if (rebuildView) homeView(cfg); else { const { w, h } = sizeLive(); world.setView({ aspect: w / h }); }
+    if (!running) world.tick(0, 12);
+    renderHud(S.stage); renderSheet();
+    request();
+    document.querySelectorAll('.seg input').forEach(i => { i.checked = String(S[i.name]) === i.value; });
+  }
+
+  /* Жесты: один палец — сдвиг, два — масштаб; страница листается за пределами карты */
+  const pts = new Map(); let downAt = null, moved = 0, pinch0 = null;
+  vp.addEventListener('pointerdown', e => { if (e.target.closest('.map-tools')) return; vp.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 1) { downAt = { x: e.clientX, y: e.clientY, t: performance.now() }; moved = 0; } if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = { d: Math.hypot(a.x - b.x, a.y - b.y), w: world.VIEW.w }; } vp.classList.add('dragging'); });
+  vp.addEventListener('pointermove', e => {
+    const p = pts.get(e.pointerId); if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    if (pts.size === 1) { moved += Math.abs(dx) + Math.abs(dy); world.panBy(dx, dy, vp.clientWidth); request(); }
+    else if (pts.size === 2 && pinch0) { const [a, b] = [...pts.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); world.setView({ w: pinch0.w * pinch0.d / Math.max(20, d) }); world.panBy(dx / 2, dy / 2, vp.clientWidth); moved = 99; request(); }
+  });
+  const up = e => {
+    if (!pts.has(e.pointerId)) return; pts.delete(e.pointerId); if (pts.size < 2) pinch0 = null;
+    if (pts.size === 0) { vp.classList.remove('dragging'); if (downAt && moved < 8 && performance.now() - downAt.t < 500) { const r = vp.getBoundingClientRect(); const id = world.pick((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); selected = id; world.select(id); renderSheet(); request(); } downAt = null; }
+  };
+  vp.addEventListener('pointerup', up); vp.addEventListener('pointercancel', up);
+  vp.addEventListener('wheel', e => { if (!e.ctrlKey && !e.metaKey) return; e.preventDefault(); world.setView({ w: world.VIEW.w * Math.exp(e.deltaY * .002) }); request(); }, { passive: false });
+  vp.addEventListener('keydown', e => { const k = { ArrowLeft: [40, 0], ArrowRight: [-40, 0], ArrowUp: [0, 40], ArrowDown: [0, -40] }[e.key]; if (k) { e.preventDefault(); world.panBy(k[0], k[1], vp.clientWidth); request(); } if (e.key === '+' || e.key === '=') { world.setView({ w: world.VIEW.w / 1.25 }); request(); } if (e.key === '-') { world.setView({ w: world.VIEW.w * 1.25 }); request(); } });
+  $('z-in').addEventListener('click', () => { world.setView({ w: world.VIEW.w / 1.3 }); request(); });
+  $('z-out').addEventListener('click', () => { world.setView({ w: world.VIEW.w * 1.3 }); request(); });
+  $('z-home').addEventListener('click', () => { homeView(STAGE_CFG[S.stage]); request(); });
+  $('z-slob').addEventListener('click', () => { world.setView({ x: 0, z: 19 }); request(); });
+  if (!matchMedia('(pointer: coarse)').matches) $('map-hint').textContent = 'Тяните карту мышью. Масштаб — кнопки или Ctrl + колесо.';
+  window.addEventListener('resize', () => { const { w, h } = sizeLive(); world.setView({ aspect: w / h }); request(); });
+
+  /* Лист постройки */
+  function nameOf(I) {
+    if (I.type === 'centre') return CENTRE[I.lvl];
+    if (I.type === 'landmark') return I.title;
+    if (I.type === 'monument') return `Памятник: ${I.title}`;
+    if (NAMES[I.type]) { const n = NAMES[I.type]; return Array.isArray(n) ? n[I.lvl - 1] : n; }
+    return I.name || 'Участок';
+  }
+  function renderSheet() {
+    const el = $('sheet'), I = selected && world.info()[selected];
+    if (!I) { el.innerHTML = `<h3>Лист постройки</h3><p class="muted" style="font-size:.9375rem">Нажмите на постройку на карте. Таймер стройки и метка «ремонт» видны прямо над домами.</p>`; return; }
+    const pips = l => `<div class="pips" aria-hidden="true">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= l ? 'on' : ''}"></i>`).join('')}</div>`;
+    if (I.type === 'landmark') {
+      el.innerHTML = `<div class="sheet-head"><div><div class="eyebrow">Ориентир</div><h3>${I.title}</h3></div><span class="chip" style="--tc:var(--t-${I.track})"><svg class="ic" aria-hidden="true"><use href="#em-${I.track}"/></svg>${TRACK[I.track]}</span></div>
+      <dl class="facts"><dt>Файл</dt><dd><code>${I.file}</code></dd><dt>Стадия</dt><dd>${ST_NAME[I.st]} (${I.st + 1} из 4)</dd></dl>
+      <p class="muted" style="font-size:.875rem">Купить нельзя: ориентир растёт от настоящей работы — сохранённого файла и пройденных дней.</p>`; return;
+    }
+    if (I.type === 'monument') { el.innerHTML = `<div class="eyebrow">Памятник цикла</div><h3>${I.title}</h3><p class="muted" style="font-size:.875rem">Закрытый цикл сворачивается в один памятник. Внутри — список всех его файлов и ретро.</p>`; return; }
+    if (I.type === 'centre') { const n = I.lvl < 5 ? CENTRE[I.lvl + 1] : null; el.innerHTML = `<div class="eyebrow">Центр поселения</div><h3>${CENTRE[I.lvl]}</h3><p style="font-size:.9375rem">${n ? `Следующая ступень — «${n}». Нужны монеты, камни, запас еды, жители и особые постройки.` : 'Последняя ступень. Дальше город растёт уровнями построек.'}</p>${n ? `<button class="btn btn-primary">Что нужно для ступени</button>` : ''}`; return; }
+    if (!NAMES[I.type]) { el.innerHTML = `<h3>${nameOf(I)}</h3><p class="muted" style="font-size:.875rem">${I.type === 'free' ? 'Участок открыт: здесь можно поставить постройку.' : 'Украшение без уровней: поднимает довольство.'}</p>`; return; }
+    const l = I.lvl, max = MAXLVL[S.stage], base = BASE[I.type], name = nameOf(I);
+    const cost = lv => { const c = Math.round(base * MULT[lv - 1]); return { coins: c, wood: lv >= 2 ? Math.round(c * .4) : 0, brick: lv >= 4 ? Math.round(c * .25) : 0 }; };
+    let action;
+    if (I.state === 'build') action = `<div class="build"><div class="build-head"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Строится: ур. ${l}<span class="build-left">осталось ${I.timer}</span></div><div class="bar"><i style="width:47%"></i></div><small class="muted">Ускорения нет: таймер просто идёт.</small></div>`;
+    else if (I.state === 'broken') action = `<div class="build rust"><div class="build-head"><svg class="ic" aria-hidden="true"><use href="#i-hammer"/></svg>Сломано после перерыва<span class="build-left">не работает</span></div><small class="muted">Починится само за три занятия.</small></div><button class="btn btn-primary"><svg class="ic" aria-hidden="true" style="color:inherit"><use href="#i-coin"/></svg>Починить за ${Math.round(base * MULT[l - 1] * .2)} монет</button>`;
+    else if (l >= 5) action = `<p class="muted" style="font-size:.875rem">Последний уровень.</p>`;
+    else if (l >= max) action = `<button class="btn" disabled><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Ур. ${l + 1} — со следующей ступени</button>`;
+    else { const c = cost(l + 1), have = HUD[S.stage]; const short = c.brick > have[4]; action = `<div class="cost" aria-label="Цена улучшения"><span><svg class="ic ic-coin" aria-hidden="true"><use href="#i-coin"/></svg>${c.coins}</span>${c.wood ? `<span${c.wood > have[3] ? ' class="short"' : ''}><svg class="ic" aria-hidden="true"><use href="#i-wood"/></svg>${c.wood}${c.wood > have[3] ? ` · есть ${have[3]}` : ''}</span>` : ''}${c.brick ? `<span${short ? ' class="short"' : ''}><svg class="ic" aria-hidden="true"><use href="#i-brick"/></svg>${c.brick}${short ? ` · есть ${have[4]}` : ''}</span>` : ''}</div>${c.wood > have[3] || short ? `<button class="btn" disabled><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Не хватает ${short ? `${c.brick - have[4]} кирпича` : `${c.wood - have[3]} дерева`}</button>` : `<button class="btn btn-primary">Улучшить до ур. ${l + 1}</button>`}`; }
+    el.innerHTML = `<div class="sheet-head"><div><h3>${name}</h3><div class="muted" style="font-size:.8125rem">${NAMES[I.type] === name ? '' : NAMES[I.type].constructor === Array ? 'Жилище · ' : ''}Уровень ${l} из 5</div>${pips(l)}</div>${I.state === 'build' ? '<span class="chip chip-warm"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>строится</span>' : I.state === 'broken' ? '<span class="chip chip-rust"><svg class="ic" aria-hidden="true"><use href="#i-hammer"/></svg>нужен ремонт</span>' : ''}</div>
+      <dl class="facts"><dt>Даёт</dt><dd>${GIVES[I.type](l)}${l < 5 && !I.state ? ` → <b>${GIVES[I.type](l + 1).replace(/^[^:]*: /, '')}</b>` : ''}</dd>${l < 5 && !I.state ? `<dt>Стройка</dt><dd>${TIMES[l]}</dd>` : ''}</dl>${action}`;
+  }
+
+  /* Переключатели */
+  document.querySelectorAll('.seg').forEach(fs => {
+    const k = fs.dataset.k;
+    Object.entries(LABEL[k]).forEach(([v, t]) => fs.insertAdjacentHTML('beforeend', `<label><input type="radio" name="${k}" value="${v}"><span>${t}</span></label>`));
+    fs.addEventListener('change', e => { S[k] = e.target.value; if (k === 'stage') { selected = null; } apply(k === 'stage'); });
+  });
+  $('now-btn').addEventListener('click', () => { Object.assign(S, nowState()); apply(false); });
+
+  /* Снимки стадий: тем же рендером, в 2D-холст */
+  const SNAP = [
+    ['camp', { season: 'summer', time: 'dusk', weather: 'clear', neglect: 0 }, 'Стоянка · лето · закат. Путник у костра, палатка, лес вокруг поляны.', { x: -3, z: -6, w: 22 }],
+    ['village', { season: 'autumn', time: 'day', weather: 'cloudy', neglect: 0 }, 'Деревня · осень · день. 15 построек: склад и таверна строятся, мастерская сломана.', { x: 0, z: -8, w: 64 }],
+    ['city', { season: 'winter', time: 'dusk', weather: 'snow', neglect: 0 }, 'Город · зима · закат, снег. 33 постройки, ратуша с часами, слобода и памятники.', { x: 0, z: -8, w: 92 }],
+  ];
+  function snapshots() {
+    const host = $('stages'); host.innerHTML = '';
+    SNAP.forEach(([stage, st, cap, view]) => {
+      const fig = document.createElement('figure');
+      fig.innerHTML = `<button type="button" style="all:unset;display:block;cursor:pointer;width:100%" aria-label="Открыть «${LABEL.stage[stage]}» в живой сцене"><div class="snap"><canvas></canvas><div class="plates"></div></div></button><figcaption>${cap}</figcaption>`;
+      host.appendChild(fig);
+      const box = fig.querySelector('.snap'), cw = box.clientWidth, ch = box.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2);
+      world.set(STAGE_CFG[stage], st); world.setView(Object.assign({ aspect: cw / ch }, view)); world.tick(0, 20);
+      renderer.setSize(cw, ch, false); renderer.render(world.scene, world.camera);
+      const c = fig.querySelector('canvas'); c.width = cw * dpr; c.height = ch * dpr; c.getContext('2d').drawImage(renderer.domElement, 0, 0, c.width, c.height);
+      placePlates(fig.querySelector('.plates'), cw, ch);
+      fig.querySelector('button').addEventListener('click', () => { Object.assign(S, { stage }, Object.fromEntries(Object.entries(st).map(([k, v]) => [k, String(v)]))); selected = null; apply(true); vp.scrollIntoView({ behavior: motion ? 'smooth' : 'auto', block: 'center' }); });
+    });
+  }
+
+  snapshots();
+  apply(true);
+  updateRunning();
+})();
+</script>

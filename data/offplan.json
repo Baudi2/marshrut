@@ -1,0 +1,4 @@
+{
+  "note": "Стороннее развитие: всё полезное вне плана. Формат записи: { \"date\": \"2026-11-20\", \"kind\": \"video\", \"title\": \"…\", \"source\": \"YouTube\", \"track\": \"B\", \"minutes\": 40, \"takeaways\": [\"…\", \"…\"] }. kind: video, article, meetup, mock-interview, session, artifact, problem-self, problem-walkthrough. Для video, article и meetup нужно не меньше двух выводов, для mock-interview — трёх; без них запись не засчитывается. Для встреч и собеседований можно указать \"with\". Правила и награды — src/game/side.ts.",
+  "entries": []
+}

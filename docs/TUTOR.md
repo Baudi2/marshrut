@@ -25,7 +25,7 @@
 
 1. `position`, запись дня в `days[]`, строка в `sessions[]` с датой и временем.
 2. По ситуации: `leetcode[]`, `knowledgeChecks`, `mistakes`, `openItems`, `baseline`, `weeklyTests`.
-3. Стороннее развитие — в `data/offplan.json`; покупки и ремонты — в `data/purchases.json`; действия в городе — в `data/town.json`.
+3. Стороннее развитие — в `data/offplan.json`; покупки и ремонты — в `data/purchases.json`; действия в городе — в `data/town.json`. Если Baudi говорит, что уезжает или болеет, — плановый перерыв в `progress.json → breaks` (см. `CLAUDE.md`).
 4. `meta.updatedAt`.
 5. Запусти `npm ci` и `npm test`. Если тесты красные — исправь запись, не правила.
 6. Сделай коммит с понятным сообщением, например «Занятие 20.11: день 3, шаги 2–3», и запушь в ветку `main`: сайт публикуется из неё. Если пуш в `main` отклонён, запушь свою ветку и скажи Baudi, что её нужно влить.

@@ -72,6 +72,7 @@ export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi 
         missed={world.missedWorkdays}
         firewood={world.town.firewood}
         covered={world.covered}
+        breaks={world.breaks}
         value={preview}
         onChange={onPreview}
       />

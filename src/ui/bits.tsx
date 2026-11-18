@@ -183,6 +183,7 @@ export function ConditionPreview({
   missed,
   firewood = 0,
   covered = 0,
+  breaks,
   value,
   onChange,
 }: {
@@ -191,6 +192,8 @@ export function ConditionPreview({
   /** Сколько рабочих дней пропуска прикрывает запас дров и сколько уже прикрыто. */
   firewood?: number
   covered?: number
+  /** Плановые перерывы цикла: использовано рабочих дней, лимит и дата конца идущего перерыва. */
+  breaks?: { used: number; limit: number; until: string | null }
   value: ConditionLevel | null
   onChange: (level: ConditionLevel | null) => void
 }) {
@@ -209,6 +212,8 @@ export function ConditionPreview({
             {firewood > 0 &&
               ` Запас дров в дровнике прикрывает до ${firewood} ${plural(firewood, ['рабочего дня', 'рабочих дней', 'рабочих дней'])} пропуска` +
                 (covered > 0 ? `; сейчас прикрыто ${covered}.` : '.')}
+            {breaks?.until && ` Объявлен плановый перерыв до ${fmtDate(breaks.until)}: эти дни пропуском не считаются.`}
+            {breaks && breaks.used > 0 && ` Плановых перерывов в цикле: ${breaks.used} из ${breaks.limit} рабочих дней.`}
           </p>
         </div>
       </div>

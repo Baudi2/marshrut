@@ -260,6 +260,13 @@ export interface Pause {
   note?: string
 }
 
+/** Плановый перерыв: отпуск, болезнь, командировка. Даты включительно. Рабочие дни внутри не считаются пропуском. */
+export interface PlannedBreak {
+  from: string
+  to: string
+  reason?: string
+}
+
 export interface Progress {
   meta: { updatedAt: string; [key: string]: unknown }
   position: {
@@ -283,6 +290,8 @@ export interface Progress {
   }
   openItems: string[]
   observations: string[]
+  /** Плановые перерывы цикла: не больше десяти рабочих дней на цикл. */
+  breaks?: PlannedBreak[]
   /** Недели, закрытые по чекпоинту. */
   weeks?: { n: number; closed: boolean; date?: string }[]
   /** События вне дней: ci-fixed — починил красный CI. */

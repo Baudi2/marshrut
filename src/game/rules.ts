@@ -136,8 +136,32 @@ export function toISO(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
-/** Рабочие дни (пн–пт) строго между последним занятием и сегодняшним днём. */
-export function missedWorkdays(lastISO: string, todayISO: string): number {
+/** Сколько рабочих дней планового перерыва даётся на цикл. */
+export const BREAK_LIMIT = 10
+
+/**
+ * Рабочие дни, прикрытые плановыми перерывами цикла. Перерывы идут по порядку дат;
+ * дни сверх лимита не прикрываются: одиннадцатый рабочий день перерыва — уже обычный пропуск.
+ */
+export function pausedDays(breaks: { from: string; to: string }[], limit = BREAK_LIMIT): Set<string> {
+  const days = new Set<string>()
+  for (const item of [...breaks].sort((a, b) => a.from.localeCompare(b.from))) {
+    const end = parseISO(item.to)
+    for (const cursor = parseISO(item.from); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+      const weekday = cursor.getDay()
+      if (weekday === 0 || weekday === 6) continue
+      if (days.size >= limit) return days
+      days.add(toISO(cursor))
+    }
+  }
+  return days
+}
+
+/**
+ * Рабочие дни (пн–пт) строго между последним занятием и сегодняшним днём.
+ * paused — дни плановых перерывов: они пропуском не считаются.
+ */
+export function missedWorkdays(lastISO: string, todayISO: string, paused?: Set<string>): number {
   const end = parseISO(todayISO)
   const cursor = parseISO(lastISO)
   let missed = 0
@@ -145,7 +169,7 @@ export function missedWorkdays(lastISO: string, todayISO: string): number {
     cursor.setDate(cursor.getDate() + 1)
     if (cursor >= end) break
     const weekday = cursor.getDay()
-    if (weekday !== 0 && weekday !== 6) missed++
+    if (weekday !== 0 && weekday !== 6 && !paused?.has(toISO(cursor))) missed++
   }
   return missed
 }

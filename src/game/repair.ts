@@ -48,17 +48,19 @@ export function damageFor(
   repairs: Purchase[],
   todayISO: string,
   forcedLevel: ConditionLevel | null = null,
+  /** Дни плановых перерывов: пропуском не считаются. */
+  paused?: Set<string>,
 ): Damage[] {
   const dates = [...new Set(sessionDates)].sort()
   if (!dates.length) return []
 
   const storms: { from: string; back: string | null; level: ConditionLevel }[] = []
   for (let i = 0; i < dates.length - 1; i++) {
-    const level = conditionLevel(missedWorkdays(dates[i], dates[i + 1]))
+    const level = conditionLevel(missedWorkdays(dates[i], dates[i + 1], paused))
     if (level >= 2) storms.push({ from: dates[i], back: dates[i + 1], level })
   }
   const last = dates[dates.length - 1]
-  const now = forcedLevel ?? conditionLevel(missedWorkdays(last, todayISO))
+  const now = forcedLevel ?? conditionLevel(missedWorkdays(last, todayISO, paused))
   if (now >= 2) storms.push({ from: last, back: null, level: now })
 
   const damage = new Map<string, Damage>()

@@ -397,6 +397,7 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
         missed={world.missedWorkdays}
         firewood={world.town.firewood}
         covered={world.covered}
+        breaks={world.breaks}
         value={preview}
         onChange={onPreview}
       />

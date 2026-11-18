@@ -5,7 +5,7 @@ import progress from './fixtures/progress-2026-11-18.json'
 import { offplan, rawCycles } from '../data/load'
 import type { Plan, Progress, RawCycle } from '../data/types'
 import { buildWorld } from './engine'
-import { conditionLevel, gemsForScore, levelFor, missedWorkdays, roman, toISO } from './rules'
+import { BREAK_LIMIT, conditionLevel, gemsForScore, levelFor, missedWorkdays, pausedDays, roman, toISO } from './rules'
 import { SHOP, canAfford, shopItem } from './shop'
 import { BREAKS_BY_LEVEL, repairCost } from './repair'
 import { repoPurchases, repoRepairs } from '../data/load'
@@ -444,6 +444,46 @@ describe('починка', () => {
   })
 })
 
+describe('плановый перерыв', () => {
+  const purchases = [
+    { item: 'pot', date: '2026-11-18' },
+    { item: 'signpost', date: '2026-11-18' },
+  ]
+  /** Последнее занятие 18.11 (среда); перерыв объявлен с 19.11. */
+  const withBreak = (to: string) => withProgress((p) => (p.breaks = [{ from: '2026-11-19', to, reason: 'отпуск' }]))
+
+  it('считаются только рабочие дни, и не больше лимита на цикл', () => {
+    expect(pausedDays([{ from: '2026-11-19', to: '2026-11-25' }]).size).toBe(5)
+    expect(pausedDays([{ from: '2026-11-21', to: '2026-11-22' }]).size).toBe(0)
+    const long = pausedDays([{ from: '2026-11-19', to: '2026-12-31' }])
+    expect(long.size).toBe(BREAK_LIMIT)
+    // десять рабочих дней с 19.11 кончаются 2.12; 3.12 уже обычный пропуск
+    expect(long.has('2026-12-02')).toBe(true)
+    expect(long.has('2026-12-03')).toBe(false)
+  })
+
+  it('дни объявленного перерыва не считаются пропуском: мир не зарастает и ничего не ломается', () => {
+    const plain = buildWorld([raw], [], '2026-11-27', { purchases, repairs: [] })
+    const rested = buildWorld([withBreak('2026-11-27')], [], '2026-11-27', { purchases, repairs: [] })
+    expect(plain.condition.level).toBeGreaterThanOrEqual(2)
+    expect(plain.damage.length).toBeGreaterThan(0)
+    expect(rested.missedWorkdays).toBe(0)
+    expect(rested.condition.level).toBe(0)
+    expect(rested.damage).toEqual([])
+    expect(rested.breaks).toEqual({ used: 7, limit: BREAK_LIMIT, until: '2026-11-27' })
+  })
+
+  it('после конца перерыва пропуски снова считаются, а сверх лимита перерыв не прикрывает', () => {
+    const back = buildWorld([withBreak('2026-11-20')], [], '2026-11-26', { purchases, repairs: [] })
+    // прикрыты 19 и 20 ноября; 23, 24, 25 — обычные пропуски
+    expect(back.missedWorkdays).toBe(3)
+    expect(back.breaks.until).toBeNull()
+    const tooLong = buildWorld([withBreak('2026-12-31')], [], '2026-12-10', { purchases, repairs: [] })
+    expect(tooLong.missedWorkdays).toBe(missedWorkdays('2026-12-02', '2026-12-10'))
+    expect(tooLong.breaks.until).toBeNull()
+  })
+})
+
 describe('запас дров', () => {
   // Лагерь и дровник поставлены 18.11: запас — один рабочий день.
   const town = [
@@ -479,6 +519,17 @@ describe('запас дров', () => {
       const after = stocked(today)
       expect(after.damage.length, today).toBe(BREAKS_BY_LEVEL[conditionLevel(before.missedWorkdays - 1)])
       expect(after.damage.length, today).toBeLessThanOrEqual(before.damage.length)
+    }
+  })
+})
+
+describe('живые данные: перерывы', () => {
+  it('у плановых перерывов даты по порядку и в лимите', () => {
+    for (const cycle of rawCycles) {
+      const breaks = cycle.progress.breaks ?? []
+      for (const item of breaks) expect(item.from <= item.to, `${item.from}–${item.to}`).toBe(true)
+      const asked = breaks.reduce((sum, item) => sum + pausedDays([item], 999).size, 0)
+      expect(asked, 'рабочих дней перерыва в цикле').toBeLessThanOrEqual(BREAK_LIMIT)
     }
   })
 })

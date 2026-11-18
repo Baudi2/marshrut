@@ -32,6 +32,8 @@ import {
   gemsForScore,
   levelFor,
   missedWorkdays,
+  pausedDays,
+  BREAK_LIMIT,
   parseISO,
   toISO,
   type Condition,
@@ -199,6 +201,8 @@ export interface World {
   missedWorkdays: number
   /** Сколько из этих дней прикрыл запас дров: они не считаются запустением. */
   covered: number
+  /** Плановые перерывы текущего цикла: сколько рабочих дней использовано и до какого числа идёт нынешний. */
+  breaks: { used: number; limit: number; until: string | null }
   condition: Condition
   /** Число занятий по неделям от первого занятия до текущей недели. */
   rhythm: { weekStart: string; sessions: number }[]
@@ -634,7 +638,10 @@ export function buildWorld(
     ...side.filter((rated) => rated.counted).map((rated) => rated.entry.date),
   ].sort()
   const lastActivity = sessionDates.length ? sessionDates[sessionDates.length - 1] : null
-  const missed = lastActivity ? missedWorkdays(lastActivity, todayISO) : 0
+  // Плановые перерывы: объявленные отпуск или болезнь. Их рабочие дни не считаются пропуском.
+  const paused = new Set(cycles.flatMap((c) => [...pausedDays(c.raw.progress.breaks ?? [])]))
+  const missed = lastActivity ? missedWorkdays(lastActivity, todayISO, paused) : 0
+  const activeBreak = (active.raw.progress.breaks ?? []).find((item) => item.from <= todayISO && todayISO <= item.to && paused.has(todayISO))
 
   const rhythm: World['rhythm'] = []
   if (sessionDates.length) {
@@ -674,11 +681,12 @@ export function buildWorld(
     means: { coins: wallet.coins, gems: wallet.gems, specials },
     gemLog,
     side,
-    damage: damageFor(sessionDates, ledger.purchases, ledger.repairs, todayISO, neglect),
+    damage: damageFor(sessionDates, ledger.purchases, ledger.repairs, todayISO, neglect, paused),
     sessionDates,
     lastActivity,
     missedWorkdays: missed,
     covered,
+    breaks: { used: pausedDays(active.raw.progress.breaks ?? []).size, limit: BREAK_LIMIT, until: activeBreak?.to ?? null },
     condition: CONDITIONS[neglect],
     rhythm,
     checks,

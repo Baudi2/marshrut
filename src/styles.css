@@ -1590,6 +1590,7 @@ details.fold[open] > summary {
 
 .shop-group {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 
@@ -2352,4 +2353,85 @@ pre.prompt {
 
 .town3d.is-full .town3d-hint {
   bottom: max(8px, env(safe-area-inset-bottom, 0px));
+}
+
+/* Свои награды и памятные знаки */
+.reward-item {
+  grid-template-columns: 1fr auto;
+}
+
+.reward-form,
+.sign-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  justify-items: start;
+  align-items: center;
+  min-width: 0;
+}
+
+.reward-form .field,
+.sign-form .field {
+  width: 100%;
+  min-width: 0;
+}
+
+.reward-form p,
+.sign-form p {
+  margin: 0;
+}
+
+.sign-form {
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.form-error {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--amber-ink);
+}
+
+@media (min-width: 640px) {
+  .reward-form {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  }
+
+  .sign-form {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .reward-form p,
+  .sign-form p {
+    grid-column: 1 / -1;
+  }
+}
+
+.reward-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+
+.reward-log li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.link-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
 }

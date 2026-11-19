@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { RecordError, addBreak, addCheck, addMistake, addOffplan, addPurchase, addSession, addTownActions, closeDay, editTodo, markSteps } from './record-lib.mjs'
+import { RecordError, addBreak, addCheck, addMistake, addOffplan, addPurchase, addSession, addTownActions, closeDay, editTodo, markSteps, mergeLedger } from './record-lib.mjs'
 
 const plan = {
   tracks: [{ code: 'A' }, { code: 'C1' }],
@@ -106,6 +106,25 @@ describe('запись вне занятия', () => {
     addPurchase(ledger, ['pot'], { item: 'pot', date: '2026-12-01', repair: true })
     addPurchase(ledger, ['pot'], { item: 'pot', date: '2026-12-20', repair: true })
     expect(ledger).toEqual({ purchases: [{ item: 'pot', date: '2026-11-19' }], repairs: [{ item: 'pot', date: '2026-12-01' }, { item: 'pot', date: '2026-12-20' }] })
+  })
+
+  it('запись из лавки целиком: покупки, награды, выкупы и знаки; повторы пропускаются, плохая запись не пишет ничего', () => {
+    const file = { purchases: [{ item: 'pot', date: '2026-11-19' }], repairs: [] }
+    const record = {
+      purchases: [{ item: 'pot', date: '2026-11-19' }, { item: 'bench', date: '2026-11-20' }],
+      repairs: [],
+      rewards: [{ id: 'r1', name: 'Новая книга', gems: 5 }],
+      redeemed: [{ at: '2026-11-20T18:00:00.000Z', name: 'Новая книга', gems: 5 }],
+      signs: [{ cycle: '01-basic-month', day: 2, text: 'Первый перевал', date: '2026-11-20' }],
+    }
+    expect(mergeLedger(file, ['pot', 'bench'], record)).toMatch(/покупок 1, ремонтов 0, наград в список 1, выкупов 1, знаков 1/)
+    expect(mergeLedger(file, ['pot', 'bench'], record)).toMatch(/покупок 0, ремонтов 0, наград в список 0, выкупов 0, знаков 0/)
+    expect(file.purchases).toHaveLength(2)
+    expect(file.signs).toEqual(record.signs)
+    const bad = { purchases: [{ item: 'hat', date: '2026-11-21' }], signs: [{ cycle: '01-basic-month', day: 'два', text: 'т', date: '2026-11-21' }] }
+    expect(() => mergeLedger(file, ['pot', 'bench', 'hat'], bad)).toThrow(/signs, запись 1/)
+    expect(file.purchases).toHaveLength(2)
+    expect(() => mergeLedger(file, ['pot'], [])).toThrow(RecordError)
   })
 
   it('журнал города: записи добавляются как есть, повторы пропускаются, порядок по времени', () => {

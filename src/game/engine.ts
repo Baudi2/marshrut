@@ -1,6 +1,9 @@
 import type {
   CampItem,
   Ledger,
+  MemorialSign,
+  Redeemed,
+  Reward,
   KeyPoint,
   KnowledgeCheck,
   Mistake,
@@ -20,6 +23,7 @@ import type {
 } from '../data/types'
 import { damageFor, repairsSpent, type Damage } from './repair'
 import { shopItem, walletFor, type Wallet } from './shop'
+import { SIGN_GEMS, redeemedGems } from './rewards'
 import { rateSide, type RatedSide } from './side'
 import { replayTown, type Means, type Town } from './town'
 import {
@@ -49,6 +53,8 @@ export interface DayView {
   state: NodeState
   done: boolean
   keyPoint: KeyPoint | null
+  /** Памятный знак на пройденном перевале: подпись игрока. */
+  sign: string | null
   stepsDone: number[]
 }
 
@@ -185,6 +191,11 @@ export interface World {
   /** Купленные предметы лавки. */
   owned: string[]
   wallet: Wallet
+  /** Свои награды: список и журнал выкупов. */
+  rewards: Reward[]
+  redeemed: Redeemed[]
+  /** Памятные знаки, которые стоят на пройденных перевалах. */
+  signs: MemorialSign[]
   /** Город: состояние из журнала действий и дат занятий. Интерфейса пока нет. */
   town: Town
   /** Что есть у игрока для города: монеты, камни и число построенных файлов. */
@@ -277,6 +288,7 @@ function buildCycle(raw: RawCycle): CycleView {
       state,
       done: DONE.includes(state),
       keyPoint: keyByDay.get(planDay.day) ?? null,
+      sign: null,
       stepsDone: p?.stepsDone ?? (DONE.includes(state) ? planDay.steps.map((s) => s.n) : []),
     }
   })
@@ -657,9 +669,18 @@ export function buildWorld(
   }
 
   const town = replayTown(ledger.town ?? [], sessionDates, now, ledger.purchases)
+  // Памятные знаки: по одному на пройденный перевал. Запись не к месту не считается и камней не стоит.
+  const signs: MemorialSign[] = []
+  for (const sign of ledger.signs ?? []) {
+    const day = cycles.find((c) => c.id === sign.cycle)?.days.find((d) => d.n === sign.day)
+    if (!day || !day.keyPoint || !day.done || day.sign) continue
+    day.sign = sign.text
+    signs.push(sign)
+  }
+  const redeemed = ledger.redeemed ?? []
   const wallet = walletFor(coinsEarned, gemsEarned, owned, {
     coins: repairsSpent(ledger.repairs) + town.spent.coins,
-    gems: town.spent.gems,
+    gems: town.spent.gems + redeemedGems(redeemed) + signs.length * SIGN_GEMS,
   })
   const specials = cycles.flatMap((c) => c.buildings).filter((b) => b.stage >= 2).length
   // Запас дров: дровник прикрывает столько рабочих дней пропуска, сколько в нём запаса.
@@ -677,6 +698,9 @@ export function buildWorld(
     ranksEarned: cycles.filter((c) => c.done).map((c) => c.rankOnComplete),
     owned,
     wallet,
+    rewards: ledger.rewards ?? [],
+    redeemed,
+    signs,
     town,
     means: { coins: wallet.coins, gems: wallet.gems, specials },
     gemLog,

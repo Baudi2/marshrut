@@ -1,6 +1,7 @@
 import type { OffplanEntry, Plan, Progress, Purchase, RawCycle } from './types'
 import offplanFile from '../../data/offplan.json'
 import purchasesFile from '../../data/purchases.json'
+import type { MemorialSign, Redeemed, Reward } from './types'
 import townFile from '../../data/town.json'
 import type { TownAction } from '../game/town'
 
@@ -32,3 +33,9 @@ export const repoTownActions = (townFile as { actions: TownAction[] }).actions
 
 /** Ремонты, уже записанные в репозиторий. */
 export const repoRepairs = (purchasesFile as { repairs?: Purchase[] }).repairs ?? []
+
+/** Свои награды, их выкупы и памятные знаки, уже записанные в репозиторий. */
+const extras = purchasesFile as { rewards?: Reward[]; redeemed?: Redeemed[]; signs?: MemorialSign[] }
+export const repoRewards = extras.rewards ?? []
+export const repoRedeemed = extras.redeemed ?? []
+export const repoSigns = extras.signs ?? []

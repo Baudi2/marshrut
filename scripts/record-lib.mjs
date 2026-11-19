@@ -212,3 +212,37 @@ export function addOffplan(plan, file, input) {
   file.entries.sort((a, b) => a.date.localeCompare(b.date))
   return `Стороннее развитие записано: ${input.kind}, «${entry.title}», выводов ${takeaways.length}.`
 }
+
+/**
+ * Запись из лавки (кнопка «Скопировать запись»): покупки, ремонты, свои награды, их выкупы и памятные знаки.
+ * Сначала проверяется вся запись, потом добавляется; повторы пропускаются.
+ */
+export function mergeLedger(file, shopIds, record) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) fail('нужна запись из лавки: объект с полями purchases, repairs, rewards, redeemed, signs')
+  const text = (value) => typeof value === 'string' && value.trim() !== ''
+  const price = (value) => Number.isInteger(value) && value > 0
+  const bought = (p) => shopIds.includes(p.item) && isDate(p.date)
+  const rules = {
+    purchases: { title: 'покупок', key: (p) => p.item, ok: bought },
+    repairs: { title: 'ремонтов', key: (p) => `${p.item}|${p.date}`, ok: bought },
+    rewards: { title: 'наград в список', key: (r) => r.id, ok: (r) => text(r.id) && text(r.name) && price(r.gems) },
+    redeemed: { title: 'выкупов', key: (r) => `${r.at}|${r.name}`, ok: (r) => text(r.at) && !Number.isNaN(Date.parse(r.at)) && text(r.name) && price(r.gems) },
+    signs: { title: 'знаков', key: (s) => `${s.cycle}|${s.day}`, ok: (s) => text(s.cycle) && Number.isInteger(s.day) && text(s.text) && isDate(s.date) },
+  }
+  for (const [name, rule] of Object.entries(rules)) {
+    const incoming = record[name] ?? []
+    if (!Array.isArray(incoming)) fail(`${name}: нужен список`)
+    incoming.forEach((item, i) => {
+      if (!item || typeof item !== 'object' || !rule.ok(item)) fail(`${name}, запись ${i + 1}: не тот формат`)
+    })
+  }
+  const added = []
+  for (const [name, rule] of Object.entries(rules)) {
+    file[name] ??= []
+    const known = new Set(file[name].map(rule.key))
+    const fresh = (record[name] ?? []).filter((item) => !known.has(rule.key(item)) && known.add(rule.key(item)))
+    file[name].push(...fresh)
+    added.push(`${rule.title} ${fresh.length}`)
+  }
+  return `Из лавки добавлено: ${added.join(', ')}. Баланс и места знаков проверит npm test.`
+}

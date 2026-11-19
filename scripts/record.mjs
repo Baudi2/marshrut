@@ -19,6 +19,8 @@ const HELP = `Запись в данные сайта. Даты — ГГГГ-М�
   todo     --add "…"   |   todo --done N        хвосты прошлых занятий (openItems), номер с единицы
   break    --from D --to D [--reason "отпуск"]  плановый перерыв
   purchase --item id --date D                   покупка из лавки;  repair — то же для ремонта
+  ledger   --json '{"purchases":[…],"redeemed":[…],"signs":[…]}'  |  ledger --file запись.json
+           запись из лавки целиком (кнопка «Скопировать запись»): покупки, ремонты, свои награды, выкупы, знаки
   town     --json '[{"at":"…","do":"build","type":"house"}]'  |  town --file журнал.json
   offplan  --date D --kind video --title "…" [--source "…"] [--track B] [--minutes 40] [--with "…"] --takeaway "…" --takeaway "…"
 
@@ -78,6 +80,7 @@ function run() {
     break: () => inProgress((p) => lib.addBreak(p, { from: one('from'), to: one('to'), reason: one('reason'), today: today() })),
     purchase: () => ({ file: 'data/purchases.json', apply: (f) => lib.addPurchase(f, shopIds(), { item: one('item'), date: one('date') }) }),
     repair: () => ({ file: 'data/purchases.json', apply: (f) => lib.addPurchase(f, shopIds(), { item: one('item'), date: one('date'), repair: true }) }),
+    ledger: () => ({ file: 'data/purchases.json', apply: (f) => lib.mergeLedger(f, shopIds(), jsonInput('запись из лавки')) }),
     town: () => ({ file: 'data/town.json', apply: (f) => lib.addTownActions(f, townInput()) }),
     offplan: () => ({
       file: 'data/offplan.json',
@@ -110,16 +113,20 @@ function shopIds() {
   return [...text.matchAll(/\{ id: '([^']+)', group:/g)].map((match) => match[1])
 }
 
-/** Журнал города: одна запись или список, из --json или из файла. */
-function townInput() {
+/** JSON из --json или из файла --file. */
+function jsonInput(what) {
   const text = one('file') ? fs.readFileSync(path.resolve(one('file')), 'utf8') : one('json')
-  if (!text) throw new lib.RecordError('нужен журнал: --json \'[…]\' или --file путь')
-  let parsed
+  if (!text) throw new lib.RecordError(`нужен JSON (${what}): --json '…' или --file путь`)
   try {
-    parsed = JSON.parse(text)
+    return JSON.parse(text)
   } catch {
-    throw new lib.RecordError('журнал не читается как JSON')
+    throw new lib.RecordError(`${what}: не читается как JSON`)
   }
+}
+
+/** Журнал города: одна запись или список. */
+function townInput() {
+  const parsed = jsonInput('журнал города')
   return Array.isArray(parsed) ? parsed : (parsed.actions ?? [parsed])
 }
 

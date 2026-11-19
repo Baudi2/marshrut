@@ -1,9 +1,12 @@
-import type { Purchase } from '../data/types'
+import { useState, type FormEvent } from 'react'
+import type { MemorialSign, Purchase, Redeemed, Reward } from '../data/types'
+import { REWARD_NAME_MAX, REWARD_SIZES, rewardSize } from '../game/rewards'
+import { toISO } from '../game/rules'
 import type { Damage } from '../game/repair'
 import { HEAL_SESSIONS } from '../game/repair'
 import { SHOP, canAfford, shopItem, type ShopItem, type Wallet } from '../game/shop'
 import { TIERS } from '../game/town'
-import { CopyButton, plural } from '../ui/bits'
+import { CopyButton, fmtDate, plural } from '../ui/bits'
 import { CoinIcon, GemIcon, ItemArt } from '../world/extras'
 
 export interface ShopApi {
@@ -15,8 +18,17 @@ export interface ShopApi {
   damage: Damage[]
   /** Ступень города: часть украшений открывается не сразу. */
   tier: number
-  /** Покупки и ремонты, которые есть только в этом браузере. */
-  unsynced: { purchases: Purchase[]; repairs: Purchase[] }
+  /** Свои награды: список и журнал выкупов. */
+  rewards: Reward[]
+  redeemed: Redeemed[]
+  /** Всё, что есть только в этом браузере: покупки, ремонты, награды, выкупы, памятные знаки. */
+  unsynced: { purchases: Purchase[]; repairs: Purchase[]; rewards: Reward[]; redeemed: Redeemed[]; signs: MemorialSign[] }
+  /** Завести награду. Возвращает причину отказа или null. */
+  addReward: (name: string, gems: number) => string | null
+  removeReward: (id: string) => void
+  redeem: (id: string) => void
+  /** Отменить последний выкуп, пока он не перенесён в репозиторий. */
+  undoRedeem: (() => void) | null
   buy: (id: string) => void
   toggle: (id: string) => void
   repair: (ids: string[]) => void
@@ -32,7 +44,14 @@ const SESSIONS: [string, string, string] = ['занятие', 'занятия', 
 export function Shop({ shop, groups }: { shop: ShopApi; groups?: ('gear' | 'camp')[] }) {
   const { wallet, damage, unsynced } = shop
   const repairTotal = damage.reduce((sum, d) => sum + d.cost, 0)
-  const pending = unsynced.purchases.length + unsynced.repairs.length
+  const pendingNames = [
+    ...unsynced.purchases.map((p) => shopItem(p.item)?.name),
+    ...unsynced.repairs.map((r) => `ремонт: ${shopItem(r.item)?.name}`),
+    ...unsynced.rewards.map((r) => `награда в списке: ${r.name}`),
+    ...unsynced.redeemed.map((r) => `выкуп: ${r.name}`),
+    ...unsynced.signs.map((s) => `знак на перевале дня ${s.day}`),
+  ]
+  const pending = pendingNames.length
 
   return (
     <div className="card" id="shop">
@@ -98,11 +117,13 @@ export function Shop({ shop, groups }: { shop: ShopApi; groups?: ('gear' | 'camp
         </section>
       ))}
 
+      <Rewards shop={shop} />
+
       {pending > 0 && (
         <div className="sync-note">
           <p>
             <b>Только в этом браузере:</b>{' '}
-            {[...unsynced.purchases.map((p) => shopItem(p.item)?.name), ...unsynced.repairs.map((r) => `ремонт: ${shopItem(r.item)?.name}`)].join(', ')}
+            {pendingNames.join(', ')}
             . Чтобы это было видно на других устройствах, отдай запись Claude Code — он добавит её в{' '}
             <code>data/purchases.json</code>.
           </p>
@@ -110,6 +131,104 @@ export function Shop({ shop, groups }: { shop: ShopApi; groups?: ('gear' | 'camp
         </div>
       )}
     </div>
+  )
+}
+
+const GEMS: [string, string, string] = ['камень', 'камня', 'камней']
+
+/** Свои награды: награды из настоящей жизни за камни. */
+function Rewards({ shop }: { shop: ShopApi }) {
+  const [name, setName] = useState('')
+  const [gems, setGems] = useState(REWARD_SIZES[0].gems)
+  const [error, setError] = useState<string | null>(null)
+  const add = (event: FormEvent) => {
+    event.preventDefault()
+    const problem = shop.addReward(name, gems)
+    setError(problem)
+    if (!problem) setName('')
+  }
+  const log = [...shop.redeemed].reverse().slice(0, 5)
+  return (
+    <section className="shop-group" id="rewards">
+      <h4>Свои награды</h4>
+      <p className="muted small">
+        Награды из настоящей жизни, которые ты назначаешь себе сам: вечер с игрой, новая книга, поездка. Платишь камнями, а их дают
+        только перевалы и недельные тесты, — так награда всегда стоит за знаниями. На игру выкуп не влияет.
+      </p>
+      {shop.rewards.length > 0 && (
+        <ul className="shop-list">
+          {shop.rewards.map((reward) => {
+            const short = reward.gems - shop.wallet.gems
+            return (
+              <li key={reward.id} className="shop-item reward-item">
+                <div className="shop-info">
+                  <b>{reward.name}</b>
+                  <span className="muted small">
+                    {rewardSize(reward.gems)?.name ?? 'своя'} награда ·{' '}
+                    <button className="link-btn" onClick={() => shop.removeReward(reward.id)} aria-label={`Убрать из списка: ${reward.name}`}>
+                      убрать из списка
+                    </button>
+                  </span>
+                </div>
+                <div className="shop-act">
+                  <span className="price">
+                    <GemIcon /> {reward.gems}
+                  </span>
+                  <button className="btn btn-primary" disabled={short > 0} onClick={() => shop.redeem(reward.id)} aria-label={`Выкупить: ${reward.name}`}>
+                    Выкупить
+                  </button>
+                  {short > 0 && <span className="muted small">не хватает {short}</span>}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      <form className="reward-form" onSubmit={add}>
+        <input
+          className="field"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={REWARD_NAME_MAX}
+          placeholder="Например: вечер с новой игрой"
+          aria-label="Название награды"
+        />
+        <select className="field" value={gems} onChange={(e) => setGems(Number(e.target.value))} aria-label="Размер награды">
+          {REWARD_SIZES.map((size) => (
+            <option key={size.id} value={size.gems}>
+              {size.name} · {size.gems} {plural(size.gems, GEMS)}
+            </option>
+          ))}
+        </select>
+        <button className="btn" type="submit">
+          Добавить в список
+        </button>
+        <p className="muted small">
+          {REWARD_SIZES.map((size) => `${size.name} (${size.gems}) — ${size.hint}`).join('; ')}.
+        </p>
+      </form>
+      {error && (
+        <p className="form-error" role="alert">
+          Не добавлено: {error}.
+        </p>
+      )}
+      {log.length > 0 && (
+        <>
+          <ul className="reward-log" aria-label="Выкупленные награды">
+            {log.map((item) => (
+              <li key={item.at + item.name}>
+                {fmtDate(toISO(new Date(item.at)))} · {item.name} · <GemIcon /> {item.gems}
+              </li>
+            ))}
+          </ul>
+          {shop.undoRedeem && (
+            <button className="btn btn-quiet" onClick={shop.undoRedeem}>
+              Отменить последний выкуп
+            </button>
+          )}
+        </>
+      )}
+    </section>
   )
 }
 

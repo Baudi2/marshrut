@@ -319,12 +319,38 @@ export interface Purchase {
   date: string
 }
 
-/** Всё, что сделал игрок: покупки, ремонты и действия в городе — из репозитория и из браузера. */
+/** Своя награда: игрок назначает себе награду из настоящей жизни. Цена в камнях — по размеру, src/game/rewards.ts. */
+export interface Reward {
+  id: string
+  name: string
+  gems: number
+}
+
+/** Выкуп своей награды. Название и цена записаны как были в момент выкупа: список наград потом можно менять. */
+export interface Redeemed {
+  at: string
+  name: string
+  gems: number
+}
+
+/** Памятный знак на пройденном перевале: подпись игрока. cycle — папка цикла, day — номер дня-перевала. */
+export interface MemorialSign {
+  cycle: string
+  day: number
+  text: string
+  date: string
+}
+
+/** Всё, что сделал игрок: покупки, ремонты, награды, знаки и действия в городе — из репозитория и из браузера. */
 export interface Ledger {
   purchases: Purchase[]
   repairs: Purchase[]
   /** Журнал действий в городе, data/town.json. */
   town?: import('../game/town').TownAction[]
+  /** Список своих наград, журнал их выкупов и памятные знаки — тоже в data/purchases.json. */
+  rewards?: Reward[]
+  redeemed?: Redeemed[]
+  signs?: MemorialSign[]
 }
 
 /**

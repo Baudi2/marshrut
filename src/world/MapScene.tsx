@@ -1,3 +1,4 @@
+import { SignBoard } from './sprites'
 import { useMemo, useRef } from 'react'
 import type { CycleView, DayView, NodeState } from '../game/engine'
 import type { ConditionLevel } from '../game/rules'
@@ -289,7 +290,7 @@ function Node({
   selected: boolean
   onSelect: (day: number) => void
 }) {
-  const label = `День ${d.n}, ${d.plan.track}: ${NODE_LABEL[d.state]}${d.keyPoint ? `. Перевал: ${d.keyPoint.title}` : ''}`
+  const label = `День ${d.n}, ${d.plan.track}: ${NODE_LABEL[d.state]}${d.keyPoint ? `. Перевал: ${d.keyPoint.title}` : ''}${d.sign ? `. Памятный знак: «${d.sign}»` : ''}`
   return (
     <g
       className={`node node-${d.state}${selected ? ' is-selected' : ''}`}
@@ -318,6 +319,7 @@ function Node({
       </text>
       <circle className="node-track" cx={r * 0.76} cy={r * 0.76} r={4.4} style={{ fill: trackColor(d.plan.trackCode) }} />
       {d.keyPoint && <Flag x={0} y={-r} />}
+      {d.sign && <SignBoard x={-r - 3} y={-r + 5} />}
     </g>
   )
 }

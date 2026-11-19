@@ -86,6 +86,17 @@ export function Flag({ x, y, color = 'var(--amber)' }: { x: number; y: number; c
   )
 }
 
+/** Памятный знак: дощечка на столбике. Доска сидит на верхушке столба, столб над ней не торчит. */
+export function SignBoard({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <path d="M0 0 L0 -8" stroke="var(--wood-dark)" strokeWidth={1.6} strokeLinecap="round" />
+      <rect x={-6.5} y={-15.5} width={13} height={8} rx={1.4} fill="#e2cfa0" stroke="var(--wood-dark)" strokeWidth={1} />
+      <path d="M-3.8 -12.8 H3.8 M-3.8 -10.3 H1.6" stroke="var(--wood-dark)" strokeWidth={0.9} strokeLinecap="round" />
+    </g>
+  )
+}
+
 /**
  * Костёр. 0 — горит, 1 — угли, 2 и 3 — погас.
  * size — насколько большое пламя: зависит от занятий за неделю.

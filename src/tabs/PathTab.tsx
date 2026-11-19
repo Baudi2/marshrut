@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import type { CycleView, DayView, World } from '../game/engine'
 import type { ConditionLevel } from '../game/rules'
 import { ConditionPreview, DAYS, RichText, TrackBadge, fmtDate, plural } from '../ui/bits'
+import { SIGN_GEMS, SIGN_MAX } from '../game/rewards'
+import { GemIcon } from '../world/extras'
 import { MapScene, NODE_LABEL } from '../world/MapScene'
 import { trackColor } from '../world/sprites'
 import { SkyCard, type SkyApi } from './SkyCard'
@@ -18,6 +20,16 @@ const ARTIFACT_STATE: Record<string, string> = {
 
 export const artifactState = (state: string) => ARTIFACT_STATE[state] ?? state
 
+/** Памятные знаки на пройденных перевалах: подпись за камень. */
+export interface SignApi {
+  gems: number
+  /** Поставить знак. Возвращает причину отказа или null. */
+  put: (cycleId: string, day: number, text: string) => string | null
+  /** Знак есть только в этом браузере: его ещё можно убрать. */
+  isFresh: (cycleId: string, day: number) => boolean
+  remove: (cycleId: string, day: number) => void
+}
+
 interface Props {
   world: World
   cycle: CycleView
@@ -27,9 +39,10 @@ interface Props {
   /** Надетая экипировка путника. */
   gear: string[]
   skyApi: SkyApi
+  signs: SignApi
 }
 
-export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi }: Props) {
+export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi, signs }: Props) {
   const [selected, setSelected] = useState<number>(cycle.current?.day.n ?? cycle.days[0].n)
   const day = cycle.days.find((d) => d.n === selected) ?? cycle.days[0]
   const week = cycle.weeks.find((w) => w.week.n === day.plan.week)
@@ -61,7 +74,7 @@ export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi 
         ))}
       </div>
 
-      <DayCard day={day} cycle={cycle} checkpoint={week?.week.checkpoint} />
+      <DayCard key={day.n} day={day} cycle={cycle} checkpoint={week?.week.checkpoint} signs={signs} />
 
       <WeeklyTests cycle={cycle} />
 
@@ -80,7 +93,40 @@ export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi 
   )
 }
 
-function DayCard({ day, cycle, checkpoint }: { day: DayView; cycle: CycleView; checkpoint?: string }) {
+function SignForm({ day, cycle, signs }: { day: DayView; cycle: CycleView; signs: SignApi }) {
+  const [text, setText] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const put = (event: FormEvent) => {
+    event.preventDefault()
+    setError(signs.put(cycle.id, day.n, text))
+  }
+  return (
+    <form className="sign-form" onSubmit={put}>
+      <p className="muted small">
+        Перевал пройден. Можно поставить здесь памятный знак со своей подписью: что понял, что далось тяжело, что хочешь запомнить.
+      </p>
+      <input
+        className="field"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        maxLength={SIGN_MAX}
+        placeholder="Подпись, до 40 знаков"
+        aria-label="Подпись на памятном знаке"
+      />
+      <button className="btn" type="submit" disabled={signs.gems < SIGN_GEMS}>
+        Поставить знак · <GemIcon /> {SIGN_GEMS}
+      </button>
+      {signs.gems < SIGN_GEMS && <span className="muted small">не хватает камней</span>}
+      {error && (
+        <p className="form-error" role="alert">
+          Не поставлен: {error}.
+        </p>
+      )}
+    </form>
+  )
+}
+
+function DayCard({ day, cycle, checkpoint, signs }: { day: DayView; cycle: CycleView; checkpoint?: string; signs: SignApi }) {
   const plan = day.plan
   const p = day.progress
   const isLastOfWeek = cycle.days.filter((d) => d.plan.week === plan.week).slice(-1)[0]?.n === day.n
@@ -112,6 +158,20 @@ function DayCard({ day, cycle, checkpoint }: { day: DayView; cycle: CycleView; c
           <b>Перевал: {day.keyPoint.title}.</b> {day.keyPoint.what}.
         </p>
       )}
+      {day.sign && (
+        <p className="key-note sign-note">
+          <b>Памятный знак:</b> «{day.sign}»
+          {signs.isFresh(cycle.id, day.n) && (
+            <>
+              {' '}
+              <button className="link-btn" onClick={() => signs.remove(cycle.id, day.n)}>
+                убрать и вернуть камень
+              </button>
+            </>
+          )}
+        </p>
+      )}
+      {day.keyPoint && day.done && !day.sign && <SignForm day={day} cycle={cycle} signs={signs} />}
       {p?.summary && <p>{p.summary}</p>}
 
       <ol className="steps">

@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
-import { offplan, rawCycles, repoPurchases, repoRepairs, repoTownActions } from './data/load'
-import type { Purchase } from './data/types'
+import { offplan, rawCycles, repoPurchases, repoRedeemed, repoRepairs, repoRewards, repoSigns, repoTownActions } from './data/load'
+import type { MemorialSign, Purchase, Redeemed, Reward } from './data/types'
+import { rewardProblem, signProblem, tidy } from './game/rewards'
 import { blockers, type TownAction } from './game/town'
 import type { TownApi } from './tabs/TownTab'
 import { buildWorld } from './game/engine'
@@ -11,7 +12,7 @@ import type { SkyApi } from './tabs/SkyCard'
 import { CoinIcon, GemIcon } from './world/extras'
 import { computeSky, fetchWeather, type Place, type SkyOverride, type Weather } from './world/sky'
 import { Growth } from './tabs/Growth'
-import { PathTab } from './tabs/PathTab'
+import { PathTab, type SignApi } from './tabs/PathTab'
 import { Problems } from './tabs/Problems'
 import { Skills } from './tabs/Skills'
 import { Today } from './tabs/Today'
@@ -75,6 +76,11 @@ export function App() {
   const [localBuys, setLocalBuys] = useState<Purchase[]>(() => readJSON('purchases', []))
   const [localRepairs, setLocalRepairs] = useState<Purchase[]>(() => readJSON('repairs', []))
   const [unequipped, setUnequipped] = useState<string[]>(() => readJSON('unequipped', []))
+  // Свои награды, их выкупы и памятные знаки: тоже сначала в браузер, потом в data/purchases.json.
+  const [localRewards, setLocalRewards] = useState<Reward[]>(() => readJSON('rewards', []))
+  const [hiddenRewards, setHiddenRewards] = useState<string[]>(() => readJSON('rewards-hidden', []))
+  const [localRedeemed, setLocalRedeemed] = useState<Redeemed[]>(() => readJSON('redeemed', []))
+  const [localSigns, setLocalSigns] = useState<MemorialSign[]>(() => readJSON('signs', []))
   // Действия в городе: сразу в браузер, позже Claude Code переносит их в data/town.json.
   const [localTown, setLocalTown] = useState<TownAction[]>(() => readJSON('town-actions', []))
 
@@ -132,13 +138,20 @@ export function App() {
   }
 
   const today = toISO(now)
+  // То, что есть только в этом браузере.
+  const freshRewards = localRewards.filter((r) => !repoRewards.some((x) => x.id === r.id))
+  const freshRedeemed = localRedeemed.filter((r) => !repoRedeemed.some((x) => x.at === r.at && x.name === r.name))
+  const freshSigns = localSigns.filter((s) => !repoSigns.some((x) => x.cycle === s.cycle && x.day === s.day))
   const ledger = useMemo(
     () => ({
+      rewards: [...repoRewards, ...localRewards.filter((r) => !repoRewards.some((x) => x.id === r.id))].filter((r) => !hiddenRewards.includes(r.id)),
+      redeemed: [...repoRedeemed, ...localRedeemed.filter((r) => !repoRedeemed.some((x) => x.at === r.at && x.name === r.name))],
+      signs: [...repoSigns, ...localSigns.filter((s) => !repoSigns.some((x) => x.cycle === s.cycle && x.day === s.day))],
       purchases: [...repoPurchases, ...localBuys.filter((p) => !repoPurchases.some((r) => r.item === p.item))],
       repairs: [...repoRepairs, ...localRepairs.filter((p) => !repoRepairs.some((r) => sameRecord(r, p)))],
       town: [...repoTownActions, ...localTown.filter((action) => !repoTownActions.some((r) => sameAction(r, action)))],
     }),
-    [localBuys, localRepairs, localTown],
+    [localBuys, localRepairs, localTown, localRewards, hiddenRewards, localRedeemed, localSigns],
   )
   const world = useMemo(() => buildWorld(rawCycles, offplan, today, ledger, now), [today, ledger, now])
   const [cycleId, setCycleId] = useState(world.active.id)
@@ -163,10 +176,49 @@ export function App() {
     gear,
     damage: world.damage,
     tier: world.town.tier,
+    rewards: world.rewards,
+    redeemed: world.redeemed,
     unsynced: {
       purchases: localBuys.filter((p) => !repoPurchases.some((r) => r.item === p.item)),
       repairs: localRepairs.filter((p) => !repoRepairs.some((r) => sameRecord(r, p))),
+      rewards: freshRewards.filter((r) => !hiddenRewards.includes(r.id)),
+      redeemed: freshRedeemed,
+      signs: freshSigns,
     },
+    addReward: (name, gems) => {
+      const problem = rewardProblem(name, gems, world.rewards)
+      if (problem) return problem
+      const next = [...localRewards, { id: `r${Date.now().toString(36)}`, name: tidy(name), gems }]
+      setLocalRewards(next)
+      writeJSON('rewards', next)
+      return null
+    },
+    removeReward: (id) => {
+      const next = localRewards.filter((r) => r.id !== id)
+      setLocalRewards(next)
+      writeJSON('rewards', next)
+      // Награду из репозитория сайт удалить не может: она просто скрывается в этом браузере.
+      if (repoRewards.some((r) => r.id === id)) {
+        const hidden = [...hiddenRewards, id]
+        setHiddenRewards(hidden)
+        writeJSON('rewards-hidden', hidden)
+      }
+    },
+    redeem: (id) => {
+      const reward = world.rewards.find((r) => r.id === id)
+      if (!reward || world.wallet.gems < reward.gems) return
+      const next = [...localRedeemed, { at: new Date().toISOString(), name: reward.name, gems: reward.gems }]
+      setLocalRedeemed(next)
+      writeJSON('redeemed', next)
+    },
+    undoRedeem: freshRedeemed.length
+      ? () => {
+          const last = freshRedeemed[freshRedeemed.length - 1]
+          const next = localRedeemed.filter((r) => r !== last)
+          setLocalRedeemed(next)
+          writeJSON('redeemed', next)
+        }
+      : null,
     buy: (id) => {
       const item = shopItem(id)
       if (!item || world.owned.includes(id) || !canAfford(item, world.wallet) || (item.tier ?? 0) > world.town.tier) return
@@ -185,6 +237,26 @@ export function App() {
       const next = [...localRepairs, ...due.map((d) => ({ item: d.item, date: today }))]
       setLocalRepairs(next)
       writeJSON('repairs', next)
+    },
+  }
+
+  const sameSign = (s: MemorialSign, cycleId: string, day: number) => s.cycle === cycleId && s.day === day
+  const signApi: SignApi = {
+    gems: world.wallet.gems,
+    put: (cycleId, dayN, text) => {
+      const day = world.cycles.find((c) => c.id === cycleId)?.days.find((d) => d.n === dayN)
+      const problem = signProblem(text, day, world.wallet.gems)
+      if (problem) return problem
+      const next = [...localSigns, { cycle: cycleId, day: dayN, text: tidy(text), date: today }]
+      setLocalSigns(next)
+      writeJSON('signs', next)
+      return null
+    },
+    isFresh: (cycleId, dayN) => freshSigns.some((s) => sameSign(s, cycleId, dayN)),
+    remove: (cycleId, dayN) => {
+      const next = localSigns.filter((s) => !sameSign(s, cycleId, dayN))
+      setLocalSigns(next)
+      writeJSON('signs', next)
     },
   }
 
@@ -305,6 +377,7 @@ export function App() {
             onPreview={setPreview}
             gear={gear}
             skyApi={skyApi}
+            signs={signApi}
           />
         )}
         {tab === 'town' && (

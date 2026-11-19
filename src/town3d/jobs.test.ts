@@ -28,6 +28,9 @@ import {
   onGround,
   outdoors,
   pathLength,
+  KEEP_FAR,
+  KEEP_NEAR,
+  KEEP_SIDE,
   STROLL_CLEAR,
   STROLL_LIMIT,
   STROLL_TIGHT,
@@ -39,6 +42,7 @@ import {
   stroll,
   type Yard,
   possibleHauls,
+  roomBehind,
   route,
   standing,
   stopOf,
@@ -608,6 +612,34 @@ describe('маршруты', () => {
     }
   })
 
+})
+
+describe('дистанция между идущими', () => {
+  // Житель идёт на восток: (1, 0).
+  it('дорога свободна, пока впереди никого нет', () => {
+    expect(roomBehind(1, 0, KEEP_FAR + 0.1, 0, 1, 0)).toBe(1)
+    expect(roomBehind(1, 0, -0.6, 0, 1, 0)).toBe(1)
+  })
+
+  it('догоняя идущего туда же, сбавляет шаг, а вплотную встаёт', () => {
+    const half = roomBehind(1, 0, (KEEP_FAR + KEEP_NEAR) / 2, 0, 1, 0)
+    expect(half).toBeGreaterThan(0.4)
+    expect(half).toBeLessThan(0.6)
+    expect(roomBehind(1, 0, KEEP_NEAR, 0, 1, 0)).toBe(0)
+    expect(roomBehind(1, 0, 0.3, 0, 1, 0)).toBe(0)
+  })
+
+  it('стоящий на пути мешает, стоящий у края улицы — нет', () => {
+    expect(roomBehind(1, 0, 0.8, 0.1, null, null)).toBeLessThan(0.3)
+    expect(roomBehind(1, 0, 0.8, KEEP_SIDE + 0.08, null, null)).toBe(1)
+  })
+
+  it('встречные и идущие поперёк друг друга не ждут', () => {
+    expect(roomBehind(1, 0, 0.8, 0.1, -1, 0)).toBe(1)
+    expect(roomBehind(1, 0, 0.8, 0.1, 0, 1)).toBe(1)
+    // Двое лицом к лицу: ни один не считает другого помехой — затора не будет.
+    expect(roomBehind(-1, 0, -0.8, -0.1, 1, 0)).toBe(1)
+  })
 })
 
 describe('круг путника по площади', () => {

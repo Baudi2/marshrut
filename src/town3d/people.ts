@@ -20,6 +20,7 @@ import {
   hurry,
   markYard,
   outdoors,
+  roomBehind,
   stroll,
   walkersFor,
   type Cargo,
@@ -132,6 +133,8 @@ interface Walker extends Figure {
   /** В доме: на сцене его не видно. */
   inside: boolean
   atHome: boolean
+  /** Встал и ждёт, пока освободится дорога. */
+  held: boolean
 }
 
 /** Животное на пастбище: стоит, щиплет траву и переходит от точки к точке. */
@@ -663,6 +666,7 @@ export class People {
         pace: 1,
         inside: false,
         atHome: false,
+        held: false,
       }
       cast.walkers.push(walker)
       if (i < this.outLimit) {
@@ -802,10 +806,51 @@ export class People {
       if (walker.wait <= 0) this.depart(walker)
       return
     }
-    const step = SPEED * walker.pace * this.haste * dt
+    // Не входит в того, кто впереди: сбавляет шаг, а вплотную — встаёт и ждёт. Трогается, когда станет свободнее.
+    const room = this.roomAhead(walker)
+    if (walker.held ? room < 0.45 : room < 0.08) {
+      if (!walker.held) {
+        walker.held = true
+        this.setWalking(walker, false)
+      }
+      return
+    }
+    if (walker.held) {
+      walker.held = false
+      this.setWalking(walker, true)
+    }
+    const step = SPEED * walker.pace * this.haste * dt * room
     if (!stepTo(walker.root, walker.path[walker.at * 2], walker.path[walker.at * 2 + 1], step, dt)) return
     walker.at++
     if (walker.at >= walker.path.length / 2) this.arrive(walker)
+  }
+
+  /**
+   * Сколько от шага можно сделать, чтобы не войти в жителя впереди: 1 — дорога свободна, 0 — вплотную.
+   * Считаются те, кто стоит на пути или идёт в ту же сторону; встречные и идущие поперёк расходятся сами.
+   */
+  private roomAhead(walker: Walker): number {
+    const cast = this.cast
+    if (!cast) return 1
+    const position = walker.root.position
+    const tx = walker.path[walker.at * 2] - position.x
+    const tz = walker.path[walker.at * 2 + 1] - position.z
+    const length = Math.hypot(tx, tz)
+    if (length < 1e-4) return 1
+    const dx = tx / length
+    const dz = tz / length
+    let room = 1
+    for (const other of cast.walkers) {
+      if (other === walker || other.inside) continue
+      const there = other.root.position
+      // Стоит у постройки — мешает, если на пути; идёт или сам ждёт дороги — только если ему туда же.
+      const moving = other.wait <= 0
+      room = Math.min(
+        room,
+        roomBehind(dx, dz, there.x - position.x, there.z - position.z, moving ? other.path[other.at * 2] - there.x : null, moving ? other.path[other.at * 2 + 1] - there.z : null),
+      )
+    }
+    return room
   }
 
   /** Начинает переход: круг занятия, дорогу домой (с остановки, где кончился переход last) или из дома. */
@@ -818,6 +863,7 @@ export class People {
     }
     walker.stage = stage
     walker.path = path
+    walker.held = false
     walker.at = 1
     walker.atHome = false
     walker.wait = 0

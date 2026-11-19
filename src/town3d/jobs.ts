@@ -534,6 +534,31 @@ export function route(from: Stop, to: Stop, net: Net, lane = LANE): Point[] {
 
 export const pathLength = (points: Point[]) => points.reduce((sum, point, i) => (i ? sum + Math.hypot(point[0] - points[i - 1][0], point[1] - points[i - 1][1]) : 0), 0)
 
+// ——— Дистанция между идущими ———
+
+/**
+ * Дистанция до идущего или стоящего впереди. Ближе KEEP_FAR житель сбавляет шаг, на KEEP_NEAR встаёт и ждёт.
+ * Мешает только тот, кто прямо по ходу (не дальше KEEP_SIDE вбок): встречный идёт по своей стороне улицы,
+ * стоящий у ворот — у края. Без этого догоняющий проходил бы сквозь идущего впереди.
+ */
+export const KEEP_FAR = 1.25
+export const KEEP_NEAR = 0.7
+export const KEEP_SIDE = 0.35
+
+/**
+ * Сколько от шага можно сделать, чтобы не войти в другого жителя: 1 — он не мешает, 0 — вплотную.
+ * (dx, dz) — куда идёт житель, единичный вектор; (ox, oz) — где другой относительно него;
+ * (ax, az) — куда идёт другой, null — стоит у постройки.
+ * Считается тот, кто стоит на пути или идёт туда же. Встречные и идущие поперёк расходятся сами:
+ * двое встречных друг друга не ждут — иначе встали бы навсегда.
+ */
+export function roomBehind(dx: number, dz: number, ox: number, oz: number, ax: number | null, az: number | null): number {
+  const ahead = ox * dx + oz * dz
+  if (ahead <= 0.05 || ahead >= KEEP_FAR || Math.abs(ox * dz - oz * dx) > KEEP_SIDE) return 1
+  if (ax !== null && az !== null && ax * dx + az * dz < 0.2 * Math.hypot(ax, az)) return 1
+  return Math.max(0, (ahead - KEEP_NEAR) / (KEEP_FAR - KEEP_NEAR))
+}
+
 // ——— Площадь: где ходит путник ———
 //
 // На площади тесно: центральная постройка, очаг со скамьями, фонтан, фонари, флагшток, купленные украшения,

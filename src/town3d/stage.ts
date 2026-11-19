@@ -1,7 +1,7 @@
 // Сцена: рисовальщик, камера сверху под наклоном, прокрутка и масштаб, свет по времени суток,
 // осадки. Что именно стоит на сцене, решают town.ts (город) и board.ts (каталог построек).
 import * as THREE from 'three'
-import type { Phase, Sky, WeatherKind } from '../world/sky'
+import { snowCover, type Phase, type Sky, type WeatherKind } from '../world/sky'
 import { makeUniforms, type WorldUniforms } from './material'
 
 /** Наклон камеры от горизонта и поворот вправо от оси «юг — север», градусы. */
@@ -56,13 +56,6 @@ const WEATHER: Record<WeatherKind, { sun: number; ambient: number; grey: number;
   rain: { sun: 0.35, ambient: 1, grey: 0.7, fog: 0.15, wet: 1 },
   snow: { sun: 0.45, ambient: 1.1, grey: 0.6, fog: 0.3, wet: 0 },
   storm: { sun: 0.15, ambient: 0.85, grey: 0.9, fog: 0.2, wet: 1 },
-}
-
-/** Сколько снега лежит: идёт снег — всё бело; зимой и в мороз он остаётся. */
-export function snowCover(sky: Sky): number {
-  if (sky.kind === 'snow') return 1
-  if (sky.temperature !== null) return sky.temperature <= -1 ? 0.85 : sky.season === 'winter' && sky.temperature <= 2 ? 0.5 : 0
-  return sky.season === 'winter' ? 0.85 : 0
 }
 
 const DROPS = 800

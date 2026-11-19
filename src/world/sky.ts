@@ -52,6 +52,13 @@ export interface Sky {
   live: boolean
 }
 
+/** Сколько снега лежит, от 0 до 1: идёт снег — всё бело; зимой и в мороз он остаётся. Одно правило для города и карты маршрута. */
+export function snowCover(sky: Sky): number {
+  if (sky.kind === 'snow') return 1
+  if (sky.temperature !== null) return sky.temperature <= -1 ? 0.85 : sky.season === 'winter' && sky.temperature <= 2 ? 0.5 : 0
+  return sky.season === 'winter' ? 0.85 : 0
+}
+
 export interface SkyOverride {
   season?: Season
   phase?: Phase

@@ -33,30 +33,46 @@
   --t-E: #e87ba4;
 
   /* мир: светлая тема — день */
-  --sky-1: #cfe3ec;
-  --sky-2: #f1ecdc;
+  /* Краски карты маршрута — те же, что у города: земля из src/town3d/ground.ts, лес из src/town3d/look.ts. */
+  --sky-1: #cfe1ea;
+  --sky-2: #eef0e6;
   --sun: #f6c453;
   --cloud: rgba(255, 255, 255, 0.85);
-  --hill-far: #b9cdc6;
-  --rock: #a9aaa0;
-  --rock-2: #8f9188;
-  --snow: #ffffff;
-  --terrain-1: #cdcfbb;
-  --terrain-2: #c6d3b0;
-  --terrain-3: #b8cfa0;
-  --terrain-4: #a9c790;
-  --terrain-5: #9cc086;
-  --tree: #4a8a63;
-  --tree-2: #2f6b4f;
+  --hill-far: #b7c6b8;
+  --rock: #c2bba9;
+  --rock-2: #9f9887;
+  --snow: #f6f8fa;
+  --snow-ground: #eef2f5;
+  --terrain-1: #c9c6ab;
+  --terrain-2: #c0c69a;
+  --terrain-3: #b5c28b;
+  --terrain-4: #abbd80;
+  --terrain-5: #9db074;
+  --patch-light: #b9c98f;
+  --patch-dark: #8a9f66;
+  --tree: #6e9a5a;
+  --tree-2: #4c7650;
+  --pine: #4c7650;
+  --leaf-1: #6e9a5a;
+  --leaf-2: #5d8a4e;
+  --leaf-3: #7aa363;
+  --leaf-4: #86a85f;
+  --trunk: #7a5a3c;
+  --shade: rgba(58, 60, 38, 0.2);
+  --side: rgba(26, 34, 28, 0.2);
+  --lit: rgba(255, 252, 232, 0.2);
+  --river: #6fa7b8;
+  --river-2: #b3d5de;
+  --bank: #d3c296;
   --wood: #b08052;
   --wood-dark: #6f4c2d;
-  --canvas: #efe3c8;
+  --canvas: #e9dfc2;
   --roof: #8c6a4a;
-  --trail: #f0e2c2;
-  --trail-walked: #8a5a2b;
-  --weed: #5a7a35;
+  --trail: #f1e8cc;
+  --trail-walked: #7d5732;
+  --weed: #5f7a3a;
   --plot: #6f6a55;
-  --dirt: #cdb98f;
+  --dirt: #c7b587;
   --fire: #ef7d1a;
   --fire-2: #ffd45c;
   --fire-glow: rgba(255, 190, 80, 0.38);
@@ -1747,46 +1763,92 @@ pre.prompt {
 /* ---------- Небо: сезоны, время суток, погода ---------- */
 /* Сезон меняет палитру рисунка. Лето — палитра по умолчанию. */
 .season-spring {
-  --terrain-1: #cfd6bd;
-  --terrain-2: #c4dba9;
-  --terrain-3: #b4da96;
-  --terrain-4: #a4d488;
-  --terrain-5: #97cd7d;
-  --tree: #5fa56b;
-  --tree-2: #3f8a55;
-  --hill-far: #bcd2c6;
+  --terrain-1: #cccdb0;
+  --terrain-2: #c5cfa2;
+  --terrain-3: #bdcc96;
+  --terrain-4: #b6c98a;
+  --terrain-5: #a7bd7a;
+  --patch-light: #c2d395;
+  --patch-dark: #93ab6b;
+  --tree: #8fb56a;
+  --tree-2: #517c55;
+  --pine: #517c55;
+  --leaf-1: #8fb56a;
+  --leaf-2: #7ea860;
+  --leaf-3: #9cbf72;
+  --leaf-4: #a9c67c;
+  --hill-far: #bccdbd;
+  --river: #77afbf;
+  --bank: #d6c79c;
+  --dirt: #c9b88c;
 }
 
 .season-autumn {
-  --sky-1: #d6e2e6;
-  --terrain-1: #d3cdb4;
-  --terrain-2: #d6cf9f;
-  --terrain-3: #d2c488;
-  --terrain-4: #c9b676;
-  --terrain-5: #bfa968;
-  --tree: #d0852f;
-  --tree-2: #a9541f;
-  --hill-far: #c5c6b8;
+  --sky-1: #d3dfe4;
+  --terrain-1: #cbc2a8;
+  --terrain-2: #c8bd98;
+  --terrain-3: #c3b889;
+  --terrain-4: #bdb27b;
+  --terrain-5: #b0a670;
+  --patch-light: #c6bb84;
+  --patch-dark: #9c9361;
+  --tree: #c88d44;
+  --tree-2: #4b6a50;
+  --pine: #4b6a50;
+  --leaf-1: #c88d44;
+  --leaf-2: #a8642f;
+  --leaf-3: #b9a24a;
+  --leaf-4: #8f8a4a;
+  --hill-far: #c1c2b2;
+  --river: #6f9aa6;
+  --bank: #cfbd90;
+  --dirt: #c4b083;
   --weed: #8a7a35;
 }
 
+/* Зима без снега — выцветшая трава и голые кроны; снег приходит отдельно, классом snowy. */
 .season-winter {
-  --sky-1: #dbe5ee;
-  --sky-2: #f3f5f6;
-  --terrain-1: #f4f6f8;
-  --terrain-2: #edf1f4;
-  --terrain-3: #e6ecf0;
-  --terrain-4: #dfe7ec;
-  --terrain-5: #d8e2e8;
-  --tree: #5f8474;
-  --tree-2: #3f6657;
-  --hill-far: #d3dce2;
-  --rock: #b9bdc0;
-  --rock-2: #9fa5aa;
-  --trail: #c9d2d8;
-  --dirt: #cfd3d2;
+  --sky-1: #d9e3ec;
+  --sky-2: #f0f2f1;
+  --terrain-1: #cfd0c0;
+  --terrain-2: #cbcdb9;
+  --terrain-3: #c5c9b3;
+  --terrain-4: #bfc4ac;
+  --terrain-5: #b9bea6;
+  --patch-light: #cbcfba;
+  --patch-dark: #a8ad97;
+  --tree: #8a7f70;
+  --tree-2: #46634f;
+  --pine: #46634f;
+  --leaf-1: #8a7f70;
+  --leaf-2: #7d7466;
+  --leaf-3: #94897a;
+  --leaf-4: #857b6c;
+  --hill-far: #cdd5d6;
+  --rock: #c3beb2;
+  --rock-2: #a5a096;
+  --river: #8eaab3;
+  --bank: #c9c0aa;
+  --dirt: #bfb49c;
   --weed: #8f9a8a;
   --plot: #7c8388;
+}
+
+/* Лежит снег: то же правило, что в городе (snowCover в src/world/sky.ts). */
+.snowcap {
+  display: none;
+  fill: var(--snow);
+}
+
+.snowy {
+  --trail: #aebbc6;
+  --shade: rgba(70, 88, 118, 0.18);
+  --hill-far: #d3dce2;
+}
+
+.snowy .snowcap {
+  display: inline;
+  opacity: var(--snow-cover, 1);
 }
 
 /* Подписи на сцене: в темноте светлые. */
@@ -2607,4 +2669,251 @@ pre.prompt {
 .mistake-list li.is-beaten .mistake-text > span:first-child {
   color: var(--muted);
   text-decoration: line-through;
+}
+
+/* ---------- Колода: свои карточки ---------- */
+/* Сетка с minmax(0, 1fr): длинный select на ширине телефона сжимается, а не распирает карточку. */
+.own-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: end;
+  min-width: 0;
+}
+
+.own-form label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.own-form .field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  /* 16px: телефон не приближает страницу, когда поле получает фокус */
+  font-size: 1rem;
+}
+
+.own-form textarea.field {
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.own-form .own-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .own-form {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .own-form .wide {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Ошибка, из которой делается карточка */
+.own-form .own-origin {
+  margin: 0;
+  border-left: 3px solid var(--amber);
+  padding: 2px 0 2px 10px;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+/* Та же форма, открытая под ошибкой в журнале */
+.mistake-list .own-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  margin-top: 4px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.mistake-list .mistake-act {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+}
+
+/* «Все карточки»: подтверждение перед тем, как убрать свою карточку */
+.deck-list .own-confirm {
+  margin-top: 8px;
+}
+
+/* ---------- Отчёт недели и время: план и факт ---------- */
+/* Одна колонка с minmax(0, 1fr): длинная строка на ширине телефона переносится, а не распирает карточку. */
+.report-card,
+.time-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ---------- Отчёт недели ---------- */
+.report-pick {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.seg.report-weeks {
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  max-width: 420px;
+}
+
+.report-weeks button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.report-text {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Время: план и факт ---------- */
+.time-figs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.time-fig {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  min-width: 0;
+  border-left: 2px solid var(--line-strong);
+  padding-left: 10px;
+}
+
+.time-fig-label,
+.time-fig-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.time-fig-value {
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.time-fig-value small {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.time-tracks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.time-track {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.time-track-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+}
+
+.time-track-head .track-badge {
+  justify-self: start;
+}
+
+.time-nums {
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.time-nums b {
+  color: var(--ink);
+}
+
+/* Полоса — факт, отметка — план; у всех треков одна шкала. */
+.time-bar {
+  position: relative;
+  height: 8px;
+  margin: 4px 0;
+  border-radius: 0 4px 4px 0;
+  background: var(--surface-2);
+}
+
+.time-bar-fact {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 0 4px 4px 0;
+  background: var(--accent);
+}
+
+.time-bar-plan {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.time-key-fact,
+.time-key-plan {
+  flex: none;
+  background: var(--accent);
+}
+
+.time-key-fact {
+  width: 18px;
+  height: 8px;
+  border-radius: 0 4px 4px 0;
+}
+
+.time-key-plan {
+  width: 2px;
+  height: 14px;
+  margin: 0 2px;
+  background: var(--ink);
+}
+
+.time-table td:first-child {
+  overflow-wrap: anywhere;
+}
+
+.time-day-sub {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
 }

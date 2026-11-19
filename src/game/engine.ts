@@ -1,4 +1,5 @@
 import type {
+  Attempt,
   CampItem,
   Ledger,
   MemorialSign,
@@ -82,6 +83,21 @@ export interface WeekView {
 }
 
 export type ProblemState = 'none' | 'walkthrough' | 'self' | 'repeated' | 'nohints' | 'before'
+
+/**
+ * Задача решена с разбором, а не самим. Разбор помнится по статусу, по первому решению, сделанному не самим,
+ * и по попытке «переписал после разбора», если она записана не позже первого своего решения:
+ * после удачного повтора такая задача не становится «решённой самой».
+ * Разбор в другой день, уже после своего решения, очков не снижает: очки не отнимаются.
+ */
+export function solvedAfterWalkthrough(state: ProblemState, attempts: Attempt[]): boolean {
+  if (state === 'walkthrough') return true
+  const solved = attempts.filter((a) => a.result === 'solved')
+  if (solved[0]?.selfSolved === false) return true
+  const rewrite = attempts.find((a) => a.kind === 'rewrite-after-walkthrough')
+  const firstSelf = solved.find((a) => a.selfSolved && a.kind !== 'rewrite-after-walkthrough')
+  return !!rewrite && !(firstSelf && firstSelf.date < rewrite.date)
+}
 
 export const PROBLEM_STATE_LABEL: Record<ProblemState, string> = {
   none: 'не начата',
@@ -200,7 +216,7 @@ export interface World {
   signs: MemorialSign[]
   /** Трофеи: достижения за мастерство, полученные и ещё нет. */
   trophies: Trophy[]
-  /** Колода: карточки из проверок понимания с коробкой и сроком повтора. */
+  /** Колода: карточки из проверок понимания и свои карточки игрока, с коробкой и сроком повтора. */
   deck: DeckCard[]
   /** Город: состояние из журнала действий и дат занятий. Интерфейса пока нет. */
   town: Town
@@ -425,9 +441,14 @@ function buildCycle(raw: RawCycle): CycleView {
     }
   }
 
+  // Файл даёт очки один раз, даже если записан в двух днях.
+  const paidFiles = new Set<string>()
   for (const pd of progress.days) {
     for (const a of pd.artifacts ?? []) {
       if (!BUILT_STATES.includes(a.state)) continue
+      const file = `${a.repo}:${a.path}`
+      if (paidFiles.has(file)) continue
+      paidFiles.add(file)
       const item = (plan.camp ?? []).find((c) => c.repo === a.repo && pathMatches(c.path, a.path))
       const fallback = trackOf(dayByN.get(pd.day)?.plan.trackCode ?? '')
       add(`Артефакт: ${a.path}`, XP.artifact, item ? item.track : fallback, lastDate(pd.dates))
@@ -443,8 +464,7 @@ function buildCycle(raw: RawCycle): CycleView {
     if (pv.role === 'pair') {
       add(`Задача-пара ${pv.id}`, XP.pair, algoTrack, firstDate)
     } else {
-      const afterWalkthrough =
-        pv.state === 'walkthrough' || got.attempts.some((a) => a.kind === 'rewrite-after-walkthrough')
+      const afterWalkthrough = solvedAfterWalkthrough(pv.state, got.attempts)
       add(
         `Задача ${pv.id}: ${afterWalkthrough ? 'решена с разбором' : 'решена сама'}`,
         afterWalkthrough ? XP.problemWalkthrough : XP.problemSelf,
@@ -524,7 +544,12 @@ function rankProgress(cycle: CycleView, track: PlanTrack): RankProgress {
           : item('Решено без подсказок через 2–3 недели', core.filter((p) => solvedBy(p, 'no-hints')).length, rule.need)
       case 'timed': {
         const attempts = cycle.problems.find((p) => p.id === rule.problem)?.progress?.attempts ?? []
-        const ok = attempts.some((a) => a.kind.startsWith('timed') && a.result === 'solved' && a.selfSolved)
+        // Решена сама и уложилась в таймер: timed-20 за 25 минут в зачёт не идёт.
+        const ok = attempts.some((a) => {
+          if (!a.kind.startsWith('timed') || a.result !== 'solved' || !a.selfSolved) return false
+          const limit = Number(a.kind.split('-')[1]) || null
+          return a.minutes == null || limit === null || a.minutes <= limit
+        })
         return item(`Задача ${rule.problem} решена на таймере без разбора`, ok ? 1 : 0, 1)
       }
       case 'artifacts': {
@@ -611,6 +636,7 @@ export function buildWorld(
   const deck = buildDeck(
     cycles.flatMap((c) => c.raw.progress.knowledgeChecks.map((check) => ({ cycle: c.id, check }))),
     ledger.reviews ?? [],
+    ledger.cards ?? [],
   )
   const trophies = trophiesFor(cycles, deck)
   for (const trophy of trophies) {

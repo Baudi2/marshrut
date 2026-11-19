@@ -68,9 +68,13 @@ export function trophiesFor(cycles: CycleView[], deck: DeckCard[] = []): Trophy[
   const designs = cycles.flatMap((c) => c.buildings).filter((b) => b.item.track === 'B' && b.stage >= 2).length
 
   // Быстрее себя: финальный замер быстрее стартового.
-  const faster = journals
-    .map((p) => p.baseline)
-    .find((b) => b.start.minutes != null && b.final.minutes != null && !!b.final.result && b.final.minutes < b.start.minutes)
+  // Финальный замер засчитывается, только если его задача в журнале решена самим.
+  const faster = journals.find((p) => {
+    const b = p.baseline
+    if (b.start.minutes == null || b.final.minutes == null || !b.final.result || b.final.minutes >= b.start.minutes) return false
+    const attempts = p.leetcode.find((problem) => problem.id === b.final.problemId)?.attempts ?? []
+    return attempts.some((a) => a.result === 'solved' && a.selfSolved)
+  })?.baseline
 
   // Возвращение: занятие после долгой паузы.
   const returns = sorted(
@@ -90,7 +94,7 @@ export function trophiesFor(cycles: CycleView[], deck: DeckCard[] = []): Trophy[
       .map((k) => k.date),
   )
 
-  // Знаю наизусть: карточки колоды в последней коробке.
+  // Знаю наизусть: карточки колоды в последней коробке — и из проверок понимания, и свои.
   const learned = deck.filter((card) => card.learned).length
 
   // Коллекция паттерна: все задачи одного паттерна решены сами.

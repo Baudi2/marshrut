@@ -68,8 +68,19 @@ describe('трофеи', () => {
       p.baseline.final = { ...p.baseline.final, minutes: 20, result: 'solved', date: '2026-12-20' }
     })
     expect(trophy(slower, 'faster').earned).toBe(false)
+    // Быстрый замер без решённой самим задачи в журнале не считается.
+    const unproven = world((p) => {
+      p.baseline.final = { ...p.baseline.final, minutes: 9, result: 'solved', date: '2026-12-20' }
+    })
+    expect(trophy(unproven, 'faster').earned).toBe(false)
     const faster = world((p) => {
       p.baseline.final = { ...p.baseline.final, minutes: 9, result: 'solved', date: '2026-12-20' }
+      p.leetcode.push({
+        id: p.baseline.final.problemId,
+        title: 'Intersection of Two Arrays',
+        status: 'solved-self',
+        attempts: [attempt('timed-20', '2026-12-20', 9)],
+      })
     })
     expect(trophy(faster, 'faster')).toMatchObject({ earned: true, date: '2026-12-20', gems: 2 })
   })

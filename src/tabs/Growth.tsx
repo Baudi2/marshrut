@@ -2,6 +2,7 @@ import { GemIcon } from '../world/extras'
 import type { CycleView, TrackView, World } from '../game/engine'
 import { SIDE } from '../game/side'
 import { TrackBadge, Tile, fmtDate, plural } from '../ui/bits'
+import { TimeCard } from './TimeCard'
 
 const VERDICT = {
   correct: { label: 'верно', mark: '✓' },
@@ -17,7 +18,6 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
   const title = (id: number) => cycle.problems.find((p) => p.id === id)?.title ?? ''
   const built = cycle.buildings.filter((b) => b.stage >= 2).length
   const sessions = world.cycles.reduce((sum, c) => sum + c.raw.progress.sessions.length, 0)
-  const timed = cycle.days.filter((d) => d.progress?.wallClockMinutes)
   const checked = world.tracks.filter((t) => t.checks.correct + t.checks.partial + t.checks.wrong > 0)
   const assessed = world.tracks.some((t) => t.selfStart !== null || t.selfFinal !== null)
 
@@ -151,31 +151,7 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
         <p className="muted">Считаются недели, а не дни подряд. Правило плана — не пропускать дважды подряд.</p>
       </div>
 
-      {timed.length > 0 && (
-        <div className="card">
-          <h3>Время: по плану и на деле</h3>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>День</th>
-                <th className="num">План</th>
-                <th className="num">На деле</th>
-              </tr>
-            </thead>
-            <tbody>
-              {timed.map((d) => (
-                <tr key={d.n}>
-                  <td>
-                    {d.n}. {d.plan.track}
-                  </td>
-                  <td className="num">{d.plan.plannedMinutes} мин</td>
-                  <td className="num">{d.progress!.wallClockMinutes} мин</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <TimeCard cycle={cycle} />
 
       <div className="card">
         <h3>За что получены очки</h3>

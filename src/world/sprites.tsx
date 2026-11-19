@@ -1,5 +1,11 @@
-// Нарисованные кодом детали мира. Цвета — CSS-переменные, поэтому светлая тема даёт день, тёмная — ночь.
+// Нарисованные кодом детали мира. Цвета — CSS-переменные: палитру задаёт сезон, а не тема сайта.
+// Краски те же, что у города (src/town3d/ground.ts и look.ts), свет идёт слева: правая сторона в тени.
 import type { CampItem } from '../data/types'
+
+/** Сторона в тени, блик на освещённой стороне и тень на земле. */
+const SIDE = 'var(--side)'
+const LIT = 'var(--lit)'
+const SHADE = 'var(--shade)'
 
 interface At {
   x: number
@@ -24,12 +30,32 @@ export function rng(seed: number) {
   }
 }
 
-export function Tree(p: At) {
+export type TreeKind = 'pine' | 'leaf'
+
+/**
+ * Дерево, как в городе: сосна остаётся зелёной круглый год, лиственное меняет крону по сезону.
+ * tone — оттенок кроны лиственного дерева, один из четырёх. Шапка снега видна, когда лежит снег.
+ */
+export function Tree({ kind = 'pine', tone = 0, ...p }: At & { kind?: TreeKind; tone?: number }) {
+  if (kind === 'leaf') {
+    return (
+      <g transform={at(p)}>
+        <ellipse cx={4} cy={0.5} rx={10} ry={2.6} fill={SHADE} />
+        <path d="M-1.7 0 L-1 -11 L1 -11 L1.7 0 Z" fill="var(--trunk)" />
+        <path d="M-9.5 -12 L-11 -19 L-6.5 -26 L1 -29 L8 -25.5 L11 -18.5 L8 -11.5 L0 -9 Z" fill={`var(--leaf-${(tone % 4) + 1})`} />
+        <path d="M1 -29 L8 -25.5 L11 -18.5 L8 -11.5 L0 -9 L3.2 -19 Z" fill={SIDE} />
+        <path d="M-11 -19 L-6.5 -26 L1 -29 L-3 -21 Z" fill={LIT} />
+        <path className="snowcap" d="M-6.5 -26 L1 -29 L8 -25.5 L4 -23.6 L0.5 -25.2 L-3.4 -23.2 Z" />
+      </g>
+    )
+  }
   return (
     <g transform={at(p)}>
-      <rect x={-1.5} y={-4} width={3} height={6} fill="var(--wood-dark)" />
-      <path d="M0 -27 L9 -9 L-9 -9 Z" fill="var(--tree)" />
-      <path d="M0 -19 L11 -2 L-11 -2 Z" fill="var(--tree-2)" />
+      <ellipse cx={4} cy={0.5} rx={10} ry={2.6} fill={SHADE} />
+      <rect x={-1.4} y={-5} width={2.8} height={6} fill="var(--trunk)" />
+      <path d="M0 -31 L7.5 -17 L-7.5 -17 Z M0 -24 L9.5 -9.5 L-9.5 -9.5 Z M0 -16.5 L11.5 -3 L-11.5 -3 Z" fill="var(--pine)" />
+      <path d="M0 -31 L7.5 -17 L0 -17 Z M0 -24 L9.5 -9.5 L0 -9.5 Z M0 -16.5 L11.5 -3 L0 -3 Z" fill={SIDE} />
+      <path className="snowcap" d="M0 -31 L3.7 -24 L1.2 -25.4 L-1.2 -24 L-3.7 -24 Z M0 -24 L-5.2 -16 L-2.4 -17.6 L0 -16 L2.6 -17.6 L5.2 -16 Z" />
     </g>
   )
 }
@@ -37,8 +63,11 @@ export function Tree(p: At) {
 export function Rock(p: At) {
   return (
     <g transform={at(p)}>
-      <path d="M-9 0 L-5 -8 L2 -11 L9 -4 L10 0 Z" fill="var(--rock)" />
-      <path d="M2 -11 L9 -4 L10 0 L3 0 Z" fill="var(--rock-2)" />
+      <ellipse cx={3} cy={0.5} rx={11} ry={2.3} fill={SHADE} />
+      <path d="M-9 0 L-6 -8 L1 -11 L8 -5 L10 0 Z" fill="var(--rock)" />
+      <path d="M1 -11 L8 -5 L10 0 L3 0 Z" fill="var(--rock-2)" />
+      <path d="M-6 -8 L1 -11 L-1.5 -5 Z" fill={LIT} />
+      <path className="snowcap" d="M-6 -8 L1 -11 L8 -5 L3.4 -6.4 L-0.6 -8.2 Z" />
     </g>
   )
 }
@@ -56,7 +85,9 @@ export function Cloud(p: At) {
 export function Tent(p: At) {
   return (
     <g transform={at(p)}>
+      <ellipse cx={4} cy={0.5} rx={17} ry={3} fill={SHADE} />
       <path d="M-15 0 L0 -19 L15 0 Z" fill="var(--canvas)" stroke="var(--wood-dark)" strokeWidth={1.2} strokeLinejoin="round" />
+      <path d="M0 -19 L15 0 L4.5 0 Z" fill={SIDE} />
       <path d="M-4.5 0 L0 -10 L4.5 0 Z" fill="var(--wood-dark)" />
       <path d="M0 -19 L0 -23" stroke="var(--wood-dark)" strokeWidth={1.2} />
     </g>

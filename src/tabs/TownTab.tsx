@@ -27,10 +27,12 @@ import { TownCanvas, fmtLeft } from '../town3d/TownCanvas'
 import { CENTER, LOOKS, levelName } from '../town3d/looks'
 import { quarterOpen } from '../town3d/plan'
 import { previewView, townView } from '../town3d/view'
-import { ConditionPreview, CopyButton, TrackBadge, plural } from '../ui/bits'
+import { ConditionPreview, TrackBadge, plural } from '../ui/bits'
 import { CoinIcon, GemIcon } from '../world/extras'
 import { artifactState } from './PathTab'
+import type { SyncSummary } from '../game/sync'
 import { Shop, type ShopApi } from './Shop'
+import { SyncNote } from './SyncNote'
 import { SkyCard, type SkyApi } from './SkyCard'
 
 export interface TownApi {
@@ -50,6 +52,8 @@ interface Props {
   shop: ShopApi
   skyApi: SkyApi
   town: TownApi
+  /** Запись из браузера, одна на весь сайт. */
+  sync: SyncSummary
   now: Date
 }
 
@@ -189,7 +193,7 @@ function moodText(town: World['town']): string {
 
 const TIER_PREVIEW = ['Стоянка', 'Лагерь', 'Хутор', 'Деревня', 'Городок', 'Город']
 
-export default function TownTab({ world, cycle, level, preview, onPreview, shop, skyApi, town: api, now }: Props) {
+export default function TownTab({ world, cycle, level, preview, onPreview, shop, skyApi, town: api, sync, now }: Props) {
   const town = world.town
   const [selected, setSelected] = useState<string | null>(null)
   const [stagePreview, setStagePreview] = useState<number | null>(null)
@@ -436,18 +440,11 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
       </div>
 
       {api.unsynced.length > 0 && (
-        <div className="card sync-note">
-          <p>
-            <b>Только в этом браузере:</b> {api.unsynced.length} {plural(api.unsynced.length, ['действие', 'действия', 'действий'])} в городе. Чтобы город был
-            тем же на других устройствах, отдай журнал Claude Code — он добавит его в <code>data/town.json</code>.
-          </p>
-          <div className="act-row">
-            <CopyButton text={JSON.stringify(api.unsynced)} label="Скопировать журнал" />
-            <button className="btn btn-quiet" onClick={api.undo}>
-              Отменить последнее действие
-            </button>
-          </div>
-        </div>
+        <SyncNote sync={sync}>
+          <button className="btn btn-quiet" onClick={api.undo}>
+            Отменить последнее действие
+          </button>
+        </SyncNote>
       )}
 
       <SkyCard api={skyApi} />
@@ -460,7 +457,7 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
         value={preview}
         onChange={onPreview}
       />
-      <Shop shop={shop} />
+      <Shop shop={shop} sync={sync} />
 
       <div className="card">
         <h3>Постройки-файлы</h3>

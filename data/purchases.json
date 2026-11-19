@@ -1,5 +1,5 @@
 {
-  "note": "Лавка: покупки, ремонты, свои награды и памятные знаки. Сайт сохраняет всё в браузере сразу; сюда запись переносит Claude Code (node scripts/record.mjs ledger), чтобы она была видна на всех устройствах. purchases и repairs: item — id из src/game/shop.ts. rewards — список своих наград { id, name, gems }; redeemed — их выкупы { at, name, gems }; signs — памятные знаки на пройденных перевалах { cycle, day, text, date }.",
+  "note": "Лавка: покупки, ремонты, свои награды и памятные знаки. Сайт сохраняет всё в браузере сразу; сюда запись переносит Claude Code (node scripts/record.mjs sync), чтобы она была видна на всех устройствах. purchases и repairs: item — id из src/game/shop.ts. rewards — список своих наград { id, name, gems }; redeemed — их выкупы { at, name, gems }; signs — памятные знаки на пройденных перевалах { cycle, day, text, date }.",
   "purchases": [],
   "repairs": [],
   "rewards": [],

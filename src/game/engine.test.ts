@@ -8,7 +8,8 @@ import { buildWorld } from './engine'
 import { BREAK_LIMIT, conditionLevel, gemsForScore, levelFor, missedWorkdays, pausedDays, roman, toISO } from './rules'
 import { SHOP, canAfford, shopItem } from './shop'
 import { BREAKS_BY_LEVEL, repairCost } from './repair'
-import { repoPurchases, repoRepairs } from '../data/load'
+import { repoCards, repoPurchases, repoRepairs } from '../data/load'
+import { ownCardsProblems } from './deck'
 
 const raw: RawCycle = {
   dir: '01-basic-month',
@@ -611,5 +612,12 @@ describe('живые данные', () => {
     for (const cycle of world.cycles) {
       for (const p of cycle.raw.progress.leetcode) expect(known, `задача ${p.id}`).toContain(p.status)
     }
+  })
+
+  it('свои карточки колоды записаны верно: трек из плана, длины в пределах, без повторов и не больше пяти на дату', () => {
+    // Ловит ошибки в data/deck.json → cards. Правила и сообщения — src/game/deck.ts.
+    const tracks = [...new Set(rawCycles.flatMap((cycle) => cycle.plan.tracks.map((track) => track.code)))]
+    expect(Array.isArray(repoCards), 'cards в data/deck.json — список').toBe(true)
+    expect(ownCardsProblems(repoCards, tracks)).toEqual([])
   })
 })

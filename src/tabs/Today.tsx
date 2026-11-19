@@ -1,11 +1,13 @@
 import { dueCards } from '../game/deck'
 import type { CycleView, World } from '../game/engine'
 import { toISO } from '../game/rules'
+import type { SyncSummary } from '../game/sync'
+import { SyncNote } from './SyncNote'
 import { DAYS, RichText, Timer, TrackBadge, plural } from '../ui/bits'
 
 const MODE: Record<string, string> = { light: 'лёгкий день', deep: 'глубокий день', retro: 'ретро' }
 
-export function Today({ world, cycle }: { world: World; cycle: CycleView }) {
+export function Today({ world, cycle, sync }: { world: World; cycle: CycleView; sync: SyncSummary }) {
   const current = cycle.current
   const progress = cycle.raw.progress
 
@@ -180,6 +182,8 @@ export function Today({ world, cycle }: { world: World; cycle: CycleView }) {
           </ul>
         </details>
       )}
+
+      <SyncNote sync={sync} />
 
       <p className="muted foot-note">
         На этой неделе {thisWeek} {plural(thisWeek, ['занятие', 'занятия', 'занятий'])}. Идём по номерам дней, а не по

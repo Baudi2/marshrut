@@ -5,8 +5,10 @@ import { toISO } from '../game/rules'
 import type { Damage } from '../game/repair'
 import { HEAL_SESSIONS } from '../game/repair'
 import { SHOP, canAfford, shopItem, type ShopItem, type Wallet } from '../game/shop'
+import type { SyncSummary } from '../game/sync'
+import { SyncNote } from './SyncNote'
 import { TIERS } from '../game/town'
-import { CopyButton, fmtDate, plural } from '../ui/bits'
+import { fmtDate, plural } from '../ui/bits'
 import { CoinIcon, GemIcon, ItemArt } from '../world/extras'
 
 export interface ShopApi {
@@ -41,17 +43,10 @@ const GROUPS = [
 
 const SESSIONS: [string, string, string] = ['занятие', 'занятия', 'занятий']
 
-export function Shop({ shop, groups }: { shop: ShopApi; groups?: ('gear' | 'camp')[] }) {
+export function Shop({ shop, groups, sync }: { shop: ShopApi; groups?: ('gear' | 'camp')[]; sync: SyncSummary }) {
   const { wallet, damage, unsynced } = shop
   const repairTotal = damage.reduce((sum, d) => sum + d.cost, 0)
-  const pendingNames = [
-    ...unsynced.purchases.map((p) => shopItem(p.item)?.name),
-    ...unsynced.repairs.map((r) => `ремонт: ${shopItem(r.item)?.name}`),
-    ...unsynced.rewards.map((r) => `награда в списке: ${r.name}`),
-    ...unsynced.redeemed.map((r) => `выкуп: ${r.name}`),
-    ...unsynced.signs.map((s) => `знак на перевале дня ${s.day}`),
-  ]
-  const pending = pendingNames.length
+  const pending = Object.values(unsynced).reduce((sum, list) => sum + list.length, 0)
 
   return (
     <div className="card" id="shop">
@@ -119,17 +114,7 @@ export function Shop({ shop, groups }: { shop: ShopApi; groups?: ('gear' | 'camp
 
       <Rewards shop={shop} />
 
-      {pending > 0 && (
-        <div className="sync-note">
-          <p>
-            <b>Только в этом браузере:</b>{' '}
-            {pendingNames.join(', ')}
-            . Чтобы это было видно на других устройствах, отдай запись Claude Code — он добавит её в{' '}
-            <code>data/purchases.json</code>.
-          </p>
-          <CopyButton text={JSON.stringify(unsynced)} label="Скопировать запись" />
-        </div>
-      )}
+      {pending > 0 && <SyncNote sync={sync} plain />}
     </div>
   )
 }

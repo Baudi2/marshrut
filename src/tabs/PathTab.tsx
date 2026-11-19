@@ -2,12 +2,14 @@ import { useState, type FormEvent } from 'react'
 import type { CycleView, DayView, World } from '../game/engine'
 import type { ConditionLevel } from '../game/rules'
 import { ConditionPreview, DAYS, RichText, TrackBadge, fmtDate, plural } from '../ui/bits'
+import { timeReport } from '../game/report'
 import { SIGN_GEMS, SIGN_MAX } from '../game/rewards'
 import { GemIcon } from '../world/extras'
 import { MapScene, NODE_LABEL } from '../world/MapScene'
 import { trackColor } from '../world/sprites'
 import { SkyCard, type SkyApi } from './SkyCard'
 import { WeeklyTests } from './Tests'
+import { WeekReport } from './WeekReport'
 
 const ARTIFACT_STATE: Record<string, string> = {
   created: 'создан',
@@ -78,6 +80,8 @@ export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi,
 
       <WeeklyTests cycle={cycle} />
 
+      <WeekReport cycle={cycle} />
+
       <SkyCard api={skyApi} />
 
       <ConditionPreview
@@ -130,6 +134,8 @@ function DayCard({ day, cycle, checkpoint, signs }: { day: DayView; cycle: Cycle
   const plan = day.plan
   const p = day.progress
   const isLastOfWeek = cycle.days.filter((d) => d.plan.week === plan.week).slice(-1)[0]?.n === day.n
+  // То же число, что в карточке «Время: план и факт» на «Приросте».
+  const spent = timeReport(cycle).days.find((d) => d.n === day.n)?.fact
   return (
     <div className="card" aria-live="polite">
       <div className="day-head">
@@ -143,9 +149,9 @@ function DayCard({ day, cycle, checkpoint, signs }: { day: DayView; cycle: Cycle
           <span className={`pill pill-${day.state}`}>{NODE_LABEL[day.state]}</span>
           <TrackBadge code={plan.trackCode} />
           {p?.dates.length ? <span className="chip">{p.dates.map(fmtDate).join(', ')}</span> : null}
-          {p?.wallClockMinutes ? (
+          {spent != null ? (
             <span className="chip">
-              {p.wallClockMinutes} мин при плане {plan.plannedMinutes}
+              {spent} мин при плане {plan.plannedMinutes}
             </span>
           ) : (
             <span className="chip">{plan.plannedMinutes} мин</span>

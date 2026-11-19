@@ -118,6 +118,7 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
   useEffect(() => {
     if (!stage.current || !scenery.current) return
     stage.current.setSky(sky, view.neglect)
+    town.current?.setSky(sky)
     scenery.current.idle = view.neglect >= 2
     scenery.current.refreshLight()
   }, [sky, view.neglect])

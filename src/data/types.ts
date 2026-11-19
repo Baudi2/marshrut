@@ -348,6 +348,21 @@ export interface DeckReview {
   ok: boolean
 }
 
+/**
+ * Своя карточка колоды, data/deck.json → cards: вопрос и ответ, которые игрок записал сам.
+ * source: note — из заметок; mistake — из журнала ошибок, тогда в mistake лежит текст этой ошибки.
+ * Вопрос — от 3 до 200 знаков, ответ — от 1 до 600; track — код трека из плана. Проверка — src/game/deck.ts.
+ * Номер карточки считается по дате и вопросу, как у проверок понимания: текст записанного вопроса не правят.
+ */
+export interface OwnCard {
+  date: string
+  track: string
+  question: string
+  answer: string
+  source: 'note' | 'mistake'
+  mistake?: string
+}
+
 /** Всё, что сделал игрок: покупки, ремонты, награды, знаки, повторы колоды и действия в городе — из репозитория и из браузера. */
 export interface Ledger {
   purchases: Purchase[]
@@ -360,6 +375,8 @@ export interface Ledger {
   signs?: MemorialSign[]
   /** Ответы по карточкам колоды, data/deck.json. */
   reviews?: DeckReview[]
+  /** Свои карточки колоды, там же. */
+  cards?: OwnCard[]
 }
 
 /**

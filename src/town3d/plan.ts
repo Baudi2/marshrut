@@ -44,6 +44,9 @@ export const PLAZA = { x: 0, z: 0, w: PITCH * 2 - 3, d: PITCH * 2 - 3 }
 /** Центральная постройка стоит в глубине площади, костёр — ближе к зрителю. */
 export const CENTER_AT = { x: 0, z: -5.2 }
 export const FIRE_AT = { x: 0, z: 5.5 }
+/** Где встаёт стройка новой центральной постройки: на площади рядом с прежней. */
+export const centerSite = (tier: number): { x: number; z: number } =>
+  tier <= 1 ? { x: CENTER_AT.x + 0.5, z: CENTER_AT.z - 3.4 } : { x: CENTER_AT.x + 9.5, z: CENTER_AT.z - 1 }
 /** На стоянке костёр горит посреди поляны, палатка путника рядом. */
 export const CAMP_FIRE_AT = { x: 0.5, z: 1 }
 export const CAMP_TENT_AT = { x: -5.4, z: -2.6 }
@@ -137,6 +140,33 @@ export function groundHeight(x: number, z: number): number {
 /** Лесная поляна к западу от поселения: здесь пасутся олени. Участков и улиц тут нет на любой ступени. */
 export const GLADE = { x: -67, z: -8, r: 7.5 }
 
+/**
+ * Луга у реки: полосы между южной улицей и берегом, где нет ни участков, ни улиц, ни деревьев.
+ * Здесь пасутся домашние животные: во дворах построек им негде развернуться.
+ * Южный край луга идёт вдоль реки (meadowEdge), room — сколько животных помещается.
+ */
+export interface Meadow {
+  id: string
+  minX: number
+  maxX: number
+  minZ: number
+  room: number
+}
+
+export const MEADOWS: Meadow[] = [
+  { id: 'east', minX: 8.6, maxX: 14.5, minZ: 15, room: 1 },
+  { id: 'west', minX: -15.5, maxX: -6.8, minZ: 15, room: 1 },
+  { id: 'far-east', minX: 40.8, maxX: 50, minZ: 15, room: 2 },
+]
+
+/** Южный край луга: до спуска к воде остаётся запас. */
+export const meadowEdge = (x: number) => riverCenter(x) - RIVER.half - 2.6
+
+/** Точка на лугу; margin — отступ внутрь от краёв. */
+export function inMeadow(meadow: Meadow, x: number, z: number, margin = 0): boolean {
+  return x >= meadow.minX + margin && x <= meadow.maxX - margin && z >= meadow.minZ + margin && z <= meadowEdge(x) - margin
+}
+
 export interface AnimalSpot {
   /** Модель: «a/cow», «a/deer»… */
   key: string
@@ -190,12 +220,20 @@ export interface Tree {
   turn: number
 }
 
+/**
+ * Насколько дальше улицы не растут деревья. Крона большого дерева шириной больше шести метров и начинается
+ * ниже роста человека: дерево у самой улицы накрывало бы идущих листвой. Улица у открытого участка
+ * и вокруг площади остаётся чистой на всю ширину, вместе с кронами.
+ */
+const STREET_CLEAR = 2.6
+
 /** Точка занята: участок, площадь, река, слобода, улица. */
 function taken(x: number, z: number, open: Plot[], specials: number, quarter: boolean): boolean {
-  if (Math.abs(x - PLAZA.x) < PLAZA.w / 2 + 3 && Math.abs(z - PLAZA.z) < PLAZA.d / 2 + 3) return true
+  if (Math.abs(x - PLAZA.x) < PLAZA.w / 2 + 3 + STREET_CLEAR && Math.abs(z - PLAZA.z) < PLAZA.d / 2 + 3 + STREET_CLEAR) return true
   if (Math.abs(z - riverCenter(x)) < RIVER.half + 3.2) return true
   for (const plot of open) {
-    if (Math.abs(x - plot.x) < PITCH / 2 + 0.6 && Math.abs(z - plot.z) < PITCH / 2 + 0.6) return true
+    // Участок, половина улицы до её середины, вторая половина и запас на ствол.
+    if (Math.abs(x - plot.x) < PITCH / 2 + 1.5 + STREET_CLEAR && Math.abs(z - plot.z) < PITCH / 2 + 1.5 + STREET_CLEAR) return true
   }
   if (Math.hypot(x - GLADE.x, z - GLADE.z) < GLADE.r) return true
   // Тропа от площади к мосту и аллея слободы.

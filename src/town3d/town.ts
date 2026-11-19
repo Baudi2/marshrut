@@ -2,7 +2,7 @@
 // Состояние приходит готовым (TownView): здесь только расстановка.
 import * as THREE from 'three'
 import { TIERS, buildingType } from '../game/town'
-import type { Season } from '../world/sky'
+import type { Season, Sky } from '../world/sky'
 import type { Scenery } from './fx'
 import { makeGround, type Ground } from './ground'
 import { buildLook, type LookContext, type LookFn } from './look'
@@ -17,6 +17,7 @@ import {
   CENTER_AT,
   FIRE_AT,
   animalSpots,
+  centerSite,
   PLAZA,
   RIVER,
   fireSpot,
@@ -174,6 +175,11 @@ export class TownScene {
     scenery.stage.tickers.push((dt) => this.people.tick(dt))
   }
 
+  /** Время суток и погода: ночью и в дождь на улице меньше жителей, животные ночью стоят. Город не пересобирается. */
+  setSky(sky: Sky) {
+    this.people.setSky(sky.phase, sky.kind)
+  }
+
   /** Светлое кольцо на земле под выбранной постройкой. */
   select(id: string | null) {
     const mark = id ? this.marks.find((m) => m.id === id) : null
@@ -241,10 +247,11 @@ export class TownScene {
     decor('pot', fire.x, fire.z)
     decor('bench', fire.x, fire.z)
     if (view.tier === 0) decor('signpost', fire.x + 6.5, fire.z + 3.5)
-    else decor('signpost', BRIDGE_X + 2.8, PLAZA.d / 2 + 2.6)
+    // Указатель стоит у тропы к мосту, за южной улицей: на проезжей части ему не место.
+    else decor('signpost', BRIDGE_X + 2.4, PLAZA.d / 2 + 4)
     if (view.tier >= 1) decor('flagpole', PLAZA.w / 2 - 1.4, PLAZA.d / 2 - 1.4)
     if (view.tier >= 3) put(fountainLook(view.tier), FIRE_AT.x, FIRE_AT.z + 1, 0)
-    if (view.tierPending) put(constructionLook, view.tier <= 1 ? CENTER_AT.x + 0.5 : CENTER_AT.x + 9.5, view.tier <= 1 ? CENTER_AT.z - 3.4 : CENTER_AT.z - 1, 0)
+    if (view.tierPending) put(constructionLook, centerSite(view.tier).x, centerSite(view.tier).z, 0)
 
     // Стандартные постройки.
     for (const building of view.buildings) {
@@ -307,11 +314,13 @@ export class TownScene {
     ]
     for (const [key, x, z, s, rot] of peaks) put((b) => b.model(key, { center: true, s, rot }), x, z, 0)
 
-    // Жители ходят между готовыми постройками.
+    // Жители заняты делами между готовыми постройками и носят материалы на стройки; животные пасутся.
     const crowd: PeopleInput = {
       tier: view.tier,
       population: view.population,
-      doors: view.buildings.filter((b) => b.level > 0).flatMap((b) => plotOf(b.id) ?? []),
+      sites: view.buildings.map((b) => ({ id: b.id, type: b.type, level: b.level, pending: !!b.pending })),
+      tierPending: !!view.tierPending,
+      open,
       quiet: view.neglect >= 2,
       gear: view.gear,
       animals: animalSpots(view.buildings),

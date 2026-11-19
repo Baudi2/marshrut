@@ -1,8 +1,10 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
-import { offplan, rawCycles, repoPurchases, repoRedeemed, repoRepairs, repoReviews, repoRewards, repoSigns, repoTownActions } from './data/load'
-import type { DeckReview, MemorialSign, Purchase, Redeemed, Reward } from './data/types'
+import { offplan, rawCycles, repoCards, repoPurchases, repoRedeemed, repoRepairs, repoReviews, repoRewards, repoSigns, repoTownActions } from './data/load'
+import type { DeckReview, MemorialSign, OwnCard, Purchase, Redeemed, Reward } from './data/types'
+import { cardId, makeOwnCard, newCardProblem } from './game/deck'
 import { ReviewTab, type DeckApi } from './tabs/ReviewTab'
 import { rewardProblem, signProblem, tidy } from './game/rewards'
+import { syncSummary } from './game/sync'
 import { blockers, type TownAction } from './game/town'
 import type { TownApi } from './tabs/TownTab'
 import { buildWorld } from './game/engine'
@@ -62,6 +64,8 @@ function writeJSON(key: string, value: unknown) {
 
 const sameRecord = (a: Purchase, b: Purchase) => a.item === b.item && a.date === b.date
 const sameAction = (a: TownAction, b: TownAction) => a.at === b.at && a.do === b.do && a.type === b.type && a.id === b.id
+/** Номера своих карточек, уже записанных в репозиторий. */
+const repoCardIds = new Set(repoCards.map(cardId))
 
 function currentTheme(): 'light' | 'dark' {
   const stamped = document.documentElement.dataset.theme
@@ -83,8 +87,9 @@ export function App() {
   const [hiddenRewards, setHiddenRewards] = useState<string[]>(() => readJSON('rewards-hidden', []))
   const [localRedeemed, setLocalRedeemed] = useState<Redeemed[]>(() => readJSON('redeemed', []))
   const [localSigns, setLocalSigns] = useState<MemorialSign[]>(() => readJSON('signs', []))
-  // Ответы по карточкам колоды: сразу в браузер, позже — в data/deck.json.
+  // Ответы по карточкам колоды и свои карточки: сразу в браузер, позже — в data/deck.json.
   const [localReviews, setLocalReviews] = useState<DeckReview[]>(() => readJSON('deck-reviews', []))
+  const [localCards, setLocalCards] = useState<OwnCard[]>(() => readJSON('deck-cards', []))
   // Действия в городе: сразу в браузер, позже Claude Code переносит их в data/town.json.
   const [localTown, setLocalTown] = useState<TownAction[]>(() => readJSON('town-actions', []))
 
@@ -150,6 +155,7 @@ export function App() {
   const ledger = useMemo(
     () => ({
       reviews: [...repoReviews, ...localReviews.filter((r) => !repoReviews.some((x) => x.card === r.card && x.at === r.at))],
+      cards: [...repoCards, ...localCards.filter((c) => !repoCardIds.has(cardId(c)))],
       rewards: [...repoRewards, ...localRewards.filter((r) => !repoRewards.some((x) => x.id === r.id))].filter((r) => !hiddenRewards.includes(r.id)),
       redeemed: [...repoRedeemed, ...localRedeemed.filter((r) => !repoRedeemed.some((x) => x.at === r.at && x.name === r.name))],
       signs: [...repoSigns, ...localSigns.filter((s) => !repoSigns.some((x) => x.cycle === s.cycle && x.day === s.day))],
@@ -157,7 +163,7 @@ export function App() {
       repairs: [...repoRepairs, ...localRepairs.filter((p) => !repoRepairs.some((r) => sameRecord(r, p)))],
       town: [...repoTownActions, ...localTown.filter((action) => !repoTownActions.some((r) => sameAction(r, action)))],
     }),
-    [localBuys, localRepairs, localTown, localRewards, hiddenRewards, localRedeemed, localSigns, localReviews],
+    [localBuys, localRepairs, localTown, localRewards, hiddenRewards, localRedeemed, localSigns, localReviews, localCards],
   )
   const world = useMemo(() => buildWorld(rawCycles, offplan, today, ledger, now), [today, ledger, now])
   const [cycleId, setCycleId] = useState(world.active.id)
@@ -270,9 +276,18 @@ export function App() {
     setLocalReviews(next)
     writeJSON('deck-reviews', next)
   }
+  const saveCards = (next: OwnCard[]) => {
+    setLocalCards(next)
+    writeJSON('deck-cards', next)
+  }
+  // Свои карточки, которые есть только в этом браузере. Карточка, совпавшая номером с проверкой понимания,
+  // в колоду не попала — в запись для репозитория она тоже не идёт.
+  const ownInDeck = new Set(world.deck.filter((c) => c.source !== 'check').map((c) => c.id))
+  const freshCards = localCards.filter((c) => !repoCardIds.has(cardId(c)) && ownInDeck.has(cardId(c)))
+  const isFreshCard = (id: string) => freshCards.some((c) => cardId(c) === id)
   const deckApi: DeckApi = {
     today,
-    unsynced: freshReviews,
+    unsynced: { reviews: freshReviews, cards: freshCards },
     review: (card, ok) => saveReviews([...localReviews, { card, at: new Date().toISOString(), ok }]),
     undo: freshReviews.length
       ? () => {
@@ -280,6 +295,24 @@ export function App() {
           saveReviews(localReviews.filter((r) => r !== last))
         }
       : null,
+    addCard: (draft) => {
+      const card = makeOwnCard(draft, toISO(new Date()))
+      const problem = newCardProblem(
+        card,
+        world.tracks.map((t) => t.track.code),
+        world.deck,
+      )
+      if (problem) return problem
+      saveCards([...localCards, card])
+      return null
+    },
+    isFresh: isFreshCard,
+    removeCard: (id) => {
+      // Карточку из репозитория сайт убрать не может.
+      if (!isFreshCard(id)) return
+      saveCards(localCards.filter((c) => cardId(c) !== id))
+      saveReviews(localReviews.filter((r) => r.card !== id))
+    },
   }
 
   const unsyncedTown = localTown.filter((action) => !repoTownActions.some((r) => sameAction(r, action)))
@@ -300,6 +333,9 @@ export function App() {
       if (last) saveTown(localTown.filter((action) => action !== last))
     },
   }
+
+  // Одна запись на весь сайт: всё, чего ещё нет в репозитории.
+  const sync = syncSummary({ ...shop.unsynced, town: unsyncedTown, reviews: freshReviews, cards: freshCards })
 
   // Когда достраивается ближайшая стройка, город пересчитывается сам.
   const nextReady = Math.min(
@@ -389,8 +425,8 @@ export function App() {
       </nav>
 
       <main>
-        {tab === 'today' && <Today world={world} cycle={cycle} />}
-        {tab === 'review' && <ReviewTab world={world} deck={deckApi} />}
+        {tab === 'today' && <Today world={world} cycle={cycle} sync={sync} />}
+        {tab === 'review' && <ReviewTab world={world} deck={deckApi} sync={sync} />}
         {tab === 'path' && (
           <PathTab
             world={world}
@@ -414,6 +450,7 @@ export function App() {
               shop={shop}
               skyApi={skyApi}
               town={townApi}
+              sync={sync}
               now={now}
             />
           </Suspense>

@@ -2,7 +2,7 @@ import type { OffplanEntry, Plan, Progress, Purchase, RawCycle } from './types'
 import offplanFile from '../../data/offplan.json'
 import purchasesFile from '../../data/purchases.json'
 import deckFile from '../../data/deck.json'
-import type { DeckReview, MemorialSign, Redeemed, Reward } from './types'
+import type { DeckReview, MemorialSign, OwnCard, Redeemed, Reward } from './types'
 import townFile from '../../data/town.json'
 import type { TownAction } from '../game/town'
 
@@ -41,5 +41,7 @@ export const repoRewards = extras.rewards ?? []
 export const repoRedeemed = extras.redeemed ?? []
 export const repoSigns = extras.signs ?? []
 
-/** Ответы по карточкам колоды, уже записанные в репозиторий. */
-export const repoReviews = (deckFile as { reviews: DeckReview[] }).reviews
+/** Ответы по карточкам колоды и свои карточки, уже записанные в репозиторий. */
+const deck = deckFile as { reviews: DeckReview[]; cards?: OwnCard[] }
+export const repoReviews = deck.reviews
+export const repoCards = deck.cards ?? []

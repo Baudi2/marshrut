@@ -1,11 +1,10 @@
-import { SignBoard } from './sprites'
 import { useMemo, useRef } from 'react'
 import type { CycleView, DayView, NodeState } from '../game/engine'
 import type { ConditionLevel } from '../game/rules'
 import { useNarrow } from '../ui/bits'
-import type { Sky } from './sky'
+import { snowCover, type Sky } from './sky'
 import { NightSky, PhaseTint, Precipitation, SkyArt, WeatherWash, skyClass } from './SkyLayers'
-import { Fire, Flag, Rock, Tent, Traveler, Tree, Tuft, rng, trackColor } from './sprites'
+import { Fire, Flag, Rock, SignBoard, Tent, Traveler, Tree, Tuft, rng, trackColor, type TreeKind } from './sprites'
 
 interface Pt {
   x: number
@@ -64,7 +63,8 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
     const W = narrow ? 400 : 900
     const rowH = narrow ? 100 : 108
     const top = 132
-    const bottom = 96
+    // Внизу — берег реки: та же река, что течёт через город.
+    const bottom = 116
     const padX = narrow ? 36 : 110
     const maxStep = narrow ? 66 : 150
     const H = top + cycle.weeks.length * rowH + bottom
@@ -83,7 +83,7 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
       return { y, week: w }
     })
 
-    const base: Pt = { x: narrow ? 44 : 118, y: H - 40 }
+    const base: Pt = { x: narrow ? 44 : 118, y: H - 62 }
     const summit: Pt = { x: W / 2, y: 46 }
     const pts = [base, ...cycle.days.map((d) => pos.get(d.n)!), summit]
     const segs = segments(pts)
@@ -94,9 +94,9 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
     const trail = `M${base.x} ${base.y} ` + segs.join(' ')
     const walked = `M${base.x} ${base.y} ` + segs.slice(0, hereIdx).join(' ')
 
-    // Пейзаж: внизу лес, выше — камни.
+    // Пейзаж: внизу смешанный лес, выше — одни сосны, под вершиной — камни.
     const rand = rng(cycle.n * 7919)
-    const trees: (Pt & { s: number })[] = []
+    const trees: (Pt & { s: number; kind: TreeKind; tone: number })[] = []
     const rocks: (Pt & { s: number })[] = []
     // Декор не садится на точки тропы и на подписи недель.
     const keepOut = [...pts, ...rows.map((row) => ({ x: W / 2, y: row.y + 44 }))]
@@ -108,11 +108,22 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
         const p = { x: 14 + rand() * (W - 28), y: row.y + rowH / 2 + (rand() - 0.5) * 34, s: 0.85 + rand() * 0.55 }
         if (!free(p)) continue
         // Лес редеет с высотой: до середины склона — деревья, выше всё чаще камни.
-        if (rand() > Math.max(0, altitude - 0.3) * 1.5) trees.push(p)
-        else rocks.push(p)
+        if (rand() > Math.max(0, altitude - 0.3) * 1.5) {
+          const leafShare = Math.max(0, 0.75 - altitude * 1.3)
+          trees.push({ ...p, kind: rand() < leafShare ? 'leaf' : 'pine', tone: Math.floor(rand() * 4) })
+        } else rocks.push(p)
       }
     })
     trees.sort((a, b) => a.y - b.y)
+
+    // Пятна на траве, как на земле города: светлые и тёмные.
+    const patches = Array.from({ length: narrow ? 12 : 26 }, () => ({
+      x: rand() * W,
+      // Только на нижней, травяной части склона: на осыпи под вершиной травы нет.
+      y: top + (H - top) * 0.42 + rand() * ((H - top) * 0.58 - bottom),
+      rx: 22 + rand() * 46,
+      light: rand() > 0.45,
+    }))
 
     // Трава запустения: на тропе впереди путника.
     const tufts: Pt[] = []
@@ -126,7 +137,7 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
       }
     }
 
-    return { W, H, top, rowH, pos, rows, base, summit, pts, trail, walked, here, hereIdx, trees, rocks, tufts }
+    return { W, H, top, rowH, pos, rows, base, summit, pts, trail, walked, here, hereIdx, trees, rocks, tufts, patches }
   }, [cycle, narrow])
 
   const { W, H, top, pos, rows, base, summit, pts } = scene
@@ -135,6 +146,10 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
   const tuftCount = [0, 6, 14, scene.tufts.length][level]
   const herePt = pts[scene.hereIdx]
   const fogTop = Math.max(0, herePt.y - 70)
+  // Снег лежит по тому же правилу, что в городе.
+  const snow = snowCover(sky)
+  const wave = (y: number) =>
+    `M0 ${y} Q${W * 0.28} ${y - 9} ${W * 0.55} ${y + 1} T${W} ${y - 3} L${W} ${H} L0 ${H} Z`
 
   const band = (i: number) => {
     const y = top - 34 + (i * (H - top + 34)) / 5
@@ -144,7 +159,13 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
 
   return (
     <div className="scene" ref={ref}>
-      <svg className={skyClass(sky)} viewBox={`0 0 ${W} ${H}`} role="group" aria-label={`Маршрут цикла ${cycle.n}: ${cycle.name}`}>
+      <svg
+        className={snow > 0 ? `${skyClass(sky)} snowy` : skyClass(sky)}
+        style={{ ['--snow-cover' as string]: snow }}
+        viewBox={`0 0 ${W} ${H}`}
+        role="group"
+        aria-label={`Маршрут цикла ${cycle.n}: ${cycle.name}`}
+      >
         <defs>
           <linearGradient id="map-sky" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="var(--sky-1)" />
@@ -172,6 +193,22 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
           {[0, 1, 2, 3, 4].map((i) => (
             <path key={i} d={band(i)} fill={`var(--terrain-${i + 1})`} />
           ))}
+          {scene.patches.map((p, i) => (
+            <ellipse key={i} cx={p.x} cy={p.y} rx={p.rx} ry={p.rx * 0.2} fill={p.light ? 'var(--patch-light)' : 'var(--patch-dark)'} opacity={0.3} />
+          ))}
+          {snow > 0 && <path d={band(0)} fill="var(--snow-ground)" opacity={snow * 0.92} />}
+
+          {/* Река у подножия и её песчаный берег */}
+          <path d={wave(H - 34)} fill="var(--bank)" />
+          <path d={wave(H - 26)} fill="var(--river)" />
+          <path
+            d={`M${W * 0.1} ${H - 12} h${W * 0.09} M${W * 0.4} ${H - 8} h${W * 0.13} M${W * 0.72} ${H - 14} h${W * 0.08} M${W * 0.86} ${H - 6} h${W * 0.07}`}
+            stroke="var(--river-2)"
+            strokeWidth={1.6}
+            strokeLinecap="round"
+            fill="none"
+            opacity={0.75}
+          />
 
           {scene.rocks.map((p, i) => (
             <Rock key={i} {...p} />

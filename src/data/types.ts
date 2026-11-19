@@ -341,7 +341,14 @@ export interface MemorialSign {
   date: string
 }
 
-/** Всё, что сделал игрок: покупки, ремонты, награды, знаки и действия в городе — из репозитория и из браузера. */
+/** Ответ по карточке колоды, data/deck.json. card — номер карточки (src/game/deck.ts), ok — знал или нет. */
+export interface DeckReview {
+  card: string
+  at: string
+  ok: boolean
+}
+
+/** Всё, что сделал игрок: покупки, ремонты, награды, знаки, повторы колоды и действия в городе — из репозитория и из браузера. */
 export interface Ledger {
   purchases: Purchase[]
   repairs: Purchase[]
@@ -351,6 +358,8 @@ export interface Ledger {
   rewards?: Reward[]
   redeemed?: Redeemed[]
   signs?: MemorialSign[]
+  /** Ответы по карточкам колоды, data/deck.json. */
+  reviews?: DeckReview[]
 }
 
 /**

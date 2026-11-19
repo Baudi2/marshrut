@@ -1,4 +1,6 @@
+import { dueCards } from '../game/deck'
 import type { CycleView, World } from '../game/engine'
+import { toISO } from '../game/rules'
 import { DAYS, RichText, Timer, TrackBadge, plural } from '../ui/bits'
 
 const MODE: Record<string, string> = { light: 'лёгкий день', deep: 'глубокий день', retro: 'ретро' }
@@ -32,8 +34,18 @@ export function Today({ world, cycle }: { world: World; cycle: CycleView }) {
     ...plan.leetcode.pairIfFast.map((id) => ({ id, kind: 'пара, если основная быстрее 10 мин' })),
   ]
 
+  const dueToday = dueCards(world.deck, toISO(new Date())).length
+
   return (
     <div className="stack">
+      {dueToday > 0 && (
+        <a className="card deck-link" href="#/review">
+          <span>
+            <b>Колода:</b> к повтору сегодня {dueToday} {plural(dueToday, ['карточка', 'карточки', 'карточек'])}
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
+      )}
       {world.condition.level > 0 && (
         <div className="card banner">
           <b>{world.condition.name}.</b> Без занятия {world.missedWorkdays}{' '}

@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { addDeckReviews, beatMistake } from './record-lib.mjs'
 import { RecordError, addBreak, addCheck, addMistake, addOffplan, addPurchase, addSession, addTownActions, closeDay, editTodo, markSteps, mergeLedger } from './record-lib.mjs'
 
 const plan = {
@@ -149,6 +150,34 @@ describe('запись вне занятия', () => {
     expect(file.entries[0]).toEqual({ ...video, takeaways: ['первая', 'вторая'] })
     expect(() => addOffplan(plan, file, { date: '2026-11-20', kind: 'mock-interview', title: 'Собеседование', takeaways: ['1', '2'] })).toThrow(/нужно выводов: 3/)
     expect(() => addOffplan(plan, file, { date: '2026-11-20', kind: 'podcast', title: 'Подкаст' })).toThrow(/kind/)
+  })
+})
+
+describe('колода и журнал ошибок', () => {
+  it('ответы по карточкам добавляются как есть, повторы пропускаются', () => {
+    const file = { reviews: [{ card: '2026-11-12-abc', at: '2026-11-19T10:00:00.000Z', ok: true }] }
+    const record = [
+      { card: '2026-11-12-abc', at: '2026-11-19T10:00:00.000Z', ok: true },
+      { card: '2026-11-17-xyz', at: '2026-11-19T09:00:00.000Z', ok: false },
+    ]
+    expect(addDeckReviews(file, record)).toMatch(/добавлено: 1, уже были: 1/)
+    expect(file.reviews.map((r) => r.card)).toEqual(['2026-11-17-xyz', '2026-11-12-abc'])
+    expect(() => addDeckReviews(file, [{ card: 'x', at: 'вчера', ok: true }])).toThrow(/ответ 1/)
+    expect(() => addDeckReviews(file, [{ card: 'x', at: '2026-11-19T10:00:00.000Z', ok: 'да' }])).toThrow(RecordError)
+    expect(() => addDeckReviews(file, [])).toThrow(RecordError)
+  })
+
+  it('ошибка отмечается побеждённой по номеру и только один раз', () => {
+    const p = fresh()
+    p.mistakes = [
+      { date: '2026-11-12', track: 'A', problemId: 1, text: 'забыл синтаксис цикла' },
+      { date: '2026-11-17', track: 'C1', problemId: null, text: 'спутал кэши' },
+    ]
+    expect(beatMistake(p, { n: 2, date: '2026-11-20' })).toMatch(/спутал кэши/)
+    expect(p.mistakes.map((m) => !!m.beaten)).toEqual([false, true])
+    expect(p.meta.updatedAt).toBe('2026-11-20')
+    expect(() => beatMistake(p, { n: 2 })).toThrow(/уже отмечена/)
+    expect(() => beatMistake(p, { n: 3 })).toThrow(RecordError)
   })
 })
 

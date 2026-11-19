@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
-import { offplan, rawCycles, repoPurchases, repoRedeemed, repoRepairs, repoRewards, repoSigns, repoTownActions } from './data/load'
-import type { MemorialSign, Purchase, Redeemed, Reward } from './data/types'
+import { offplan, rawCycles, repoPurchases, repoRedeemed, repoRepairs, repoReviews, repoRewards, repoSigns, repoTownActions } from './data/load'
+import type { DeckReview, MemorialSign, Purchase, Redeemed, Reward } from './data/types'
+import { ReviewTab, type DeckApi } from './tabs/ReviewTab'
 import { rewardProblem, signProblem, tidy } from './game/rewards'
 import { blockers, type TownAction } from './game/town'
 import type { TownApi } from './tabs/TownTab'
@@ -27,6 +28,7 @@ const TABS = [
   { id: 'path', label: 'Путь' },
   { id: 'town', label: 'Город' },
   { id: 'problems', label: 'Задачи' },
+  { id: 'review', label: 'Повтор' },
   { id: 'growth', label: 'Прирост' },
   { id: 'skills', label: 'Навыки' },
 ] as const
@@ -81,6 +83,8 @@ export function App() {
   const [hiddenRewards, setHiddenRewards] = useState<string[]>(() => readJSON('rewards-hidden', []))
   const [localRedeemed, setLocalRedeemed] = useState<Redeemed[]>(() => readJSON('redeemed', []))
   const [localSigns, setLocalSigns] = useState<MemorialSign[]>(() => readJSON('signs', []))
+  // Ответы по карточкам колоды: сразу в браузер, позже — в data/deck.json.
+  const [localReviews, setLocalReviews] = useState<DeckReview[]>(() => readJSON('deck-reviews', []))
   // Действия в городе: сразу в браузер, позже Claude Code переносит их в data/town.json.
   const [localTown, setLocalTown] = useState<TownAction[]>(() => readJSON('town-actions', []))
 
@@ -142,8 +146,10 @@ export function App() {
   const freshRewards = localRewards.filter((r) => !repoRewards.some((x) => x.id === r.id))
   const freshRedeemed = localRedeemed.filter((r) => !repoRedeemed.some((x) => x.at === r.at && x.name === r.name))
   const freshSigns = localSigns.filter((s) => !repoSigns.some((x) => x.cycle === s.cycle && x.day === s.day))
+  const freshReviews = localReviews.filter((r) => !repoReviews.some((x) => x.card === r.card && x.at === r.at))
   const ledger = useMemo(
     () => ({
+      reviews: [...repoReviews, ...localReviews.filter((r) => !repoReviews.some((x) => x.card === r.card && x.at === r.at))],
       rewards: [...repoRewards, ...localRewards.filter((r) => !repoRewards.some((x) => x.id === r.id))].filter((r) => !hiddenRewards.includes(r.id)),
       redeemed: [...repoRedeemed, ...localRedeemed.filter((r) => !repoRedeemed.some((x) => x.at === r.at && x.name === r.name))],
       signs: [...repoSigns, ...localSigns.filter((s) => !repoSigns.some((x) => x.cycle === s.cycle && x.day === s.day))],
@@ -151,7 +157,7 @@ export function App() {
       repairs: [...repoRepairs, ...localRepairs.filter((p) => !repoRepairs.some((r) => sameRecord(r, p)))],
       town: [...repoTownActions, ...localTown.filter((action) => !repoTownActions.some((r) => sameAction(r, action)))],
     }),
-    [localBuys, localRepairs, localTown, localRewards, hiddenRewards, localRedeemed, localSigns],
+    [localBuys, localRepairs, localTown, localRewards, hiddenRewards, localRedeemed, localSigns, localReviews],
   )
   const world = useMemo(() => buildWorld(rawCycles, offplan, today, ledger, now), [today, ledger, now])
   const [cycleId, setCycleId] = useState(world.active.id)
@@ -258,6 +264,22 @@ export function App() {
       setLocalSigns(next)
       writeJSON('signs', next)
     },
+  }
+
+  const saveReviews = (next: DeckReview[]) => {
+    setLocalReviews(next)
+    writeJSON('deck-reviews', next)
+  }
+  const deckApi: DeckApi = {
+    today,
+    unsynced: freshReviews,
+    review: (card, ok) => saveReviews([...localReviews, { card, at: new Date().toISOString(), ok }]),
+    undo: freshReviews.length
+      ? () => {
+          const last = freshReviews[freshReviews.length - 1]
+          saveReviews(localReviews.filter((r) => r !== last))
+        }
+      : null,
   }
 
   const unsyncedTown = localTown.filter((action) => !repoTownActions.some((r) => sameAction(r, action)))
@@ -368,6 +390,7 @@ export function App() {
 
       <main>
         {tab === 'today' && <Today world={world} cycle={cycle} />}
+        {tab === 'review' && <ReviewTab world={world} deck={deckApi} />}
         {tab === 'path' && (
           <PathTab
             world={world}

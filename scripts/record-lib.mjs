@@ -246,3 +246,29 @@ export function mergeLedger(file, shopIds, record) {
   }
   return `Из лавки добавлено: ${added.join(', ')}. Баланс и места знаков проверит npm test.`
 }
+
+/** Ответы по карточкам колоды с сайта, data/deck.json: добавляются как есть, повторы пропускаются. */
+export function addDeckReviews(file, reviews) {
+  if (!Array.isArray(reviews) || !reviews.length) fail('нужен непустой список ответов по карточкам')
+  reviews.forEach((review, i) => {
+    const ok = review && typeof review.card === 'string' && review.card && typeof review.at === 'string' && !Number.isNaN(Date.parse(review.at)) && typeof review.ok === 'boolean'
+    if (!ok) fail(`ответ ${i + 1}: нужны card, at (время ISO) и ok (true или false)`)
+  })
+  const key = (r) => `${r.card}|${r.at}`
+  const known = new Set(file.reviews.map(key))
+  const fresh = reviews.filter((r) => !known.has(key(r)) && known.add(key(r))).map((r) => ({ card: r.card, at: r.at, ok: r.ok }))
+  file.reviews.push(...fresh)
+  file.reviews.sort((a, b) => a.at.localeCompare(b.at))
+  return `Ответов по карточкам добавлено: ${fresh.length}, уже были: ${reviews.length - fresh.length}. Что карточки существуют, проверит npm test.`
+}
+
+/** Ошибка из журнала побеждена: при повторе задачи не повторилась. Номер — с единицы, по порядку в mistakes. */
+export function beatMistake(progress, input) {
+  const index = input.n
+  if (!Number.isInteger(index) || index < 1 || index > progress.mistakes.length) fail(`ошибка №${index}: есть номера с 1 по ${progress.mistakes.length}`)
+  const mistake = progress.mistakes[index - 1]
+  if (mistake.beaten) fail(`ошибка №${index} уже отмечена побеждённой`)
+  mistake.beaten = true
+  touch(progress, input.date === undefined ? input.today : needDate(input.date, 'date'))
+  return `Ошибка побеждена: «${mistake.text}».`
+}

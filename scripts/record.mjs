@@ -16,12 +16,15 @@ const HELP = `Запись в данные сайта. Даты — ГГГГ-М�
            день закрыт или пропущен; позиция уходит на следующий день
   check    --date D --track C1 --question "…" --first "ответ Baudi" --verdict correct|partial|wrong --answer "…"
   mistake  --date D --track A [--problem 1] --text "…"
+  beaten   --n N [--date D]                     ошибка №N из журнала побеждена: при повторе не повторилась
   todo     --add "…"   |   todo --done N        хвосты прошлых занятий (openItems), номер с единицы
   break    --from D --to D [--reason "отпуск"]  плановый перерыв
   purchase --item id --date D                   покупка из лавки;  repair — то же для ремонта
   ledger   --json '{"purchases":[…],"redeemed":[…],"signs":[…]}'  |  ledger --file запись.json
            запись из лавки целиком (кнопка «Скопировать запись»): покупки, ремонты, свои награды, выкупы, знаки
   town     --json '[{"at":"…","do":"build","type":"house"}]'  |  town --file журнал.json
+  deck     --json '[{"card":"…","at":"…","ok":true}]'  |  deck --file запись.json
+           ответы по карточкам колоды (кнопка «Скопировать запись» на вкладке «Повтор»)
   offplan  --date D --kind video --title "…" [--source "…"] [--track B] [--minutes 40] [--with "…"] --takeaway "…" --takeaway "…"
 
   --dry    показать итог и ничего не записать
@@ -77,6 +80,8 @@ function run() {
       ),
     mistake: () => inProgress((p) => lib.addMistake(plan, p, { date: one('date'), track: one('track'), problemId: num('problem'), text: one('text') })),
     todo: () => inProgress((p) => lib.editTodo(p, { add: one('add'), done: num('done'), today: today() })),
+    beaten: () => inProgress((p) => lib.beatMistake(p, { n: num('n'), date: one('date'), today: today() })),
+    deck: () => ({ file: 'data/deck.json', apply: (f) => lib.addDeckReviews(f, jsonInput('ответы по карточкам')) }),
     break: () => inProgress((p) => lib.addBreak(p, { from: one('from'), to: one('to'), reason: one('reason'), today: today() })),
     purchase: () => ({ file: 'data/purchases.json', apply: (f) => lib.addPurchase(f, shopIds(), { item: one('item'), date: one('date') }) }),
     repair: () => ({ file: 'data/purchases.json', apply: (f) => lib.addPurchase(f, shopIds(), { item: one('item'), date: one('date'), repair: true }) }),

@@ -18,7 +18,7 @@ const attempt = (kind: string, date: string, minutes = 10) => ({ date, kind, min
 describe('трофеи', () => {
   it('на снимке получен один трофей — возвращение после паузы, и он принёс камень', () => {
     const w = world()
-    expect(w.trophies).toHaveLength(8)
+    expect(w.trophies).toHaveLength(13)
     expect(w.trophies.filter((t) => t.earned).map((t) => t.id)).toEqual(['return'])
     expect(trophy(w, 'return')).toMatchObject({ earned: true, date: '2026-11-11', gems: 1 })
     expect(w.gemLog.filter((g) => g.label.startsWith('Трофей'))).toEqual([{ label: 'Трофей: Возвращение', gems: 1, date: '2026-11-11' }])
@@ -85,6 +85,50 @@ describe('трофеи', () => {
       p.leetcode.push({ id: 387, title: 'задача', status: 'solved-self', attempts: [attempt('timed-20', '2026-11-25')] })
     })
     expect(trophy(full, 'pattern')).toMatchObject({ earned: true, progress: '2 из 2' })
+  })
+
+  it('дуэль с собой: старая задача на таймере быстрее первой попытки', () => {
+    // первая попытка на таймере в снимке — 14 минут
+    const slower = world((p) => {
+      p.leetcode[0].attempts.push(attempt('duel', '2026-12-05', 15))
+    })
+    expect(trophy(slower, 'duel').earned).toBe(false)
+    const won = world((p) => {
+      p.leetcode[0].attempts.push(attempt('duel', '2026-12-05', 9))
+    })
+    expect(trophy(won, 'duel')).toMatchObject({ earned: true, date: '2026-12-05' })
+  })
+
+  it('работа над ошибками: три побеждённые ошибки', () => {
+    expect(trophy(world(), 'mistakes')).toMatchObject({ earned: false, progress: '0 из 3' })
+    const w = world((p) => {
+      for (const m of p.mistakes.slice(0, 3)) m.beaten = true
+    })
+    expect(trophy(w, 'mistakes')).toMatchObject({ earned: true, progress: '3 из 3' })
+  })
+
+  it('с первого раза: десять верных первых ответов', () => {
+    expect(trophy(world(), 'first-try')).toMatchObject({ earned: false, progress: '3 из 10' })
+    const w = world((p) => {
+      for (let i = 0; i < 7; i++) {
+        p.knowledgeChecks.push({ date: `2026-12-0${i + 1}`, track: 'C1', question: `Вопрос ${i}`, firstAnswer: 'ответ', verdict: 'correct', answer: 'ответ' })
+      }
+    })
+    expect(trophy(w, 'first-try')).toMatchObject({ earned: true, date: '2026-12-07', progress: '10 из 10' })
+  })
+
+  it('знаю наизусть: десять карточек в последней коробке; вершина: закрытый цикл', () => {
+    const w = world()
+    const cycles = structuredClone(w.cycles)
+    const deck = structuredClone(w.deck)
+    expect(deck).toHaveLength(10)
+    for (const card of deck.slice(0, 9)) card.learned = true
+    expect(trophiesFor(cycles, deck).find((t) => t.id === 'deck')).toMatchObject({ earned: false, progress: '9 из 10' })
+    deck[9].learned = true
+    expect(trophiesFor(cycles, deck).find((t) => t.id === 'deck')).toMatchObject({ earned: true })
+    expect(trophiesFor(cycles, deck).find((t) => t.id === 'summit')).toMatchObject({ earned: false, gems: 2 })
+    cycles[0].done = true
+    expect(trophiesFor(cycles, deck).find((t) => t.id === 'summit')!.earned).toBe(true)
   })
 
   it('архитектор: три сохранённых файла по System Design', () => {

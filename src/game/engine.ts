@@ -25,6 +25,7 @@ import { damageFor, repairsSpent, type Damage } from './repair'
 import { shopItem, walletFor, type Wallet } from './shop'
 import { SIGN_GEMS, redeemedGems } from './rewards'
 import { trophiesFor, type Trophy } from './trophies'
+import { buildDeck, type DeckCard } from './deck'
 import { rateSide, type RatedSide } from './side'
 import { replayTown, type Means, type Town } from './town'
 import {
@@ -199,6 +200,8 @@ export interface World {
   signs: MemorialSign[]
   /** Трофеи: достижения за мастерство, полученные и ещё нет. */
   trophies: Trophy[]
+  /** Колода: карточки из проверок понимания с коробкой и сроком повтора. */
+  deck: DeckCard[]
   /** Город: состояние из журнала действий и дат занятий. Интерфейса пока нет. */
   town: Town
   /** Что есть у игрока для города: монеты, камни и число построенных файлов. */
@@ -605,7 +608,11 @@ export function buildWorld(
   for (const rated of side) {
     if (rated.gems) gemLog.push({ label: `${rated.rule.name}: ${rated.entry.title}`, gems: rated.gems, date: rated.entry.date })
   }
-  const trophies = trophiesFor(cycles)
+  const deck = buildDeck(
+    cycles.flatMap((c) => c.raw.progress.knowledgeChecks.map((check) => ({ cycle: c.id, check }))),
+    ledger.reviews ?? [],
+  )
+  const trophies = trophiesFor(cycles, deck)
   for (const trophy of trophies) {
     if (trophy.earned) gemLog.push({ label: `Трофей: ${trophy.name}`, gems: trophy.gems, date: trophy.date })
   }
@@ -709,6 +716,7 @@ export function buildWorld(
     redeemed,
     signs,
     trophies,
+    deck,
     town,
     means: { coins: wallet.coins, gems: wallet.gems, specials },
     gemLog,

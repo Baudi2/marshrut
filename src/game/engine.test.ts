@@ -182,9 +182,12 @@ describe('монеты, камни и лавка', () => {
 
   it('монеты даются за ежедневный прогресс, но не за возвращение после паузы', () => {
     const world = buildWorld([raw], [], '2026-11-18')
-    // камень — за пройденный перевал «Baseline» (день 2)
-    expect(world.wallet).toMatchObject({ coinsEarned: 110, coins: 110, gemsEarned: 1, gems: 1 })
-    expect(world.gemLog).toEqual([{ label: 'Перевал: Baseline', gems: 1, date: '2026-11-12' }])
+    // камень — за пройденный перевал «Baseline» (день 2) и ещё один — за трофей «Возвращение»
+    expect(world.wallet).toMatchObject({ coinsEarned: 110, coins: 110, gemsEarned: 2, gems: 2 })
+    expect(world.gemLog).toEqual([
+      { label: 'Перевал: Baseline', gems: 1, date: '2026-11-12' },
+      { label: 'Трофей: Возвращение', gems: 1, date: '2026-11-11' },
+    ])
     expect(world.events.find((e) => e.label.startsWith('Возвращение'))!.coins).toBe(0)
   })
 
@@ -206,8 +209,8 @@ describe('монеты, камни и лавка', () => {
       '2026-11-20',
     )
     expect(world.active.weeks[0].test).toMatchObject({ state: 'done', gems: 2 })
-    // два камня за тест и один за перевал
-    expect(world.wallet.gems).toBe(3)
+    // два камня за тест, один за перевал и один за трофей «Возвращение»
+    expect(world.wallet.gems).toBe(4)
   })
 
   it('при пересдаче считается лучшая попытка', () => {
@@ -224,7 +227,8 @@ describe('монеты, камни и лавка', () => {
       '2026-11-24',
     )
     expect(world.active.weeks[0].test.attempts).toHaveLength(2)
-    expect(world.wallet.gemsEarned).toBe(4)
+    // три за лучшую попытку, один за перевал и один за трофей «Возвращение»
+    expect(world.wallet.gemsEarned).toBe(5)
   })
 
   it('покупка списывает цену один раз, неизвестные предметы не считаются', () => {
@@ -296,8 +300,8 @@ describe('стороннее развитие', () => {
     })
     const world = buildWorld([raw], [mock('2026-11-20'), mock('2026-11-23'), mock('2026-11-27')], '2026-11-27')
     expect(world.side.map((s) => [s.xp, s.gems])).toEqual([[40, 1], [40, 0], [40, 1]])
-    // один камень за перевал и два за собеседования
-    expect(world.wallet.gemsEarned).toBe(3)
+    // один камень за перевал, один за трофей «Возвращение» и два за собеседования
+    expect(world.wallet.gemsEarned).toBe(4)
   })
 })
 
@@ -366,7 +370,7 @@ describe('город в общем расчёте', () => {
   it('без действий город — стоянка, а особые постройки считаются из файлов', () => {
     const world = buildWorld([raw], [], '2026-11-18')
     expect(world.town).toMatchObject({ tier: 0, population: 0 })
-    expect(world.means).toEqual({ coins: 110, gems: 1, specials: 2 })
+    expect(world.means).toEqual({ coins: 110, gems: 2, specials: 2 })
   })
 
   it('траты на город списываются из общего кошелька, ходы идут по дням занятий', () => {

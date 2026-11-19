@@ -1,3 +1,4 @@
+import { GemIcon } from '../world/extras'
 import type { CycleView, TrackView, World } from '../game/engine'
 import { SIDE } from '../game/side'
 import { TrackBadge, Tile, fmtDate, plural } from '../ui/bits'
@@ -252,10 +253,37 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
         </table>
       </div>
 
+      <div className="card" id="trophies">
+        <h3>Трофеи</h3>
+        <p className="muted">
+          Достижения за мастерство: их нельзя купить и нельзя получить за число занятий. Каждый даётся один раз и приносит камни.
+          Получено {world.trophies.filter((t) => t.earned).length} из {world.trophies.length}.
+        </p>
+        <ul className="trophy-list">
+          {world.trophies.map((t) => (
+            <li key={t.id} className={t.earned ? 'trophy is-earned' : 'trophy'}>
+              <div className="trophy-info">
+                <b>{t.name}</b>
+                <span className="muted small">{t.how}</span>
+              </div>
+              <div className="trophy-state">
+                <span className={t.earned ? 'pill pill-core' : 'pill'}>
+                  {t.earned ? `получен${t.date ? ' ' + fmtDate(t.date) : ''}` : (t.progress ?? 'ещё нет')}
+                </span>
+                <span className="price">
+                  <GemIcon /> {t.earned ? '+' : ''}
+                  {t.gems}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="card">
         <h3>За что получены камни</h3>
         {world.gemLog.length === 0 ? (
-          <p className="muted">Пока ни одного. Камни дают пройденные перевалы и недельные тесты.</p>
+          <p className="muted">Пока ни одного. Камни дают пройденные перевалы, недельные тесты и трофеи.</p>
         ) : (
           <table className="table">
             <tbody>

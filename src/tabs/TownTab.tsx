@@ -217,7 +217,7 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
 
   const hud: { key: string; icon: ReactNode; value: string; text: string }[] = [
     { key: 'coins', icon: <CoinIcon />, value: String(world.means.coins), text: `Монеты: ${world.means.coins}. Дают закрытый день, задача, сохранённый файл.` },
-    { key: 'gems', icon: <GemIcon />, value: String(world.means.gems), text: `Камни: ${world.means.gems}. Дают недельные тесты и перевалы.` },
+    { key: 'gems', icon: <GemIcon />, value: String(world.means.gems), text: `Камни: ${world.means.gems}. Дают недельные тесты, перевалы и трофеи.` },
     { key: 'food', icon: <FoodIcon />, value: `${Math.floor(town.food)}`, text: `Запас еды: ${Math.floor(town.food)} из ${town.foodCap}. За ход: +${town.perTurn.food}, жители съедают ${town.perTurn.eaten}.` },
     { key: 'wood', icon: <WoodIcon />, value: `${Math.floor(town.wood)}`, text: `Дерево: ${Math.floor(town.wood)} из ${town.materialCap}. За ход: +${town.perTurn.wood}.` },
     { key: 'brick', icon: <BrickIcon />, value: `${Math.floor(town.brick)}`, text: `Кирпич: ${Math.floor(town.brick)} из ${town.materialCap}. За ход: +${town.perTurn.brick}.` },

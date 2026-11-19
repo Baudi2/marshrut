@@ -24,6 +24,7 @@ import type {
 import { damageFor, repairsSpent, type Damage } from './repair'
 import { shopItem, walletFor, type Wallet } from './shop'
 import { SIGN_GEMS, redeemedGems } from './rewards'
+import { trophiesFor, type Trophy } from './trophies'
 import { rateSide, type RatedSide } from './side'
 import { replayTown, type Means, type Town } from './town'
 import {
@@ -196,6 +197,8 @@ export interface World {
   redeemed: Redeemed[]
   /** Памятные знаки, которые стоят на пройденных перевалах. */
   signs: MemorialSign[]
+  /** Трофеи: достижения за мастерство, полученные и ещё нет. */
+  trophies: Trophy[]
   /** Город: состояние из журнала действий и дат занятий. Интерфейса пока нет. */
   town: Town
   /** Что есть у игрока для города: монеты, камни и число построенных файлов. */
@@ -602,6 +605,10 @@ export function buildWorld(
   for (const rated of side) {
     if (rated.gems) gemLog.push({ label: `${rated.rule.name}: ${rated.entry.title}`, gems: rated.gems, date: rated.entry.date })
   }
+  const trophies = trophiesFor(cycles)
+  for (const trophy of trophies) {
+    if (trophy.earned) gemLog.push({ label: `Трофей: ${trophy.name}`, gems: trophy.gems, date: trophy.date })
+  }
   const gemsEarned = gemLog.reduce((sum, g) => sum + g.gems, 0)
 
   const checks = cycles.flatMap((c) => c.raw.progress.knowledgeChecks)
@@ -701,6 +708,7 @@ export function buildWorld(
     rewards: ledger.rewards ?? [],
     redeemed,
     signs,
+    trophies,
     town,
     means: { coins: wallet.coins, gems: wallet.gems, specials },
     gemLog,

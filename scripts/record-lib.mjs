@@ -24,6 +24,14 @@ const needDate = (value, name) => (isDate(value) ? value : fail(`${name}: нуж
 const needText = (value, name) => (typeof value === 'string' && value.trim() ? value.trim() : fail(`${name}: нужен непустой текст`))
 const needTime = (value, name) => (value == null ? null : TIME.test(value) ? value : fail(`${name}: нужно время ЧЧ:ММ, получено «${value}»`))
 const needMinutes = (value, name) => (Number.isFinite(value) && value > 0 ? value : fail(`${name}: нужно число минут больше нуля`))
+/**
+ * Прогноз перед проверкой: целое число в границах. unit — в чём он: «баллов», «минут».
+ * Называется до теста или попытки, очков за точность нет: сайт только копит «прогноз и факт».
+ */
+const needForecast = (value, min, max, unit, where = '') =>
+  Number.isInteger(value) && value >= min && value <= max
+    ? value
+    : fail(`${where}forecast: прогноз — целое число ${unit} от ${min} до ${max}${typeof value === 'string' ? ' без кавычек' : ''}, получено «${value}»`)
 /** Текст без лишних пробелов: края обрезаны, пробелы внутри схлопнуты — как tidy в src/game/rewards.ts. */
 const tidy = (text) => text.trim().replace(/\s+/g, ' ')
 /** Один и тот же текст, если не смотреть на регистр букв и лишние пробелы: так ловятся повторные запуски команды. */
@@ -161,9 +169,39 @@ function dayRecord(progress, n, date) {
   return record
 }
 
+/** Своя строка после занятия не длиннее этого: одна мысль, а не конспект. */
+const INSIGHT_MAX = 280
+
+/** Своя строка после занятия в том виде, в каком она ляжет в файл: одна строка, края обрезаны, пробелы схлопнуты. */
+function cleanInsight(value) {
+  const text = needText(value, 'insight')
+  if (/[\n\r]/.test(text)) fail('insight: своя строка — одна строка, а в тексте есть перевод строки. Собери мысль в одну фразу')
+  const line = tidy(text)
+  if (line.length > INSIGHT_MAX) fail(`insight: своя строка не длиннее ${INSIGHT_MAX} знаков, сейчас ${line.length}. Сократи её вместе с Baudi: слова должны остаться его`)
+  return line
+}
+
+/** Как назвать записанное занятие в ответе: дата и время, какое есть. */
+const sessionName = (s) => `${s.date}${s.from ? (s.to ? ` ${s.from}–${s.to}` : ` с ${s.from}`) : ' без времени'}`
+
+/**
+ * Занятие, к которому дописывают свою строку, когда точного совпадения по дате и началу нет.
+ * Начало не названо — берётся единственное занятие за дату; их несколько или ни одного — отказ с тем, что записано.
+ */
+function sessionForInsight(progress, date, from) {
+  const sameDay = progress.sessions.filter((s) => s.date === date)
+  const starts = sameDay.map((s) => (s.from ? `с ${s.from}` : 'без времени')).join(', ')
+  const how = (time) => `Свою строку дописывают к записанному занятию; новое занятие запиши с темой: session --date ${date} --from ${time} --topic "…" --insight "…"`
+  if (from) fail(`занятия ${date} с ${from} в журнале нет${sameDay.length ? `: за эту дату записаны занятия ${starts}` : ', за эту дату занятий нет совсем'}. ${how(from)}`)
+  if (!sameDay.length) fail(`занятий за ${date} в журнале нет. ${how('ЧЧ:ММ')}`)
+  if (sameDay.length > 1) fail(`за ${date} записано несколько занятий (${starts}): назови начало нужного — --from ${sameDay[0].from}`)
+  return sameDay[0]
+}
+
 /**
  * Занятие: строка в sessions и дата в записи дня.
  * Занятие, записанное в начале без времени конца, можно дописать: та же дата и то же начало, теперь с концом.
+ * Своя строка (insight) — что Baudi понял, его словами: пишется вместе с занятием, дописывается или заменяется позже той же командой.
  */
 export function addSession(plan, progress, input) {
   const date = needDate(input.date, 'date')
@@ -176,13 +214,33 @@ export function addSession(plan, progress, input) {
   if (from && to && (to === from || overnight > OVERNIGHT_MAX_MINUTES)) fail(`время: конец ${to} не позже начала ${from}`)
   const late = overnight ? `\nВнимание: конец раньше начала — занятие записано как перешедшее за полночь, ${overnight} мин. Дата занятия — день начала.` : ''
   const topics = (input.topics ?? []).map((topic) => needText(topic, 'topic'))
-  const known = progress.sessions.find((s) => s.date === date && s.from === from)
-  if (known && from && to && known.to == null) {
-    if (input.day !== undefined && input.day !== known.day) fail(`занятие ${date} с ${from} записано в дне ${known.day}, а не ${input.day}`)
-    known.to = to
-    known.topics = [...new Set([...known.topics, ...topics])]
-    touch(progress, date)
-    return `Занятие ${date} ${from}–${to} дописано: день ${known.day}, тем ${known.topics.length}.${late}`
+  const insight = input.insight === undefined ? undefined : cleanInsight(input.insight)
+  // Два занятия в один день различаются началом: занятие ищется по дате и началу.
+  let known = progress.sessions.find((s) => s.date === date && s.from === from)
+  // Своя строка без тем — не новое занятие (ему нужна тема): её дописывают к записанному, и начало можно не называть.
+  if (!known && insight !== undefined && !topics.length) known = sessionForInsight(progress, date, from)
+  const finishing = !!(known && from && to && known.to == null)
+  if (known && (finishing || insight !== undefined)) {
+    if (input.day !== undefined && input.day !== known.day) fail(`занятие ${sessionName(known)} записано в дне ${known.day}, а не ${input.day}`)
+    if (!finishing) {
+      // Меняется только своя строка: время и темы записанного занятия команда не правит.
+      const about = `занятие ${sessionName(known)} уже записано (день ${known.day})`
+      if (to && to !== known.to) fail(`${about}, а конец назван другой — ${to}. Время записанного занятия правится в файле; свою строку допиши без --to`)
+      const extra = topics.filter((topic) => !known.topics.includes(topic))
+      if (extra.length) {
+        fail(`${about}, а тем «${extra.join('», «')}» у него нет: ${known.to == null ? 'темы дописываются вместе с концом занятия (--to)' : 'темы записанного занятия правятся в файле'}. Свою строку допиши без --topic`)
+      }
+    }
+    const was = known.insight
+    if (finishing) {
+      known.to = to
+      known.topics = [...new Set([...known.topics, ...topics])]
+    }
+    if (insight !== undefined && insight !== was) known.insight = insight
+    if (finishing || insight !== was) touch(progress, date)
+    const line = insight === undefined ? '' : insight === was ? 'своя строка — без изменений' : was ? `своя строка заменена (было: «${was}»)` : 'своя строка записана'
+    if (!finishing) return `Занятие ${sessionName(known)}, день ${known.day}: ${line}.`
+    return `Занятие ${date} ${from}–${to} дописано: день ${known.day}, тем ${known.topics.length}.${line ? ` ${line[0].toUpperCase()}${line.slice(1)}.` : ''}${late}`
   }
   if (known) {
     const about = [known.to ? `до ${known.to}` : null, `день ${known.day}`].filter(Boolean).join(', ')
@@ -192,11 +250,13 @@ export function addSession(plan, progress, input) {
   const day = input.day ?? progress.position.currentDay
   planDay(plan, day)
   if (!topics.length) fail('нужна хотя бы одна тема занятия (--topic)')
-  progress.sessions.push({ date, from, to, day, topics })
+  const session = { date, from, to, day, topics }
+  if (insight !== undefined) session.insight = insight
+  progress.sessions.push(session)
   progress.sessions.sort((a, b) => (a.date + (a.from ?? '')).localeCompare(b.date + (b.from ?? '')))
   dayRecord(progress, day, date)
   touch(progress, date)
-  return `Занятие ${date}${from ? ' ' + from : ''}${to ? '–' + to : ''} записано: день ${day}, тем ${topics.length}.${late}`
+  return `Занятие ${date}${from ? ' ' + from : ''}${to ? '–' + to : ''} записано: день ${day}, тем ${topics.length}.${insight !== undefined ? ' Своя строка записана.' : ''}${late}`
 }
 
 /** Шаги дня сделаны: stepsDone, stepsOpen и позиция. */
@@ -690,6 +750,8 @@ const NO_HINTS_GAP_DAYS = 14
 /** Само решение задачи — на таймере или после разбора, а не повтор и не дуэль. */
 const isBaseSolve = (a) => a.result === 'solved' && !REPEAT_KINDS.includes(a.kind) && a.kind !== 'duel'
 const isTimed = (a) => typeof a.kind === 'string' && a.kind.startsWith('timed')
+/** Прогноз перед попыткой — сколько минут уйдёт: от минуты до трёх часов. */
+const FORECAST_MINUTES = { min: 1, max: 180 }
 
 /**
  * Статус, который следует из попыток, — так, как их читает сайт (src/game/engine.ts, src/game/trophies.ts).
@@ -730,6 +792,11 @@ function cleanAttempt(raw, where) {
   const attempt = { date, kind, minutes, result: raw.result, selfSolved }
   if (raw.approach != null) attempt.approach = needText(raw.approach, `${where}: approach`)
   if (raw.notes != null) attempt.notes = needText(raw.notes, `${where}: notes`)
+  if (raw.forecast != null) {
+    // Прогноз сравнивают с минутами на таймере: у повтора, разбора и захода на оптимальное решение сравнивать не с чем.
+    if (!isTimed(attempt) && kind !== 'duel') fail(`${where}: прогноз называют перед попыткой на таймере (timed-<минут>) или дуэлью (duel), а это ${kind}. Убери forecast (--forecast)`)
+    attempt.forecast = needForecast(raw.forecast, FORECAST_MINUTES.min, FORECAST_MINUTES.max, 'минут', `${where}: `)
+  }
   return attempt
 }
 
@@ -773,7 +840,9 @@ export function addAttempts(plan, progress, input) {
   const fresh = []
   incoming.forEach((raw, i) => {
     const attempt = cleanAttempt(raw, where(i))
-    if ([...before, ...fresh].some((other) => same(other, attempt))) fail(`${where(i)}: уже записана (${attempt.date}, ${attempt.kind})`)
+    if ([...before, ...fresh].some((other) => same(other, attempt))) {
+      fail(`${where(i)}: уже записана (${attempt.date}, ${attempt.kind})${attempt.forecast !== undefined ? '. Прогноз называют до попытки: к записанной он не дописывается' : ''}`)
+    }
     fresh.push(attempt)
   })
   // Порядок по датам; внутри одного дня — как записывали.
@@ -837,7 +906,7 @@ export function addAttempts(plan, progress, input) {
   }
   touch(progress, fresh.length ? fresh.map((a) => a.date).sort().at(-1) : input.today)
 
-  const said = fresh.map((a) => `${a.date} ${a.kind}${a.minutes !== null ? `, ${a.minutes} мин` : ''} — ${attemptOutcome(a)}`)
+  const said = fresh.map((a) => `${a.date} ${a.kind}${a.minutes !== null ? `, ${a.minutes} мин` : ''}${a.forecast !== undefined ? `, прогноз ${a.forecast} мин` : ''} — ${attemptOutcome(a)}`)
   const head = `Задача ${planned.id}${planned.title ? ` «${planned.title}»` : ''}: ${fresh.length ? `попыток добавлено ${fresh.length} (${said.join('; ')})` : 'заметка записана'}.`
   return [`${head} Статус: ${status}${was && was !== status ? `, был ${was}` : ''}.`, ...remarks].join('\n')
 }
@@ -862,8 +931,9 @@ function weekState(plan, progress, n) {
 
 /**
  * Недельный тест. record — список вопросов или объект с полем questions (такой выдаёт задание теста);
- * week, date и note можно назвать отдельно — они важнее тех, что в записи. Баллы считает команда.
+ * week, date, note и forecast можно назвать отдельно — они важнее тех, что в записи. Баллы считает команда.
  * Пересдача — новая запись с той же неделей: сайт берёт лучшую попытку.
+ * forecast — прогноз перед тестом: сколько баллов из max Baudi ожидал набрать. Пишется в запись этого запуска.
  */
 export function addWeeklyTest(plan, progress, input) {
   const raw = Array.isArray(input.record) ? { questions: input.record } : input.record
@@ -897,7 +967,12 @@ export function addWeeklyTest(plan, progress, input) {
   const test = { week: week.n, date, score, max, questions }
   const note = input.note ?? raw.note
   if (note != null && note !== '') test.note = needText(note, 'note')
-  if (tests.some((other) => other.week === test.week && other.date === date && print(other) === print(test))) fail(`этот тест недели ${week.n} за ${date} уже записан`)
+  // Прогноз — сколько баллов Baudi ожидал набрать: у каждой попытки свой, у пересдачи тоже.
+  const forecast = input.forecast ?? raw.forecast
+  if (forecast != null) test.forecast = needForecast(forecast, 0, max, 'баллов')
+  if (tests.some((other) => other.week === test.week && other.date === date && print(other) === print(test))) {
+    fail(`этот тест недели ${week.n} за ${date} уже записан${test.forecast !== undefined ? '. Прогноз называют до теста: к записанному тесту он не дописывается' : ''}`)
+  }
   progress.weeklyTests = [...tests, test].sort((a, b) => a.week - b.week || a.date.localeCompare(b.date))
   touch(progress, date)
 
@@ -908,7 +983,9 @@ export function addWeeklyTest(plan, progress, input) {
   const attempts = progress.weeklyTests.filter((other) => other.week === week.n)
   const best = attempts.reduce((top, other) => (other.score / other.max > top.score / top.max ? other : top))
   const retake = attempts.length > 1 ? ` Попыток по этой неделе: ${attempts.length}, лучшая — ${best.score} из ${best.max}; сайт берёт лучшую.` : ''
-  return `Тест недели ${week.n} записан: ${score} из ${max}. По трекам: ${byTrack.join(', ')}.${retake}`
+  const gap = score - (test.forecast ?? score)
+  const guessed = test.forecast === undefined ? '' : ` Прогноз был ${test.forecast} из ${max}: ${gap === 0 ? 'совпал с результатом' : `на деле на ${Math.abs(gap)} ${gap > 0 ? 'больше' : 'меньше'}`}.`
+  return `Тест недели ${week.n} записан: ${score} из ${max}. По трекам: ${byTrack.join(', ')}.${guessed}${retake}`
 }
 
 /** Неделя закрыта по чекпоинту: все её дни закрыты и результат недели подтверждён. Дважды не закрывается. */

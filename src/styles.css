@@ -3395,3 +3395,242 @@ b.sum-row-side {
 .dev-keys code {
   overflow-wrap: anywhere;
 }
+
+/* ——— Чертежи редких построек ——— */
+
+.blueprint {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.blueprint-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.blueprint-head h4 {
+  margin: 0;
+}
+
+.blueprint .build-menu li.is-locked {
+  opacity: 0.6;
+}
+
+/* ——— Город из летописи: полоса под картой ——— */
+
+.past-bar {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.past-bar p {
+  margin: 0;
+}
+
+.past-range {
+  width: 100%;
+  min-height: 32px;
+  accent-color: var(--accent);
+}
+
+/* ——— Прогноз и факт ——— */
+
+/* ---------- Прогноз и факт ---------- */
+/* Одна колонка с minmax(0, 1fr): длинная строка на ширине телефона переносится, а не распирает карточку. */
+.forecast-card,
+.forecast-scale {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.forecast-scale {
+  display: grid;
+  gap: 8px;
+}
+
+.forecast-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+/* Слева — что это, справа — «ждал → вышло»; подпись с датой и разницей идёт во всю ширину. */
+.forecast-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  align-items: baseline;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.forecast-what {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.forecast-nums {
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.forecast-nums b {
+  color: var(--ink);
+}
+
+/* Разница — словами и тем же серым, что дата: это наблюдение, цветом она не выделяется. */
+.forecast-sub {
+  grid-column: 1 / -1;
+  font-size: 0.82rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* ——— Летопись города и итог занятия на «Сегодня» ——— */
+
+/* Летопись города и карточка «Итог занятия» на вкладке «Сегодня».
+   Свои классы — с приставкой chron-. Цвета только из токенов темы (src/styles.css): страница читается в светлой и тёмной теме.
+   Файл подключается из Chronicle.tsx и Today.tsx и в сборке может идти раньше styles.css, поэтому свойства общих классов
+   (.card, .btn, .plain) здесь правятся только селектором с большим весом: .chron … */
+
+.chron-back {
+  justify-self: start;
+  padding: 6px 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.chron-back:hover {
+  text-decoration: underline;
+}
+
+.chron-month {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.chron-month-title {
+  padding-top: 4px;
+  color: var(--ink-2);
+}
+
+.chron-item {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Перерыв между двумя записями: тихая строка с чертой по бокам, без цвета тревоги. */
+.chron-gap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.chron-gap::before,
+.chron-gap::after {
+  content: '';
+  flex: 1;
+  min-width: 16px;
+  border-top: 1px dashed var(--line-strong);
+}
+
+.chron-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.chron-head > div:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chron-head h3 {
+  overflow-wrap: anywhere;
+}
+
+/* Своя строка после занятия: слова ученика, а не сайта. */
+.chron-quote {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+.chron-block {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chron-block p {
+  margin: 0;
+}
+
+.chron-block li,
+.chron-turn li {
+  overflow-wrap: anywhere;
+}
+
+.chron-takeaways {
+  color: var(--ink-2);
+  font-size: 0.92rem;
+}
+
+.chron-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.chron .chron-show {
+  border-color: var(--line-strong);
+  color: var(--accent-ink);
+}
+
+/* Карточка «Итог занятия» на «Сегодня». */
+.chron-turn-head {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chron-turn-link {
+  justify-self: start;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.chron-turn-link:hover {
+  text-decoration: underline;
+}

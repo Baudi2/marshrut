@@ -1,4 +1,4 @@
-import { TRADE_COINS, tradeYield } from './town'
+import { BLUEPRINT_TESTS, RARE, TRADE_COINS, blueprintsFor, tradeYield } from './town'
 import { describe, expect, it } from 'vitest'
 import { pickBroken, repairPrice } from './repair'
 import { pausedDays, toISO, type ConditionLevel } from './rules'
@@ -121,7 +121,7 @@ describe('довольство', () => {
   ]
 
   it('уют складывается из ступени, колодцев, таверны и украшений', () => {
-    expect(replayTown([], [], noon(0)).comfort).toEqual({ total: 1, center: 1, wells: 0, tavern: 0, decor: 0 })
+    expect(replayTown([], [], noon(0)).comfort).toEqual({ total: 1, center: 1, wells: 0, tavern: 0, decor: 0, rare: 0 })
     const camp = replayTown([evening(0, { do: 'tier' })], [], noon(1))
     expect(camp.comfort.total).toBe(COMFORT.base + COMFORT.tier)
     const built = replayTown(
@@ -136,12 +136,12 @@ describe('довольство', () => {
       ],
     )
     // колодец второго уровня — 4, таверна — 4, скамьи (один раз) и фонари — 6; шляпа уюта не даёт
-    expect(built.comfort).toEqual({ total: 15, center: 1, wells: 4, tavern: 4, decor: 6 })
+    expect(built.comfort).toEqual({ total: 15, center: 1, wells: 4, tavern: 4, decor: 6, rare: 0 })
   })
 
   it('довольство — уют на одного жителя; без жителей оно полное', () => {
-    expect(moodOf({ comfort: { total: 1, center: 1, wells: 0, tavern: 0, decor: 0 }, population: 0 })).toBe(100)
-    const at = (total: number, population: number) => ({ comfort: { total, center: total, wells: 0, tavern: 0, decor: 0 }, population })
+    expect(moodOf({ comfort: { total: 1, center: 1, wells: 0, tavern: 0, decor: 0, rare: 0 }, population: 0 })).toBe(100)
+    const at = (total: number, population: number) => ({ comfort: { total, center: total, wells: 0, tavern: 0, decor: 0, rare: 0 }, population })
     expect(moodOf(at(5, 8))).toBe(63)
     expect(moodOf(at(9, 4))).toBe(100)
     expect([arrivalPace(at(5, 4)), arrivalPace(at(5, 5)), arrivalPace(at(5, 9)), arrivalPace(at(5, 10))]).toEqual(['fast', 'normal', 'normal', 'stopped'])
@@ -652,5 +652,95 @@ describe('поломки после перерыва', () => {
     expect(look('2026-11-04', 3)).toHaveLength(2)
     expect(look('2026-11-04', 3)).toEqual(look('2026-11-17', null))
     expect(look('2026-11-17', 0)).toEqual([])
+  })
+})
+
+describe('чертежи и редкие постройки', () => {
+  // Лагерь в первый день, хутор — к десятому: редким постройкам нужна ступень.
+  const camp = [evening(0, { do: 'tier' })]
+  const hamlet = [...camp, evening(2, { do: 'tier' })]
+  const withPlans = (blueprints: number): Means => ({ coins: 5000, gems: 99, specials: 99, blueprints })
+  const at = (actions: TownAction[], n = 12) => replayTown(actions, days(n), noon(n))
+
+  it('чертёж дают за первый и за третий сданный тест', () => {
+    expect(BLUEPRINT_TESTS).toEqual([1, 3])
+    expect([0, 1, 2, 3, 4, 6].map(blueprintsFor)).toEqual([0, 1, 1, 2, 2, 2])
+  })
+
+  it('у каждого чертежа две постройки, и они называют друг друга', () => {
+    for (const type of RARE) {
+      const pair = buildingType(type.rare!.pair)!
+      expect(pair.rare).toEqual({ offer: type.rare!.offer, pair: type.id })
+      expect(pair.tier).toBe(type.tier)
+      expect(pair.base).toBe(type.base)
+    }
+    expect(RARE.map((t) => t.rare!.offer).sort()).toEqual([1, 1, 2, 2])
+    // Редких построек нет в обычном списке: план местности и темп игры считают только обычные.
+    expect(BUILDINGS.some((t) => t.rare)).toBe(false)
+  })
+
+  it('без чертежа редкую постройку не поставить, с чертежом — можно', () => {
+    const town = at(camp)
+    expect(blockers(town, { do: 'build', type: 'apiary' }, withPlans(0)).join(' ')).toContain('нужен чертёж')
+    expect(blockers(town, { do: 'build', type: 'apiary' }, withPlans(1))).toEqual([])
+    expect(blockers(town, { do: 'build', type: 'dovecote' }, withPlans(1))).toEqual([])
+    // Без поля blueprints — как без чертежей: прежние вызовы не ломаются.
+    expect(blockers(town, { do: 'build', type: 'apiary' }, rich).join(' ')).toContain('нужен чертёж')
+  })
+
+  it('первому чертежу хватает лагеря, второму нужен хутор и третий тест', () => {
+    expect(blockers(at([]), { do: 'build', type: 'apiary' }, withPlans(2)).join(' ')).toContain('Лагерь')
+    expect(blockers(at(camp), { do: 'build', type: 'pottery' }, withPlans(2)).join(' ')).toContain('Хутор')
+    expect(blockers(at(hamlet), { do: 'build', type: 'pottery' }, withPlans(1)).join(' ')).toContain('3-й')
+    expect(blockers(at(hamlet), { do: 'build', type: 'pottery' }, withPlans(2))).toEqual([])
+  })
+
+  it('выбор окончательный: поставил пасеку — голубятня уже не строится', () => {
+    const town = at([...camp, evening(1, { do: 'build', type: 'apiary' })])
+    expect(town.buildings.map((b) => b.id)).toEqual(['apiary-1'])
+    expect(blockers(town, { do: 'build', type: 'dovecote' }, withPlans(2)).join(' ')).toContain('уже стоит другая постройка: пасека')
+    expect(blockers(town, { do: 'build', type: 'apiary' }, withPlans(2)).join(' ')).toContain('больше нельзя')
+    // Журнал, в котором записаны обе, строит только первую и за вторую не берёт монет.
+    const both = at([...camp, evening(1, { do: 'build', type: 'apiary' }), evening(2, { do: 'build', type: 'dovecote' }), evening(3, { do: 'build', type: 'apiary' })])
+    expect(both.buildings.map((b) => b.id)).toEqual(['apiary-1'])
+    expect(both.spent.coins).toBe(town.spent.coins)
+  })
+
+  it('пасека даёт еду без работников, голубятня — уют', () => {
+    const bare = at(camp)
+    const apiary = at([...camp, evening(1, { do: 'build', type: 'apiary' })])
+    expect(apiary.perTurn.food - bare.perTurn.food).toBe(3)
+    expect(apiary.comfort.rare).toBe(0)
+    const dovecote = at([...camp, evening(1, { do: 'build', type: 'dovecote' })])
+    expect(dovecote.comfort.rare).toBe(4)
+    expect(dovecote.comfort.total - bare.comfort.total).toBe(4)
+    expect(dovecote.perTurn.food).toBe(bare.perTurn.food)
+  })
+
+  it('гончарня даёт кирпич, лодочный сарай — еду', () => {
+    const bare = at(hamlet)
+    expect(at([...hamlet, evening(3, { do: 'build', type: 'pottery' })]).perTurn.brick - bare.perTurn.brick).toBe(2)
+    expect(at([...hamlet, evening(3, { do: 'build', type: 'boathouse' })]).perTurn.food - bare.perTurn.food).toBe(4)
+  })
+
+  it('редкая постройка стоит монет, строится пять минут и не улучшается', () => {
+    const cost = buildCost(buildingType('apiary')!, 1)
+    expect(cost).toMatchObject({ coins: 90, wood: 0, brick: 0 })
+    expect(buildCost(buildingType('boathouse')!, 1).coins).toBe(180)
+    const town = at([...camp, evening(1, { do: 'build', type: 'apiary' })])
+    expect(town.buildings[0]).toMatchObject({ level: 1, pending: null })
+    expect(blockers(town, { do: 'upgrade', id: 'apiary-1' }, withPlans(2))).toEqual(['редкая постройка не улучшается'])
+    const tried = at([...camp, evening(1, { do: 'build', type: 'apiary' }), evening(2, { do: 'upgrade', id: 'apiary-1' })])
+    expect(tried.buildings[0]).toMatchObject({ level: 1, pending: null })
+    expect(tried.spent.coins).toBe(town.spent.coins)
+  })
+
+  it('редкая постройка ломается после долгого перерыва, как обычная, и тогда ничего не даёт', () => {
+    const study = ['2026-11-18', '2026-11-19', '2026-11-20']
+    const actions = [{ at: '2026-11-18T18:00:00', do: 'tier' as const }, { at: '2026-11-19T18:00:00', do: 'build' as const, type: 'apiary' }]
+    const town = replayTown(actions, study, new Date(2026, 11, 10, 12), [], { today: '2026-12-10' })
+    expect(town.buildings[0].broken).not.toBeNull()
+    expect(town.perTurn.food).toBe(0)
+    expect(town.buildings[0].broken!.cost).toBe(20)
   })
 })

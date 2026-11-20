@@ -1,5 +1,5 @@
 // Каталог обликов: что показать на доске «Постройки по уровням».
-import { BUILDINGS } from '../game/town'
+import { BUILDINGS, RARE } from '../game/town'
 import type { BoardCell } from './board'
 import { CENTER, DECOR, LOOKS, constructionLook, monumentLook, specialLook } from './looks'
 
@@ -50,6 +50,8 @@ export function catalogRows(): BoardCell[][] {
     { title: 'Трек C2', note: 'ромб', look: specialLook('cabin', 2), ctx: { accent: TRACK_ACCENT.C2, emblem: 'C2' } },
     { title: 'Трек E', note: 'две полосы', look: specialLook('tower', 3), ctx: { accent: TRACK_ACCENT.E, emblem: 'E' } },
   ])
+  // Редкие постройки: по чертежу, без уровней.
+  rows.push(RARE.map((type) => ({ title: LOOKS[type.id].levels[0].name, note: `редкая · чертёж ${type.rare!.offer}`, look: LOOKS[type.id].levels[0].look(0) })))
   // Памятники закрытых циклов: поясков столько, каков номер цикла.
   rows.push([1, 2, 3, 5].map((n) => ({ title: `Памятник цикла ${n}`, note: 'закрытый цикл', look: monumentLook(n) })))
   return rows

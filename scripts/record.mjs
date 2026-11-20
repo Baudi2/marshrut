@@ -12,7 +12,11 @@ const HELP = `Запись в данные сайта. Даты — ГГГГ-М�
 Занятие
   session      занятие: строка в sessions и дата в записи дня. Записал в начале без --to — та же команда с --to допишет конец.
                Конец раньше начала — занятие перешло за полночь (не длиннее шести часов); дата — день начала
-               session --date 2026-11-19 --from 16:00 --to 17:10 --topic "команды Gradle" [--topic "…"] [--day 3]
+               session --date 2026-11-19 --from 16:00 --to 17:10 --topic "команды Gradle" [--topic "…"] [--day 3] [--insight "…"]
+               --insight — своя строка после занятия: что Baudi понял, его словами. Одна строка до 280 знаков, одна на занятие.
+               Идёт в летопись города и отчёт недели, очков не даёт; её можно не называть. Дописать позже или заменить —
+               той же командой без тем; если занятие за дату одно, начало можно не называть:
+               session --date 2026-11-19 --from 16:00 --insight "wrapper держит версию Gradle, чтобы сборка шла у всех одинаково"
   steps        шаги дня сделаны; позиция уходит на следующий шаг
                steps --done 2,3 --date 2026-11-19 [--day 3]
   day          день закрыт (minimum, core, extension) или пропущен (skipped); позиция уходит на следующий день.
@@ -40,10 +44,16 @@ const HELP = `Запись в данные сайта. Даты — ГГГГ-М�
                --kind: timed-<минут>, optimal-<минут>, rewrite-after-walkthrough, from-empty-editor, no-hints, duel
                --result: solved, not-solved; у решённой попытки --self yes|no — сам или с подсказкой
                problem --id 217 --date 2026-11-23 --kind timed-20 --minutes 14 --result solved --self yes [--approach "…"] [--notes "…"] [--problem-note "заметка к задаче"]
-               Несколько попыток одного занятия — списком, по порядку (поля как в progress.json):
+               --forecast — прогноз перед попыткой на таймере (timed-…, duel): сколько минут Baudi ожидал потратить, целое от 1 до 180.
+               Называется до попытки, к записанной не дописывается; сайт копит «прогноз и факт», очков за точность нет
+               problem --id 217 --date 2026-11-23 --kind timed-20 --forecast 10 --minutes 14 --result solved --self yes
+               Несколько попыток одного занятия — списком, по порядку (поля как в progress.json, прогноз — поле forecast):
                problem --id 217 --json '[{"date":"2026-11-23","kind":"timed-20","minutes":20,"result":"not-solved"},{"date":"2026-11-23","kind":"rewrite-after-walkthrough","minutes":8,"result":"solved"}]'
   weekly       недельный тест: 10 вопросов, у каждого баллы 0–2 и код трека; score и max считает команда. Пересдача — новая запись
-               weekly --week 1 --date 2026-11-20 --file тест.json [--note "…"]   |   … --json -   |   … --json '[{"q":"Что такое task?","track":"C1","points":2,"note":"…"}, …]'
+               weekly --week 1 --date 2026-11-20 --file тест.json [--note "…"] [--forecast 14]   |   … --json -   |   … --json '[{"q":"Что такое task?","track":"C1","points":2,"note":"…"}, …]'
+               --forecast — прогноз перед тестом: сколько баллов из 20 Baudi ожидал набрать, целое от 0 до 20. Называется до теста,
+               у пересдачи свой; сайт копит «прогноз и факт», очков за точность нет
+               weekly --week 1 --date 2026-11-20 --forecast 14 --file тест.json
   week         неделя закрыта по чекпоинту: все её дни закрыты, результат недели подтверждён
                week --n 1 --date 2026-11-20
   baseline     замер в начале (start) или в конце (final) цикла: минуты и результат задачи на таймере, самооценка по трекам от 1 до 5.
@@ -111,7 +121,7 @@ const HELP = `Запись в данные сайта. Даты — ГГГГ-М�
 
 /** Какие ключи понимает каждая команда: незнакомый ключ — ошибка, а не молчаливый пропуск. */
 const FLAGS = {
-  session: ['date', 'from', 'to', 'day', 'topic'],
+  session: ['date', 'from', 'to', 'day', 'topic', 'insight'],
   steps: ['done', 'day', 'date'],
   day: ['status', 'date', 'day', 'summary', 'note', 'minutes'],
   artifact: ['path', 'state', 'repo', 'day', 'date'],
@@ -120,8 +130,8 @@ const FLAGS = {
   beaten: ['n', 'date'],
   todo: ['add', 'done'],
   observation: ['text', 'date'],
-  problem: ['id', 'date', 'kind', 'minutes', 'result', 'self', 'approach', 'notes', 'problem-note', 'json', 'file'],
-  weekly: ['week', 'date', 'note', 'json', 'file'],
+  problem: ['id', 'date', 'kind', 'minutes', 'result', 'self', 'approach', 'notes', 'forecast', 'problem-note', 'json', 'file'],
+  weekly: ['week', 'date', 'note', 'forecast', 'json', 'file'],
   week: ['n', 'date'],
   baseline: ['point', 'minutes', 'result', 'scores', 'problem', 'day', 'date'],
   ci: ['workflow', 'state', 'date'],
@@ -140,7 +150,7 @@ const FLAGS = {
 const COMMON_FLAGS = ['dry', 'cycle', 'help']
 /** Ключи, которым значение не нужно. */
 const SWITCHES = ['dry', 'help', 'self']
-const ATTEMPT_FLAGS = ['date', 'kind', 'minutes', 'result', 'self', 'approach', 'notes']
+const ATTEMPT_FLAGS = ['date', 'kind', 'minutes', 'result', 'self', 'approach', 'notes', 'forecast']
 
 const LEDGER_FILE = 'data/purchases.json'
 const TOWN_FILE = 'data/town.json'
@@ -248,7 +258,11 @@ async function run() {
   // Какой файл правит команда и что она с ним делает. У sync файлов несколько: files вместо file.
   const inProgress = (apply) => ({ file: progressFile, apply })
   const commands = {
-    session: () => inProgress((p) => lib.addSession(plan, p, { date: one('date'), from: one('from'), to: one('to'), day: num('day'), topics: many('topic') })),
+    session: () =>
+      inProgress((p) => {
+        if (many('insight').length > 1) wrong(`своя строка одна на занятие, а --insight назван несколько раз (${many('insight').length}): оставь один`)
+        return lib.addSession(plan, p, { date: one('date'), from: one('from'), to: one('to'), day: num('day'), topics: many('topic'), insight: one('insight') })
+      }),
     steps: () => inProgress((p) => lib.markSteps(plan, p, { day: num('day'), done: nums('done'), date: one('date') })),
     day: () =>
       inProgress((p) => {
@@ -273,7 +287,7 @@ async function run() {
     beaten: () => inProgress((p) => lib.beatMistake(p, { n: num('n'), date: one('date'), today: today() })),
     observation: () => inProgress((p) => lib.addObservation(p, { text: one('text'), date: one('date'), today: today() })),
     problem: () => inProgress((p) => lib.addAttempts(plan, p, { id: num('id'), attempts: attemptsInput(), note: one('problem-note'), today: today() })),
-    weekly: () => inProgress((p) => lib.addWeeklyTest(plan, p, { week: num('week'), date: one('date'), note: one('note'), record: jsonInput('вопросы теста') })),
+    weekly: () => inProgress((p) => lib.addWeeklyTest(plan, p, { week: num('week'), date: one('date'), note: one('note'), forecast: num('forecast'), record: jsonInput('вопросы теста') })),
     week: () => inProgress((p) => lib.closeWeek(plan, p, { n: num('n'), date: one('date') })),
     baseline: () =>
       inProgress((p) =>
@@ -374,7 +388,7 @@ function attemptsInput() {
     return Array.isArray(parsed) ? parsed : [parsed]
   }
   if (!typed.length) return []
-  return [{ date: one('date'), kind: one('kind'), minutes: num('minutes'), result: one('result'), selfSolved: yesNo('self'), approach: one('approach'), notes: one('notes') }]
+  return [{ date: one('date'), kind: one('kind'), minutes: num('minutes'), result: one('result'), selfSolved: yesNo('self'), approach: one('approach'), notes: one('notes'), forecast: num('forecast') }]
 }
 
 /** Самооценка: --scores A=2,B=1 → { A: 2, B: 1 }. */

@@ -28,7 +28,7 @@ import { SIGN_GEMS, redeemedGems } from './rewards'
 import { trophiesFor, type Trophy } from './trophies'
 import { buildDeck, type DeckCard } from './deck'
 import { rateSide, type RatedSide } from './side'
-import { replayTown, type Means, type Town } from './town'
+import { BLUEPRINT_SHARE, blueprintsFor, replayTown, type Means, type Town } from './town'
 import {
   BUILT_STATES,
   CONDITIONS,
@@ -723,6 +723,8 @@ export function buildWorld(
     gems: town.spent.gems + redeemedGems(redeemed) + signs.length * SIGN_GEMS,
   })
   const specials = cycles.flatMap((c) => c.buildings).filter((b) => b.stage >= 2).length
+  // Чертежи редких построек: в счёт идут недельные тесты всех циклов, сданные не ниже порога (лучшая попытка).
+  const passedTests = cycles.flatMap((c) => c.weeks).filter((w) => w.test.best && w.test.best.max > 0 && w.test.best.score / w.test.best.max >= BLUEPRINT_SHARE).length
   // Запас дров: дровник прикрывает столько рабочих дней пропуска, сколько в нём запаса.
   // Мир начинает зарастать и ломаться только после того, как дрова кончились.
   // Считает это город (town.idle) — тем же правилом, что и для прошедших перерывов.
@@ -745,7 +747,7 @@ export function buildWorld(
     trophies,
     deck,
     town,
-    means: { coins: wallet.coins, gems: wallet.gems, specials },
+    means: { coins: wallet.coins, gems: wallet.gems, specials, blueprints: blueprintsFor(passedTests) },
     gemLog,
     side,
     // Сломанные украшения; сломанные постройки города — в town.buildings[].broken.

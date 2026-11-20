@@ -66,6 +66,15 @@ export interface BuildingType {
   materialCap?: number[]
   /** Запас дров: рабочих дней защиты от запустения. */
   firewood?: number[]
+  /**
+   * Редкая постройка: строится по чертежу, одна на город, не улучшается.
+   * offer — номер чертежа; pair — вторая постройка того же чертежа: построить можно только одну из двух.
+   */
+  rare?: { offer: number; pair: string }
+  /** Что редкая постройка даёт каждый ход. Работников ей не нужно. */
+  flat?: { food?: number; wood?: number; brick?: number }
+  /** Уют от редкой постройки. */
+  comfort?: number
 }
 
 // Карта города прокручивается, поэтому в один экран он не вмещается и не должен:
@@ -88,7 +97,28 @@ export const BUILDINGS: BuildingType[] = [
   { id: 'tower', name: 'Сторожевая башня', tier: 4, base: 600, count: [0, 0, 0, 0, 1, 1] },
 ]
 
-export const buildingType = (id: string): BuildingType | undefined => BUILDINGS.find((b) => b.id === id)
+/**
+ * Редкие постройки. Их нет в лавке и в обычном списке стройки: каждую открывает чертёж,
+ * а чертёж дают за сданный недельный тест. В чертеже две постройки на выбор; выбор окончательный —
+ * вторая в этом городе уже не появится, обе стоят на одном месте.
+ * Отдельным списком, чтобы план местности, темп игры и предпросмотр ступеней считали только обычные постройки.
+ */
+export const RARE: BuildingType[] = [
+  { id: 'apiary', name: 'Пасека', tier: 1, base: 90, count: [0, 1, 1, 1, 1, 1], rare: { offer: 1, pair: 'dovecote' }, flat: { food: 3 } },
+  { id: 'dovecote', name: 'Голубятня', tier: 1, base: 90, count: [0, 1, 1, 1, 1, 1], rare: { offer: 1, pair: 'apiary' }, comfort: 4 },
+  { id: 'pottery', name: 'Гончарня', tier: 2, base: 180, count: [0, 0, 1, 1, 1, 1], rare: { offer: 2, pair: 'boathouse' }, flat: { brick: 2 } },
+  { id: 'boathouse', name: 'Лодочный сарай', tier: 2, base: 180, count: [0, 0, 1, 1, 1, 1], rare: { offer: 2, pair: 'pottery' }, flat: { food: 4 } },
+]
+
+/** Какой по счёту сданный недельный тест открывает чертёж: первый чертёж — за первый тест, второй — за третий. */
+export const BLUEPRINT_TESTS = [1, 3]
+/** Тест идёт в счёт чертежей, если набрано не меньше этой доли баллов. Считается лучшая попытка. */
+export const BLUEPRINT_SHARE = 0.7
+
+/** Сколько чертежей открыто при стольких сданных тестах. */
+export const blueprintsFor = (passedTests: number): number => BLUEPRINT_TESTS.filter((need) => passedTests >= need).length
+
+export const buildingType = (id: string): BuildingType | undefined => BUILDINGS.find((b) => b.id === id) ?? RARE.find((b) => b.id === id)
 
 /** Рынок: одна партия товара стоит столько монет. */
 export const TRADE_COINS = 20
@@ -189,7 +219,7 @@ export interface Town {
   /** Рабочих дней защиты от запустения: запас работающего дровника. */
   firewood: number
   /** Уют и из чего он складывается. decor — украшения из лавки. */
-  comfort: { total: number; center: number; wells: number; tavern: number; decor: number }
+  comfort: { total: number; center: number; wells: number; tavern: number; decor: number; rare: number }
   /** Сломанные украшения из лавки. Сломанные постройки помечены полем broken. */
   damage: Damage[]
   /**
@@ -217,7 +247,9 @@ function refresh(town: Town) {
   const wells = levelsOf(town, 'well').reduce((total, b) => total + b.level * COMFORT.well, 0)
   const tavern = topLevel(town, 'tavern') * COMFORT.tavern
   const decor = town.comfort.decor
-  town.comfort = { center, wells, tavern, decor, total: center + wells + tavern + decor }
+  // Редкие постройки: уют даёт та, что стоит и не сломана.
+  const rare = town.buildings.reduce((total, b) => total + (b.level > 0 && !b.broken ? (buildingType(b.type)?.comfort ?? 0) : 0), 0)
+  town.comfort = { center, wells, tavern, decor, rare, total: center + wells + tavern + decor + rare }
   town.builders = {
     total: 1 + (topLevel(town, 'workshop') > 0 ? 1 : 0) + (town.tier >= 4 ? 1 : 0),
     busy: town.buildings.filter((b) => b.pending).length + (town.tierPending ? 1 : 0),
@@ -241,8 +273,15 @@ function yields(town: Town) {
     levelsOf(town, type).reduce((s, b) => s + at(pick(buildingType(type)!), b.level) * (share.get(b.id) ?? 0), 0)
   const mill = levelsOf(town, 'mill')[0]
   const millBonus = mill ? 1 + 0.1 * mill.level * (share.get(mill.id) ?? 0) : 1
-  const food = total('garden', (t) => t.food) * millBonus + total('pier', (t) => t.food) + (mill ? total('bakery', (t) => t.food) : 0)
-  return { food: Math.floor(food), wood: Math.floor(total('sawmill', (t) => t.wood)), brick: Math.floor(total('brickyard', (t) => t.brick)) }
+  // Редкие постройки дают своё без работников; сломанные — ничего.
+  const flat = (pick: 'food' | 'wood' | 'brick') =>
+    town.buildings.reduce((sum, b) => sum + (b.level > 0 && !b.broken ? (buildingType(b.type)?.flat?.[pick] ?? 0) : 0), 0)
+  const food = total('garden', (t) => t.food) * millBonus + total('pier', (t) => t.food) + (mill ? total('bakery', (t) => t.food) : 0) + flat('food')
+  return {
+    food: Math.floor(food),
+    wood: Math.floor(total('sawmill', (t) => t.wood)) + flat('wood'),
+    brick: Math.floor(total('brickyard', (t) => t.brick)) + flat('brick'),
+  }
 }
 
 function settle(town: Town, time: number) {
@@ -332,13 +371,15 @@ function act(town: Town, action: TownAction, time: number) {
   } else if (action.do === 'build') {
     const type = buildingType(action.type ?? '')
     if (!type) return
+    // Редкая постройка одна, и из двух построек чертежа ставится только одна.
+    if (type.rare && town.buildings.some((b) => b.type === type.id || b.type === type.rare!.pair)) return
     const n = town.buildings.filter((b) => b.type === type.id).length + 1
     pay(town, buildCost(type, 1))
     town.buildings.push({ id: `${type.id}-${n}`, type: type.id, level: 0, pending: { level: 1, readyAt: time + buildHours(town, 1) * HOUR }, broken: null })
   } else if (action.do === 'upgrade') {
     const b = town.buildings.find((x) => x.id === action.id)
-    // Сломанную постройку сначала чинят.
-    if (!b || b.pending || b.broken || b.level >= 5) return
+    // Сломанную постройку сначала чинят; редкая не улучшается.
+    if (!b || b.pending || b.broken || b.level >= 5 || buildingType(b.type)?.rare) return
     const level = b.level + 1
     pay(town, buildCost(buildingType(b.type)!, level))
     b.pending = { level, readyAt: time + buildHours(town, level) * HOUR }
@@ -396,7 +437,7 @@ export function replayTown(
     turns: 0,
     perTurn: { food: 0, eaten: 0, wood: 0, brick: 0 },
     firewood: 0,
-    comfort: { total: COMFORT.base, center: COMFORT.base, wells: 0, tavern: 0, decor: 0 },
+    comfort: { total: COMFORT.base, center: COMFORT.base, wells: 0, tavern: 0, decor: 0, rare: 0 },
     damage: [],
     idle: { missed: 0, covered: 0, level: 0 },
   }
@@ -562,6 +603,8 @@ export interface Means {
   gems: number
   /** Сколько особых построек (файлов) построено. */
   specials: number
+  /** Сколько чертежей редких построек открыто: по сданным недельным тестам, blueprintsFor. */
+  blueprints?: number
 }
 
 /** Почему действие сейчас нельзя сделать. Пустой список — можно. */
@@ -598,6 +641,15 @@ export function blockers(town: Town, action: Pick<TownAction, 'do' | 'type' | 'i
     const type = buildingType(action.type ?? '')
     if (!type) return ['такой постройки нет']
     cost = buildCost(type, 1)
+    if (type.rare) {
+      // Чертёж использован: вторая постройка из той же пары уже не строится.
+      const taken = town.buildings.find((b) => b.type === type.rare!.pair)
+      if (taken) return [`по этому чертежу уже стоит другая постройка: ${buildingType(taken.type)!.name.toLowerCase()}`]
+      if ((means.blueprints ?? 0) < type.rare.offer) {
+        const need = BLUEPRINT_TESTS[type.rare.offer - 1]
+        why.push(`нужен чертёж: его дают за недельный тест, сданный от ${Math.round(BLUEPRINT_SHARE * 100)}% — ${need === 1 ? 'за первый' : `за ${need}-й`}`)
+      }
+    }
     if (town.tier < type.tier) why.push(`откроется на ступени «${TIERS[type.tier].name}»`)
     const have = town.buildings.filter((b) => b.type === type.id).length
     if (have >= type.count[town.tier]) why.push('на этой ступени больше нельзя')
@@ -606,6 +658,7 @@ export function blockers(town: Town, action: Pick<TownAction, 'do' | 'type' | 'i
     if (!b) return ['такой постройки нет']
     if (b.pending) return ['уже строится']
     if (b.broken) return ['постройка сломана: сначала почини её']
+    if (buildingType(b.type)?.rare) return ['редкая постройка не улучшается']
     if (b.level >= maxLevel(town.tier)) return ['выше уровень откроет следующая ступень']
     cost = buildCost(buildingType(b.type)!, b.level + 1)
   }

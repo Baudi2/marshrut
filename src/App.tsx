@@ -8,13 +8,17 @@ import { syncSummary } from './game/sync'
 import { blockers, type TownAction } from './game/town'
 import type { TownApi } from './tabs/TownTab'
 import { buildWorld } from './game/engine'
+import { lastTurn } from './game/chronicle'
+import { worldAt, type WorldInputs } from './game/history'
 import { toISO } from './game/rules'
 import { SHOP, canAfford, shopItem } from './game/shop'
 import type { ShopApi } from './tabs/Shop'
 import type { SkyApi } from './tabs/SkyCard'
 import { CoinIcon, GemIcon } from './world/extras'
 import { computeSky, fetchWeather, type Place, type Weather } from './world/sky'
+import { ChroniclePage } from './tabs/Chronicle'
 import { CycleSummary } from './tabs/CycleSummary'
+import { levelNameOf } from './town3d/names'
 import { DEV_OFF, DevMenu, devActive, devSummary, type DevState } from './tabs/DevMenu'
 import { Growth } from './tabs/Growth'
 import { PathTab, type SignApi } from './tabs/PathTab'
@@ -37,13 +41,15 @@ const TABS = [
   { id: 'skills', label: 'Навыки' },
 ] as const
 
-type TabId = (typeof TABS)[number]['id'] | 'lab' | 'cycle' | 'dev'
+type TabId = (typeof TABS)[number]['id'] | 'lab' | 'cycle' | 'dev' | 'chronicle'
 
 function readTab(): TabId {
   const hash = location.hash.replace(/^#\/?/, '')
   if (hash === 'lab') return 'lab'
   // Меню разработчика: адрес нигде не показан, вход — пять быстрых нажатий на название сайта.
   if (hash === 'dev') return 'dev'
+  // Летопись города: страница без вкладки, вход — с «Города» и из карточки итога на «Сегодня».
+  if (hash === 'chronicle') return 'chronicle'
   // Итог цикла — тоже страница без вкладки: #/cycle или #/cycle/<id цикла>.
   if (hash === 'cycle' || hash.startsWith('cycle/')) return 'cycle'
   // Прежний адрес лагеря ведёт в город.
@@ -188,6 +194,17 @@ export function App() {
   const [cycleId, setCycleId] = useState(world.active.id)
   const cycle = world.cycles.find((c) => c.id === cycleId) ?? world.active
   const level = preview ?? world.condition.level
+  // Город из летописи: учебный день, на который показана сцена. Живёт, пока открыта страница.
+  const [townDate, setTownDate] = useState<string | null>(null)
+  const turns = useMemo(() => [...new Set(world.sessionDates)].sort(), [world.sessionDates])
+  const inputs = useMemo<WorldInputs>(() => ({ rawCycles, offplan, ledger }), [ledger])
+  const past = useMemo(() => (townDate ? { date: townDate, world: worldAt(inputs, townDate, now) } : null), [townDate, inputs, now])
+  // Итог последнего занятия для «Сегодня»: считается при каждом открытии, это два-четыре мира.
+  const turn = useMemo(() => lastTurn(inputs, today, { now, world, levelName: levelNameOf }), [inputs, today, now, world])
+  const showTownAt = (date: string) => {
+    setTownDate(date)
+    location.hash = '#/town'
+  }
 
   const gear = world.owned.filter((id) => shopItem(id)?.group === 'gear' && !unequipped.includes(id))
   const saveUnequipped = (next: string[]) => {
@@ -472,7 +489,8 @@ export function App() {
       </nav>
 
       <main>
-        {tab === 'today' && <Today world={world} cycle={cycle} sync={sync} />}
+        {tab === 'today' && <Today world={world} cycle={cycle} sync={sync} turn={turn} />}
+        {tab === 'chronicle' && <ChroniclePage inputs={inputs} today={today} now={now} onShowTown={showTownAt} />}
         {tab === 'review' && <ReviewTab world={world} deck={deckApi} sync={sync} />}
         {tab === 'path' && (
           <PathTab
@@ -492,6 +510,9 @@ export function App() {
               level={level}
               stagePreview={dev.stage}
               onStagePreview={(stage) => setDev({ ...dev, stage })}
+              past={past}
+              onPast={setTownDate}
+              turns={turns}
               shop={shop}
               skyApi={skyApi}
               town={townApi}

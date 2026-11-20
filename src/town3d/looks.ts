@@ -1077,6 +1077,162 @@ function port(b: LookBuilder, key: string, boats: number, push = 0) {
   if (boats >= 2) lantern(b, 1.2, -0.6, 2.4)
 }
 
+// ——— Редкие постройки: строятся по чертежу, по одному облику ———
+
+/** Улей: короб на ножках под двускатной крышкой, леток смотрит на юг. */
+function hive(b: LookBuilder, x: number, z: number, color: string) {
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b.box(x + sx * 0.2, 0, z + sz * 0.18, 0.07, 0.22, 0.07, C.woodDark)
+  b.box(x, 0.22, z, 0.56, 0.48, 0.5, color)
+  b.box(x, 0.3, z + 0.26, 0.2, 0.05, 0.03, C.dark)
+  b.box(x, 0.2, z + 0.34, 0.4, 0.03, 0.16, C.woodLight)
+  b.gable(x, 0.7, z, 0.72, 0.2, 0.66, C.shingle)
+}
+
+/** Голубь: тушка и голова из двух коробочек. */
+function dove(b: LookBuilder, x: number, y: number, z: number, color: string, turn = 0) {
+  b.group([x, y, z], turn, () => {
+    b.box(0, 0, 0, 0.14, 0.13, 0.26, color)
+    b.box(0, 0.1, 0.12, 0.09, 0.09, 0.09, color)
+  })
+}
+
+/** Горшок: пузатый, с горлом. */
+function pot(b: LookBuilder, x: number, y: number, z: number, r: number, h: number, color: string) {
+  b.cylinder(x, y, z, r * 0.7, r, h * 0.55, 7, color)
+  b.cylinder(x, y + h * 0.55, z, r, r * 0.55, h * 0.45, 7, color)
+}
+
+LOOKS.apiary = {
+  levels: [
+    {
+      name: 'Пасека',
+      look: one((b) => {
+        const colors = ['#d9c37c', '#cdb98f', '#e0d3ae']
+        ;[-1.45, 0, 1.45].forEach((x, i) => {
+          hive(b, x, -0.7, colors[i % 3])
+          hive(b, x + 0.3, 0.9, colors[(i + 1) % 3])
+        })
+        fence(b, -2.3, -1.8, 2.3, -1.8)
+        fence(b, -2.3, -1.8, -2.3, 0.3)
+        fence(b, 2.3, -1.8, 2.3, 0.3)
+        // Соломенная колода для роя на шесте, бочонок под мёд и ведро.
+        b.beam([-2, 0, -1.25], [-2, 1.5, -1.25], 0.1, C.woodDark)
+        b.cylinder(-2, 1.4, -1.25, 0.26, 0.2, 0.5, 7, C.thatch)
+        b.model('r/barrel', { at: [2, 0, 1.75], s: 0.9 })
+        bucket(b, -1.95, 1.75)
+      }),
+    },
+  ],
+}
+
+LOOKS.dovecote = {
+  levels: [
+    {
+      name: 'Голубятня',
+      look: one((b) => {
+        // Четырёхгранная башенка: радиус — до угла, грани смотрят по сторонам света.
+        const corner = (half: number) => half * Math.SQRT2
+        const turn = Math.PI / 4
+        const z = -0.3
+        b.cylinder(0, 0, z, 1.25, 1.15, 0.45, 8, C.stone)
+        b.cylinder(0, 0.45, z, corner(0.7), corner(0.62), 2.9, 4, C.plaster, 0, turn)
+        b.box(0, 0.45, z + 0.69, 0.5, 0.95, 0.05, C.woodDark)
+        // Ярус с летками и присадой.
+        b.box(0, 3.35, z, 1.95, 0.14, 1.95, C.woodDark)
+        b.cylinder(0, 3.49, z, corner(0.85), corner(0.85), 1.05, 4, C.woodLight, 0, turn)
+        for (const x of [-0.45, 0, 0.45]) b.box(x, 3.82, z + 0.86, 0.2, 0.28, 0.04, C.dark)
+        for (const dz of [-0.4, 0.2]) b.box(0.86, 3.82, z + dz, 0.04, 0.28, 0.2, C.dark)
+        b.box(0, 3.7, z + 1.08, 1.6, 0.05, 0.24, C.wood)
+        b.cylinder(0, 4.54, z, corner(1.2), 0, 1.3, 4, C.tile, 0, turn)
+        b.beam([0, 5.78, z], [0, 6.1, z], 0.06, C.woodDark)
+        // Приставная лестница.
+        b.beam([1.05, 0, 1], [0.9, 3.4, 0.45], 0.06, C.wood)
+        b.beam([1.5, 0, 1], [1.35, 3.4, 0.45], 0.06, C.wood)
+        for (let i = 1; i <= 7; i++) {
+          const t = i / 8
+          b.beam([1.05 - 0.15 * t, 3.4 * t, 1 - 0.55 * t], [1.5 - 0.15 * t, 3.4 * t, 1 - 0.55 * t], 0.045, C.woodLight)
+        }
+        // Голуби на присаде и на поясе, кормушка, мешок зерна.
+        dove(b, -0.5, 3.75, z + 1.08, '#f1efe8')
+        dove(b, 0.35, 3.75, z + 1.06, '#9aa3ad', 160)
+        dove(b, -0.8, 3.49, z - 0.9, '#f1efe8', 100)
+        b.box(-1.7, 0, 1.1, 0.9, 0.18, 0.4, C.wood)
+        b.model('v/bag', { at: [1.9, 0, 1.6], s: 2.2, rot: 30 })
+      }),
+    },
+  ],
+}
+
+LOOKS.pottery = {
+  levels: [
+    {
+      name: 'Гончарня',
+      look: one((b) => {
+        const raw = C.clay
+        const fired = '#b9795a'
+        const glazed = '#d9cdb2'
+        kiln(b, -2.5, -1.6, 1.25, 2.1)
+        // Навес с верстаком: готовая посуда на столе.
+        b.group([1.5, 0, -1.4], 0, () => shelter(b, 3.6, 2.6, 2.5))
+        table(b, 1.5, -1.7, 2.6, 0.8)
+        pot(b, 0.55, 0.85, -1.7, 0.2, 0.42, fired)
+        pot(b, 1.1, 0.85, -1.75, 0.16, 0.3, glazed)
+        pot(b, 1.6, 0.85, -1.65, 0.24, 0.5, fired)
+        pot(b, 2.2, 0.85, -1.72, 0.17, 0.34, fired)
+        // Гончарный круг и сырой горшок на нём.
+        b.cylinder(1.6, 0, -0.5, 0.26, 0.26, 0.5, 8, C.woodDark)
+        b.cylinder(1.6, 0.5, -0.5, 0.48, 0.48, 0.07, 10, C.stone)
+        pot(b, 1.6, 0.57, -0.5, 0.18, 0.34, raw)
+        // Сушильная полка перед печью: сырые горшки ждут обжига.
+        for (const x of [-3.5, -1.5]) b.beam([x, 0, 0.7], [x, 0.9, 0.7], 0.09, C.woodDark)
+        b.box(-2.5, 0.42, 0.7, 2.2, 0.06, 0.5, C.woodLight)
+        b.box(-2.5, 0.86, 0.7, 2.2, 0.06, 0.5, C.woodLight)
+        for (const x of [-3.2, -2.75, -2.3, -1.85]) pot(b, x, 0.48, 0.7, 0.15, 0.3, raw)
+        for (const x of [-3.1, -2.5, -1.9]) pot(b, x, 0.92, 0.7, 0.17, 0.34, raw)
+        // Куча глины, ведро воды и большие корчаги у навеса.
+        dome(b, -0.3, 0, 1.3, 0.75, 0.6, raw)
+        bucket(b, 0.7, 1.5)
+        pot(b, 3.4, 0, 0.9, 0.34, 0.75, fired)
+        pot(b, 2.7, 0, 1.4, 0.26, 0.55, glazed)
+      }),
+    },
+  ],
+}
+
+LOOKS.boathouse = {
+  levels: [
+    {
+      name: 'Лодочный сарай',
+      look: one((b) => {
+        // Помост от берега до воды на сваях; сарай открыт к реке.
+        b.box(0, 0.04, 3.2, 5.2, 0.14, 6.6, C.woodLight)
+        for (const x of [-2.4, 0, 2.4]) for (const z of [2.6, 4.4, 6.3]) b.beam([x, -1.9, z], [x, 0.06, z], 0.2, C.woodDark)
+        const h = 2.5
+        for (const [x, z] of [[-2.4, 0.3], [2.4, 0.3], [-2.4, 4.2], [2.4, 4.2]]) b.beam([x, 0.18, z], [x, h + 0.18, z], 0.2, C.woodDark)
+        b.box(0, 0.18, 0.3, 4.8, h, 0.14, C.wood)
+        b.box(-2.4, 0.18, 2.25, 0.14, h, 3.9, C.wood)
+        b.box(2.4, 0.18, 2.25, 0.14, h * 0.5, 3.9, C.wood)
+        // Конёк идёт к реке: фронтон смотрит на воду.
+        b.group([0, h + 0.18, 2.25], 90, () => b.gable(0, 0, 0, 4.6, 1.5, 5.6, C.shingle))
+        // Лодка под крышей, вторая — на воде; спуск из двух брёвен.
+        b.model('s/boat', { at: [-0.5, 0.18, 2.3] })
+        b.model('s/boat', { at: [3.2, WATER, 7.3], rot: 20 })
+        for (const x of [-1.3, 0.3]) b.beam([x, 0.1, 6.4], [x, -1.05, 8.7], 0.16, C.woodDark)
+        // Вёсла у стены, сеть на вешалах, бочка и ящик на берегу.
+        b.beam([2.75, 0.18, 1.3], [2.6, 2.7, 0.9], 0.07, C.woodLight)
+        b.beam([3, 0.18, 1.6], [2.85, 2.5, 1.2], 0.07, C.woodLight)
+        b.beam([-4.1, 0, -0.6], [-4.1, 1.9, -0.6], 0.1, C.woodDark)
+        b.beam([-3, 0, -1.6], [-3, 1.9, -1.6], 0.1, C.woodDark)
+        b.beam([-4.1, 1.9, -0.6], [-3, 1.9, -1.6], 0.06, C.rope)
+        b.sheet([-4.1, 1.85, -0.6], [-3, 1.85, -1.6], [-3, 0.7, -1.6], [-4.1, 0.7, -0.6], '#9aa39a')
+        b.model('r/barrel', { at: [-3.3, 0, 0.9], s: 1.1 })
+        b.model('r/crate', { at: [3.4, 0, -0.5], s: 1.1 })
+        lantern(b, 2.3, 5.9, 2.4)
+      }),
+    },
+  ],
+}
+
 function watch(b: LookBuilder, key: string, s: number) {
   b.model(key, { center: true, s })
   fence(b, -3.2, 3.2, -0.9, 3.2)

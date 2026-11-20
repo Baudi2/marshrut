@@ -24,6 +24,8 @@ export interface GroundInput {
   specials: number
   /** Сколько памятников закрытых циклов стоит на берегу. */
   monuments: number
+  /** Места редких построек, которые стоят или строятся: под ними своя площадка и тропинка от улицы. */
+  rare?: Plot[]
   /** Мост и слобода уже есть: тогда к ним ведёт тропа. */
   quarter: boolean
   /** Запустение 0–3: улицы зарастают. */
@@ -114,6 +116,8 @@ function paintMap(input: GroundInput): HTMLCanvasElement {
     line([[plot.x - h, plot.z - h], [plot.x - h, plot.z + h]], 2.2)
     line([[plot.x + h, plot.z - h], [plot.x + h, plot.z + h]], 2.2)
   }
+  // Тропинка от южной улицы к редкой постройке.
+  for (const plot of input.rare ?? []) line([[plot.x, PITCH + 1.2], [plot.x, plot.z - 1]], 1.4)
   // Дороги через лес к участкам, стоящим особняком.
   for (const road of connectors(input.open)) line([[road.x0, road.z0], [road.x1, road.z1]], 2.2)
   g.globalAlpha = 1
@@ -176,6 +180,7 @@ function paintMap(input: GroundInput): HTMLCanvasElement {
     rect(slot.x, slot.z, QUARTER.plot, QUARTER.plot, 1.2)
   }
   if (input.quarter) for (let i = 0; i < input.monuments; i++) rect(monumentSpot(i).x, monumentSpot(i).z, MONUMENT.size + 1.6, MONUMENT.size + 1.6, 1)
+  for (const plot of input.rare ?? []) rect(plot.x, plot.z - 0.4, 6.4, 5, 1.2)
   g.globalAlpha = 1
 
   // Запустение: трава выходит на улицы.

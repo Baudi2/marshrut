@@ -2,6 +2,7 @@ import { GemIcon } from '../world/extras'
 import type { CycleView, TrackView, World } from '../game/engine'
 import { SIDE } from '../game/side'
 import { TrackBadge, Tile, fmtDate, plural } from '../ui/bits'
+import { ForecastCard } from './ForecastCard'
 import { TimeCard } from './TimeCard'
 
 const VERDICT = {
@@ -152,6 +153,8 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
       </div>
 
       <TimeCard cycle={cycle} />
+
+      <ForecastCard cycles={world.cycles} />
 
       <div className="card">
         <h3>За что получены очки</h3>

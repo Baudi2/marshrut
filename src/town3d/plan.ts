@@ -21,6 +21,8 @@ export interface Plot {
   rot: number
   /** Участок у воды: постройка выходит на реку. */
   water?: boolean
+  /** Место редкой постройки: вне сетки участков, улицы к нему нет, жители туда не ходят. */
+  rare?: boolean
 }
 
 const columnX = (c: number) => (c - (COLUMNS - 1) / 2) * PITCH
@@ -81,7 +83,22 @@ export const PLOTS: Plot[] = [
   ...PIERS,
 ]
 
-export const plotOf = (id: string): Plot | undefined => PLOTS.find((p) => p.id === id)
+/**
+ * Места редких построек — вне сетки, в стороне от улиц, поэтому в список участков они не входят:
+ * ни улиц, ни площадок под них не рисуется, и носильщики к ним не ходят.
+ * Обе постройки одного чертежа стоят на одном месте: из двух всё равно строится одна.
+ *  — первый чертёж (пасека или голубятня): лужок у тропы к мосту, между южной улицей и берегом;
+ *  — второй (гончарня или лодочный сарай): берег между двумя причалами, место выходит к воде, как у причалов.
+ */
+const RARE_SPOTS: [string[], number, number][] = [
+  [['apiary', 'dovecote'], 5.8, 17.2],
+  [['pottery', 'boathouse'], 33.8, riverCenter(33.8) - RIVER.half - 4.4],
+]
+export const RARE_PLOTS: Plot[] = RARE_SPOTS.flatMap(([types, x, z]) => types.map((type) => ({ id: `${type}-1`, type, n: 1, x, z, rot: 0, rare: true })))
+/** Полуширина места редкой постройки: на столько от его середины расчищается лес. */
+export const RARE_HALF = 4.6
+
+export const plotOf = (id: string): Plot | undefined => PLOTS.find((p) => p.id === id) ?? RARE_PLOTS.find((p) => p.id === id)
 
 /** Участки, которые ступень уже открыла: остальные пока под лесом. */
 export function openPlots(tier: number): Plot[] {
@@ -349,7 +366,9 @@ export interface Tree {
 const STREET_CLEAR = 2.6
 
 /** Точка занята: участок, площадь, река, слобода, улица. */
-function taken(x: number, z: number, open: Plot[], specials: number, quarter: boolean, monuments: number, pasture: boolean, roads: Road[]): boolean {
+function taken(x: number, z: number, open: Plot[], specials: number, quarter: boolean, monuments: number, pasture: boolean, roads: Road[], rare: Plot[]): boolean {
+  // Место редкой постройки расчищается, когда она там стоит или строится.
+  for (const plot of rare) if (Math.abs(x - plot.x) < RARE_HALF && Math.abs(z - plot.z) < RARE_HALF) return true
   if (Math.abs(x - PLAZA.x) < PLAZA.w / 2 + 3 + STREET_CLEAR && Math.abs(z - PLAZA.z) < PLAZA.d / 2 + 3 + STREET_CLEAR) return true
   if (Math.abs(z - riverCenter(x)) < RIVER.half + 3.2) return true
   for (const plot of open) {
@@ -385,7 +404,7 @@ function taken(x: number, z: number, open: Plot[], specials: number, quarter: bo
 }
 
 /** Лес: растёт везде, где город ещё не расчистил землю. */
-export function forest(tier: number, specials: number, monuments = 0): Tree[] {
+export function forest(tier: number, specials: number, monuments = 0, rare: Plot[] = []): Tree[] {
   const open = openPlots(tier)
   const roads = connectors(open)
   const random = seeded(20261118)
@@ -403,7 +422,7 @@ export function forest(tier: number, specials: number, monuments = 0): Tree[] {
       // Вдали от города лес гуще, у самой площади — редкий.
       const far = Math.hypot(jx, jz - 4) / 90
       if (density > 0.34 + Math.min(0.5, far * 0.55)) continue
-      if (taken(jx, jz, open, specials, quarterOpen(tier), monuments, tier >= 2, roads)) continue
+      if (taken(jx, jz, open, specials, quarterOpen(tier), monuments, tier >= 2, roads, rare)) continue
       // Сосны держатся севера и опушек у гор.
       const pine = kindRoll < (jz < -50 ? 0.7 : 0.22)
       trees.push({ x: jx, z: jz, kind: pine ? 3 : Math.floor(kindRoll * 97) % 3, scale, turn })

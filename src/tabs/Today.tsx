@@ -1,14 +1,69 @@
+import { earnedText, type LastTurn } from '../game/chronicle'
 import { dueCards } from '../game/deck'
 import type { CycleView, World } from '../game/engine'
 import { toISO } from '../game/rules'
 import { fullPeriod } from '../game/summary'
 import type { SyncSummary } from '../game/sync'
 import { SyncNote } from './SyncNote'
-import { DAYS, RichText, Timer, TrackBadge, plural } from '../ui/bits'
+import { DAYS, RichText, Timer, TrackBadge, fmtDate, plural } from '../ui/bits'
 
 const MODE: Record<string, string> = { light: 'лёгкий день', deep: 'глубокий день', retro: 'ретро' }
 
-export function Today({ world, cycle, sync }: { world: World; cycle: CycleView; sync: SyncSummary }) {
+/**
+ * Итог последнего занятия: самое важное из последней записи летописи и что будет готово дальше.
+ * Тихая карточка: без счётчиков и значков, со ссылкой на всю летопись.
+ */
+function TurnCard({ turn }: { turn: LastTurn }) {
+  const { entry, highlights, next } = turn
+  const earned = earnedText(entry.earned)
+  return (
+    <div className="card chron-turn">
+      <div className="chron-turn-head">
+        <div className="eyebrow">
+          Ход {entry.turn} · {entry.title}
+        </div>
+        <h3>Итог занятия {fmtDate(entry.date)}</h3>
+      </div>
+      {entry.insights.length > 0 && <blockquote className="chron-quote">{entry.insights[0]}</blockquote>}
+      {highlights.length > 0 ? (
+        <ul className="plain">
+          {highlights.map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+      ) : (
+        entry.topics.length > 0 && <p className="muted">Темы: {entry.topics.join(' · ')}</p>
+      )}
+      {earned && <p className="muted small">За день: {earned}</p>}
+      {next.length > 0 && (
+        <div className="chron-block">
+          <h4>Что будет готово дальше</h4>
+          <ul className="plain">
+            {next.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <a className="chron-turn-link" href="#/chronicle">
+        Вся летопись →
+      </a>
+    </div>
+  )
+}
+
+export function Today({
+  world,
+  cycle,
+  sync,
+  turn,
+}: {
+  world: World
+  cycle: CycleView
+  sync: SyncSummary
+  /** Итог последнего занятия — lastTurn() из src/game/chronicle.ts. Без него карточки нет. */
+  turn?: LastTurn | null
+}) {
   const current = cycle.current
   const progress = cycle.raw.progress
 
@@ -74,6 +129,8 @@ export function Today({ world, cycle, sync }: { world: World; cycle: CycleView; 
             встреча. Расскажи репетитору, что сделал и что вынес, — он запишет. Город живёт как обычно: день с занятием — один ход.
           </p>
         </div>
+
+        {turn && <TurnCard turn={turn} />}
 
         {progress.openItems.length > 0 && (
           <details className="card fold">
@@ -207,6 +264,8 @@ export function Today({ world, cycle, sync }: { world: World; cycle: CycleView; 
           ))}
         </ul>
       </div>
+
+      {turn && <TurnCard turn={turn} />}
 
       <details className="card fold">
         <summary>

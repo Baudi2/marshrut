@@ -3,11 +3,14 @@ import { STAGE_LABEL, type BuildingView, type CycleView, type World } from '../g
 import { HEAL_SESSIONS } from '../game/repair'
 import type { ConditionLevel } from '../game/rules'
 import {
+  BLUEPRINT_SHARE,
+  BLUEPRINT_TESTS,
   BUILDINGS,
   COMFORT,
   GOODS,
   LEVEL_HOURS,
   NO_WELL_LIMIT,
+  RARE,
   TIERS,
   TRADE_COINS,
   arrivalPace,
@@ -31,6 +34,7 @@ import { quarterOpen } from '../town3d/plan'
 import { folded, previewView, townView } from '../town3d/view'
 import { ConditionCard, TrackBadge, plural } from '../ui/bits'
 import { CoinIcon, GemIcon } from '../world/extras'
+import { fullDate } from '../game/summary'
 import { MonumentCard } from './MonumentCard'
 import { artifactState } from './PathTab'
 import type { SyncSummary } from '../game/sync'
@@ -53,6 +57,12 @@ interface Props {
   /** Предпросмотр ступени из меню разработчика: null — настоящий город. */
   stagePreview: number | null
   onStagePreview: (stage: number | null) => void
+  /** Город из летописи: каким он был к концу учебного дня. null — сегодняшний. */
+  past: { date: string; world: World } | null
+  /** Перейти к другому учебному дню летописи; null — вернуться к сегодняшнему городу. */
+  onPast: (date: string | null) => void
+  /** Учебные дни по порядку: по ним листается летопись города. */
+  turns: string[]
   shop: ShopApi
   skyApi: SkyApi
   town: TownApi
@@ -116,6 +126,15 @@ const RESIDENTS: [string, string, string] = ['житель', 'жителя', 'ж
 /** Что даёт уровень постройки, одной строкой. */
 function gives(type: BuildingType, level: number): string {
   const at = (values: number[] | undefined) => (values ? values[level - 1] : 0)
+  if (type.rare) {
+    const parts = [
+      type.flat?.food && `еда: +${type.flat.food} за ход`,
+      type.flat?.wood && `дерево: +${type.flat.wood} за ход`,
+      type.flat?.brick && `кирпич: +${type.flat.brick} за ход`,
+      type.comfort && `уют +${type.comfort}`,
+    ].filter(Boolean)
+    return `${parts.join(', ')}; работники не нужны`
+  }
   if (type.housing) return `мест для жителей: ${at(type.housing)}`
   if (type.food) return `еда: +${at(type.food)} за ход${type.id === 'bakery' ? ' (нужна мельница)' : ''}`
   if (type.wood) return `дерево: +${at(type.wood)} за ход`
@@ -150,6 +169,7 @@ function lost(type: BuildingType, level: number): string {
   if (type.id === 'tavern') return 'Не работает: уюта не даёт, жители приходят без прибавки'
   if (type.id === 'market') return 'Не работает: обмена нет'
   if (type.id === 'tower') return 'Не работает: за следующим долгим перерывом не присмотрит'
+  if (type.rare) return `Не работает: ${type.comfort ? 'уюта не даёт' : type.flat?.brick ? 'кирпича не даёт' : type.flat?.wood ? 'дерева не даёт' : 'еды не даёт'}`
   return 'Не работает'
 }
 
@@ -222,7 +242,7 @@ function moodText(town: World['town']): string {
   return `Довольство: ${moodOf(town)}%. Уют ${c.total} (${parts.join(', ')}) на ${town.population} ${plural(town.population, RESIDENTS)}; его хватает на ${comfortRoom(town)}. ${effect} Уют дают колодцы, таверна, украшения из лавки и новая ступень.`
 }
 
-export default function TownTab({ world, cycle, level, stagePreview, onStagePreview, shop, skyApi, town: api, sync, now }: Props) {
+export default function TownTab({ world, cycle, level, stagePreview, onStagePreview, past, onPast, turns, shop, skyApi, town: api, sync, now }: Props) {
   const town = world.town
   const [selected, setSelected] = useState<string | null>(null)
   const [hint, setHint] = useState<string | null>(null)
@@ -236,12 +256,13 @@ export default function TownTab({ world, cycle, level, stagePreview, onStagePrev
 
   const season = skyApi.sky.season
   const gear = shop.gear
-  const real = useMemo(() => townView(world, season, level, gear), [world, season, level, gear])
+  // Город из летописи рисуется по миру того дня; кошелёк, лавка и карточки остаются сегодняшними.
+  const real = useMemo(() => townView(past?.world ?? world, season, level, gear), [past, world, season, level, gear])
   const view = useMemo(
     () => (stagePreview === null ? real : previewView(stagePreview, world, season, level, gear)),
     [stagePreview, real, world, season, level, gear],
   )
-  const previewing = stagePreview !== null
+  const previewing = stagePreview !== null || past !== null
 
   const next = TIERS[town.tier + 1]
   const building = !previewing ? town.buildings.find((b) => b.id === selected) : undefined
@@ -292,7 +313,9 @@ export default function TownTab({ world, cycle, level, stagePreview, onStagePrev
 
       <TownCanvas view={view} sky={skyApi.sky} selected={previewing ? null : selected} onSelect={setSelected} now={time} />
 
-      {previewing && (
+      {past && <PastBar past={past} turns={turns} onPast={onPast} />}
+
+      {stagePreview !== null && (
         <p className="note">
           Это предпросмотр ступени «{TIERS[stagePreview].name}»: так город может выглядеть, когда дорастёт. Настоящий город не меняется.{' '}
           <button className="btn btn-quiet" onClick={() => onStagePreview(null)}>
@@ -363,7 +386,11 @@ export default function TownTab({ world, cycle, level, stagePreview, onStagePrev
             {building.broken && <span className="pill pill-current breakage-mark">сломано</span>}
           </div>
           <h3>{building.level > 0 ? levelName(building.type, building.level) : 'Строится'}</h3>
-          <Levels level={building.level} pending={building.pending?.level} />
+          {buildingType(building.type)?.rare ? (
+            <p className="muted small">Редкая постройка: стоит одна на город, уровней у неё нет.</p>
+          ) : (
+            <Levels level={building.level} pending={building.pending?.level} />
+          )}
           {building.level > 0 && (
             <p>
               {building.broken ? 'Когда цела, даёт' : 'Даёт'}: {gives(buildingType(building.type)!, building.level)}.
@@ -395,7 +422,7 @@ export default function TownTab({ world, cycle, level, stagePreview, onStagePrev
               time={time}
               hours={LEVEL_HOURS[building.pending.level - 1]}
             />
-          ) : building.level < 5 ? (
+          ) : buildingType(building.type)?.rare ? null : building.level < 5 ? (
             <>
               <p className="muted">
                 Уровень {building.level + 1} — «{levelName(building.type, building.level + 1)}»: {gives(buildingType(building.type)!, building.level + 1)}.
@@ -468,6 +495,17 @@ export default function TownTab({ world, cycle, level, stagePreview, onStagePrev
       {monument && <MonumentCard cycle={monument} folded={folded(monument, world.cycles)} />}
 
       {!previewing && !selected && <p className="muted">Нажми на постройку на карте, чтобы увидеть, что она даёт и сколько стоит следующий уровень.</p>}
+
+      {!previewing && <Blueprints town={town} world={world} onBuild={(type) => api.act({ do: 'build', type })} />}
+
+      {!previewing && (
+        <a className="card deck-link" href="#/chronicle">
+          <span>
+            <b>Летопись города.</b> Что происходило в каждый учебный день — и каким город был тогда
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
+      )}
 
       <div className="card">
         <h3>Что можно построить</h3>
@@ -559,6 +597,120 @@ export default function TownTab({ world, cycle, level, stagePreview, onStagePrev
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Чертежи: редкие постройки, которых нет в обычном списке. Чертёж дают за сданный недельный тест;
+ * в чертеже две постройки, выбрать можно одну — вторая в этом городе уже не появится.
+ */
+function Blueprints({ town, world, onBuild }: { town: World['town']; world: World; onBuild: (type: string) => void }) {
+  const have = world.means.blueprints ?? 0
+  const offers = [...new Set(RARE.map((type) => type.rare!.offer))].sort((a, b) => a - b)
+  const share = Math.round(BLUEPRINT_SHARE * 100)
+  return (
+    <div className="card">
+      <h3>Чертежи</h3>
+      <p className="muted">
+        Редкие постройки. Чертёж дают за недельный тест, сданный от {share}%. В чертеже две постройки — выбрать можно одну, вторая в этом
+        городе уже не появится.
+      </p>
+      {offers.map((offer) => {
+        const pair = RARE.filter((type) => type.rare!.offer === offer)
+        const built = town.buildings.find((b) => pair.some((type) => type.id === b.type))
+        const open = have >= offer
+        const need = BLUEPRINT_TESTS[offer - 1]
+        return (
+          <div className="blueprint" key={offer}>
+            <div className="blueprint-head">
+              <h4>Чертёж {offer}</h4>
+              <span className={`pill${open ? ' pill-core' : ''}`}>{built ? 'использован' : open ? 'открыт' : need === 1 ? 'за первый тест' : `за ${need}-й тест`}</span>
+            </div>
+            <ul className="build-menu">
+              {pair.map((type) => {
+                const mine = built?.type === type.id
+                const why = built ? [] : blockers(town, { do: 'build', type: type.id }, world.means)
+                return (
+                  <li key={type.id} className={built && !mine ? 'is-locked' : ''}>
+                    <div>
+                      <b>{type.name}</b>
+                      <div className="muted small">{gives(type, 1)}</div>
+                      {mine && <div className="small">Стоит в городе.</div>}
+                      {built && !mine && <div className="muted small">Не выбрана.</div>}
+                      {why.length > 0 && <div className="why small">{why.join('; ')}</div>}
+                    </div>
+                    {!built && (
+                      <div className="act-row">
+                        <span className="cost-chip">
+                          <CoinIcon /> {buildCost(type, 1).coins}
+                        </span>
+                        <button className="btn" disabled={why.length > 0} onClick={() => onBuild(type.id)} aria-label={`Построить по чертежу: ${type.name}`}>
+                          Построить
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Полоса под картой, когда показан город из летописи: какой это день и как листать дальше. */
+function PastBar({ past, turns, onPast }: { past: { date: string; world: World }; turns: string[]; onPast: (date: string | null) => void }) {
+  const at = Math.max(0, turns.indexOf(past.date))
+  // Ползунок двигается свободно, а город пересобирается, когда его отпустили: сборка сцены не мгновенная.
+  const [drag, setDrag] = useState<number | null>(null)
+  const shown = drag ?? at
+  const commit = () => {
+    if (drag !== null && drag !== at) onPast(turns[drag])
+    setDrag(null)
+  }
+  const then = past.world.town
+  return (
+    <div className="past-bar" role="status">
+      <p>
+        <b>
+          Город {fullDate(past.date)} — ход {at + 1} из {turns.length}.
+        </b>{' '}
+        Тогда: {TIERS[then.tier].name.toLowerCase()}, построек {then.buildings.filter((b) => b.level > 0).length}, жителей {then.population}. Это летопись:
+        строить и чинить здесь нельзя.
+      </p>
+      {turns.length > 1 && (
+        <input
+          className="past-range"
+          type="range"
+          min={0}
+          max={turns.length - 1}
+          value={shown}
+          aria-label="Учебный день летописи"
+          aria-valuetext={fullDate(turns[shown])}
+          onChange={(e) => setDrag(Number(e.target.value))}
+          onPointerUp={commit}
+          onKeyUp={commit}
+          onBlur={commit}
+        />
+      )}
+      <div className="act-row">
+        <button className="btn btn-quiet" disabled={at <= 0} onClick={() => onPast(turns[at - 1])}>
+          ← Раньше
+        </button>
+        <button className="btn btn-quiet" disabled={at >= turns.length - 1} onClick={() => onPast(turns[at + 1])}>
+          Позже →
+        </button>
+        <button className="btn" onClick={() => onPast(null)}>
+          К сегодняшнему
+        </button>
+        <a className="small" href="#/chronicle">
+          Летопись
+        </a>
+        {drag !== null && drag !== at && <span className="muted small">{fullDate(turns[drag])}</span>}
       </div>
     </div>
   )

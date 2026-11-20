@@ -187,6 +187,8 @@ export interface Session {
   to: string | null
   day: number
   topics: string[]
+  /** Своя строка после занятия: что понял, своими словами. Идёт в летопись города и в отчёт недели. Очков не даёт. */
+  insight?: string
 }
 
 /**
@@ -203,6 +205,8 @@ export interface Attempt {
   selfSolved: boolean
   approach?: string
   notes?: string
+  /** Прогноз перед попыткой на таймере: сколько минут, по собственной оценке, уйдёт. Очков за точность нет. */
+  forecast?: number
 }
 
 /**
@@ -311,6 +315,8 @@ export interface WeeklyTest {
   /** track — код трека вопроса: по нему считается зачёт на ранг. */
   questions?: { q: string; points: number; note?: string; track?: string }[]
   note?: string
+  /** Прогноз перед тестом: сколько баллов из max ожидал набрать. Очков за точность нет. */
+  forecast?: number
 }
 
 /** Покупка или ремонт в лавке, data/purchases.json. */

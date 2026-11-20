@@ -36,6 +36,7 @@ function TestRow({ cycle, w }: { cycle: CycleView; w: WeekView }) {
         <Gems count={test.gems} of={MAX_GEMS_PER_TEST} />
         {test.best && (
           <span className="muted">
+            {typeof test.best.forecast === 'number' ? `ждал ${test.best.forecast} → ` : ''}
             {test.best.score} из {test.best.max}, {fmtDate(test.best.date)}
             {test.attempts.length > 1 ? ` · попыток: ${test.attempts.length}` : ''}
           </span>

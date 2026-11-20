@@ -134,6 +134,121 @@ describe('запись занятия', () => {
     bad({ date: '2026-11-19', from: '17:00', to: '16:00', topics: ['тема'] })
   })
 
+  it('своя строка пишется вместе с занятием: одна строка без лишних пробелов; без неё запись прежняя', () => {
+    const p = fresh()
+    expect(addSession(plan, p, { date: '2026-11-19', from: '16:00', to: '17:10', topics: ['Gradle: команды'], insight: '  wrapper   держит версию Gradle ' })).toBe(
+      'Занятие 2026-11-19 16:00–17:10 записано: день 2, тем 1. Своя строка записана.',
+    )
+    expect(p.sessions.at(-1)).toEqual({ date: '2026-11-19', from: '16:00', to: '17:10', day: 2, topics: ['Gradle: команды'], insight: 'wrapper держит версию Gradle' })
+    expect(Object.keys(p.sessions.at(-1))).toEqual(['date', 'from', 'to', 'day', 'topics', 'insight'])
+    // строку можно не называть: поля тогда нет
+    expect(addSession(plan, p, { date: '2026-11-20', topics: ['тема'] })).toBe('Занятие 2026-11-20 записано: день 2, тем 1.')
+    expect('insight' in p.sessions.at(-1)).toBe(false)
+    // занятие через полночь: предупреждение остаётся последней строкой
+    expect(addSession(plan, p, { date: '2026-11-21', from: '23:30', to: '00:40', topics: ['тема'], insight: 'мысль' })).toMatch(/тем 1\. Своя строка записана\.\nВнимание: конец раньше начала/)
+  })
+
+  it('своя строка дописывается позже той же командой и заменяется: ответ говорит, что было', () => {
+    const p = fresh()
+    addSession(plan, p, { date: '2026-11-19', from: '16:00', to: '17:10', topics: ['Gradle'] })
+    expect(addSession(plan, p, { date: '2026-11-19', from: '16:00', insight: 'первая мысль' })).toBe('Занятие 2026-11-19 16:00–17:10, день 2: своя строка записана.')
+    // та же команда целиком — с тем же концом и той же темой — занятие не дублирует
+    expect(addSession(plan, p, { date: '2026-11-19', from: '16:00', to: '17:10', topics: ['Gradle'], insight: 'вторая мысль' })).toBe(
+      'Занятие 2026-11-19 16:00–17:10, день 2: своя строка заменена (было: «первая мысль»).',
+    )
+    expect(p.sessions.at(-1)).toEqual({ date: '2026-11-19', from: '16:00', to: '17:10', day: 2, topics: ['Gradle'], insight: 'вторая мысль' })
+    expect(p.sessions).toHaveLength(2)
+    // повторный запуск ничего не меняет
+    const snapshot = structuredClone(p)
+    expect(addSession(plan, p, { date: '2026-11-19', from: '16:00', insight: ' вторая  мысль ' })).toBe('Занятие 2026-11-19 16:00–17:10, день 2: своя строка — без изменений.')
+    expect(p).toEqual(snapshot)
+    // строка к давнему занятию дату правки назад не уводит
+    expect(addSession(plan, p, { date: '2026-11-17', from: '16:00', insight: 'мысль о первом дне' })).toBe('Занятие 2026-11-17 16:00–17:00, день 1: своя строка записана.')
+    expect(p.sessions[0].insight).toBe('мысль о первом дне')
+    expect(p.meta.updatedAt).toBe('2026-11-19')
+  })
+
+  it('своя строка у занятия без конца: пишется сразу, а вместе с концом — заменяется той же командой', () => {
+    const p = fresh()
+    addSession(plan, p, { date: '2026-11-19', from: '15:30', topics: ['app/build.gradle.kts'] })
+    expect(addSession(plan, p, { date: '2026-11-19', from: '15:30', insight: 'черновая мысль' })).toBe('Занятие 2026-11-19 с 15:30, день 2: своя строка записана.')
+    expect(p.sessions.at(-1)).toMatchObject({ to: null, insight: 'черновая мысль' })
+    expect(addSession(plan, p, { date: '2026-11-19', from: '15:30', to: '16:40', topics: ['каталог версий'], insight: 'итоговая мысль' })).toBe(
+      'Занятие 2026-11-19 15:30–16:40 дописано: день 2, тем 2. Своя строка заменена (было: «черновая мысль»).',
+    )
+    expect(p.sessions.at(-1)).toEqual({ date: '2026-11-19', from: '15:30', to: '16:40', day: 2, topics: ['app/build.gradle.kts', 'каталог версий'], insight: 'итоговая мысль' })
+    // конец и строка одним запуском
+    const q = fresh()
+    addSession(plan, q, { date: '2026-11-19', from: '15:30', topics: ['тема'] })
+    expect(addSession(plan, q, { date: '2026-11-19', from: '15:30', to: '16:40', insight: 'мысль' })).toBe('Занятие 2026-11-19 15:30–16:40 дописано: день 2, тем 1. Своя строка записана.')
+    // у занятия без конца темы дописываются только вместе с концом
+    const open = fresh()
+    addSession(plan, open, { date: '2026-11-19', from: '15:30', topics: ['тема'] })
+    const snapshot = structuredClone(open)
+    expect(() => addSession(plan, open, { date: '2026-11-19', from: '15:30', topics: ['другая тема'], insight: 'мысль' })).toThrow(
+      /занятие 2026-11-19 с 15:30 уже записано \(день 2\), а тем «другая тема» у него нет: темы дописываются вместе с концом занятия \(--to\)\. Свою строку допиши без --topic/,
+    )
+    expect(open).toEqual(snapshot)
+  })
+
+  it('два занятия в один день различаются началом: своя строка идёт в названное; без начала — только если занятие за дату одно', () => {
+    const p = fresh()
+    addSession(plan, p, { date: '2026-11-19', from: '10:00', to: '11:00', topics: ['утро'] })
+    addSession(plan, p, { date: '2026-11-19', from: '16:00', to: '17:00', topics: ['вечер'] })
+    const snapshot = structuredClone(p)
+    expect(() => addSession(plan, p, { date: '2026-11-19', insight: 'мысль' })).toThrow(/за 2026-11-19 записано несколько занятий \(с 10:00, с 16:00\): назови начало нужного — --from 10:00/)
+    expect(p).toEqual(snapshot)
+    addSession(plan, p, { date: '2026-11-19', from: '16:00', insight: 'вечерняя мысль' })
+    expect(p.sessions.filter((s) => s.date === '2026-11-19').map((s) => [s.from, s.insight])).toEqual([
+      ['10:00', undefined],
+      ['16:00', 'вечерняя мысль'],
+    ])
+    // занятие за дату одно — начало можно не называть
+    expect(addSession(plan, p, { date: '2026-11-17', insight: 'мысль' })).toBe('Занятие 2026-11-17 16:00–17:00, день 1: своя строка записана.')
+    // с темой и без начала это по-прежнему новое занятие без времени, а не строка к записанному
+    expect(addSession(plan, p, { date: '2026-11-19', topics: ['без времени'], insight: 'третья мысль' })).toBe('Занятие 2026-11-19 записано: день 2, тем 1. Своя строка записана.')
+    expect(p.sessions.filter((s) => s.date === '2026-11-19')).toHaveLength(3)
+    // занятие без времени так и находится — по дате без начала
+    expect(addSession(plan, p, { date: '2026-11-19', insight: 'четвёртая мысль' })).toBe('Занятие 2026-11-19 без времени, день 2: своя строка заменена (было: «третья мысль»).')
+  })
+
+  it('своя строка: занятия нет — отказ; время, темы и день записанного занятия она не меняет', () => {
+    const bad = (input, pattern) => {
+      const p = fresh()
+      expect(() => addSession(plan, p, { insight: 'мысль', ...input })).toThrow(pattern)
+      expect(p).toEqual(fresh())
+    }
+    bad({ date: '2026-11-19' }, /занятий за 2026-11-19 в журнале нет\. Свою строку дописывают к записанному занятию; новое занятие запиши с темой: session --date 2026-11-19 --from ЧЧ:ММ --topic "…" --insight "…"/)
+    bad({ date: '2026-11-19', from: '16:00' }, /занятия 2026-11-19 с 16:00 в журнале нет, за эту дату занятий нет совсем\. Свою строку дописывают к записанному занятию/)
+    // опечатка в начале: ответ называет, что записано за эту дату
+    bad({ date: '2026-11-17', from: '16:05' }, /занятия 2026-11-17 с 16:05 в журнале нет: за эту дату записаны занятия с 16:00\./)
+    bad({ date: '2026-11-17', from: '16:00', to: '18:00' }, /занятие 2026-11-17 16:00–17:00 уже записано \(день 1\), а конец назван другой — 18:00\. Время записанного занятия правится в файле; свою строку допиши без --to/)
+    bad({ date: '2026-11-17', from: '16:00', topics: ['тема', 'новая тема'] }, /а тем «новая тема» у него нет: темы записанного занятия правятся в файле\. Свою строку допиши без --topic/)
+    bad({ date: '2026-11-17', from: '16:00', day: 2 }, /занятие 2026-11-17 16:00–17:00 записано в дне 1, а не 2/)
+    bad({ date: '2026-11-17', day: 2 }, /записано в дне 1, а не 2/)
+    bad({ date: 'вчера' }, /date/)
+  })
+
+  it('своя строка: не пусто, одна строка, не длиннее 280 знаков — и для нового занятия, и для записанного', () => {
+    const bad = (insight, pattern) => {
+      for (const input of [{ date: '2026-11-19', from: '16:00', topics: ['тема'] }, { date: '2026-11-17', from: '16:00' }]) {
+        const p = fresh()
+        expect(() => addSession(plan, p, { ...input, insight })).toThrow(pattern)
+        expect(p).toEqual(fresh())
+      }
+    }
+    bad('', /insight: нужен непустой текст/)
+    bad('   ', /insight: нужен непустой текст/)
+    bad(280, /insight: нужен непустой текст/)
+    bad('первая строка\nвторая строка', /insight: своя строка — одна строка, а в тексте есть перевод строки\. Собери мысль в одну фразу/)
+    bad('первая строка\r\nвторая строка', /перевод строки/)
+    bad('я'.repeat(281), /insight: своя строка не длиннее 280 знаков, сейчас 281\. Сократи её вместе с Baudi: слова должны остаться его/)
+    // ровно 280 знаков проходят; длина считается уже без лишних пробелов
+    const p = fresh()
+    addSession(plan, p, { date: '2026-11-17', from: '16:00', insight: `  ${'я'.repeat(140)}    ${'ю'.repeat(139)}  ` })
+    expect(p.sessions[0].insight).toHaveLength(280)
+  })
+
   it('шаги: отмечает сделанные, снимает их из открытых и ставит позицию на следующий', () => {
     const p = fresh()
     p.days.push({ day: 2, status: 'in_progress', dates: [], stepsDone: [], stepsOpen: [{ n: 1, what: 'а' }, { n: 2, what: 'б' }] })
@@ -530,6 +645,47 @@ describe('задачи LeetCode', () => {
     expect(p.leetcode[0].attempts).toHaveLength(2)
     expect(() => addAttempts(plan, p, { id: 217, note: ' ' })).toThrow(/problem-note/)
   })
+
+  it('прогноз перед попыткой на таймере пишется в попытку: решённую, нерешённую и дуэль; без него запись прежняя', () => {
+    const p = fresh()
+    expect(addAttempts(plan, p, { id: 217, attempts: [attempt({ forecast: 10, approach: 'HashSet' })] })).toBe(
+      'Задача 217 «Contains Duplicate»: попыток добавлено 1 (2026-11-19 timed-20, 14 мин, прогноз 10 мин — решил сам). Статус: solved-self.',
+    )
+    expect(p.leetcode[0].attempts[0]).toEqual({ date: '2026-11-19', kind: 'timed-20', minutes: 14, result: 'solved', selfSolved: true, approach: 'HashSet', forecast: 10 })
+    expect(Object.keys(p.leetcode[0].attempts[0]).at(-1)).toBe('forecast')
+    // не уложился и не решил: прогноз всё равно был назван
+    expect(addAttempts(plan, p, { id: 217, attempts: [{ date: '2026-11-24', kind: 'timed-15', result: 'not-solved', forecast: 8 }] })).toMatch(/2026-11-24 timed-15, прогноз 8 мин — не решил/)
+    expect(addAttempts(plan, p, { id: 217, attempts: [attempt({ kind: 'duel', date: '2026-11-30', minutes: 9, forecast: 12 })] })).toMatch(/2026-11-30 duel, 9 мин, прогноз 12 мин — решил сам/)
+    expect(p.leetcode[0].attempts.map((a) => a.forecast)).toEqual([10, 8, 12])
+    // прогноз необязателен: без него поля нет, ответ прежний
+    addAttempts(plan, p, { id: 217, attempts: [attempt({ date: '2026-12-01', minutes: 7 })] })
+    expect('forecast' in p.leetcode[0].attempts.at(-1)).toBe(false)
+    // границы: от минуты до трёх часов
+    addAttempts(plan, p, { id: 217, attempts: [attempt({ date: '2026-12-02', forecast: 1 }), attempt({ date: '2026-12-03', forecast: 180 })] })
+    expect(p.leetcode[0].attempts.slice(-2).map((a) => a.forecast)).toEqual([1, 180])
+  })
+
+  it('прогноз: только у попыток на таймере, целые минуты от 1 до 180; к записанной попытке не дописывается', () => {
+    const snapshot = solvedSelf()
+    const bad = (over, pattern) => {
+      const p = solvedSelf()
+      expect(() => addAttempts(plan, p, { id: 217, attempts: [attempt({ date: '2026-11-24', ...over })] })).toThrow(pattern)
+      expect(p).toEqual(snapshot)
+    }
+    bad({ kind: 'from-empty-editor', forecast: 8 }, /попытка: прогноз называют перед попыткой на таймере \(timed-<минут>\) или дуэлью \(duel\), а это from-empty-editor\. Убери forecast \(--forecast\)/)
+    bad({ kind: 'no-hints', date: '2026-12-10', forecast: 8 }, /а это no-hints/)
+    bad({ kind: 'optimal-10', forecast: 8 }, /а это optimal-10/)
+    bad({ kind: 'rewrite-after-walkthrough', selfSolved: false, forecast: 8 }, /а это rewrite-after-walkthrough/)
+    bad({ forecast: 0 }, /попытка: forecast: прогноз — целое число минут от 1 до 180, получено «0»/)
+    bad({ forecast: 181 }, /от 1 до 180, получено «181»/)
+    bad({ forecast: -5 }, /от 1 до 180/)
+    bad({ forecast: 7.5 }, /целое число минут от 1 до 180, получено «7.5»/)
+    bad({ forecast: '10' }, /целое число минут от 1 до 180 без кавычек, получено «10»/)
+    // та же попытка ещё раз, теперь с прогнозом: прогноз называют до попытки
+    const p = solvedSelf()
+    expect(() => addAttempts(plan, p, { id: 217, attempts: [attempt({ forecast: 10 })] })).toThrow(/попытка: уже записана \(2026-11-19, timed-20\)\. Прогноз называют до попытки: к записанной он не дописывается/)
+    expect(p).toEqual(snapshot)
+  })
 })
 
 /** Десять вопросов: шесть по треку A и четыре по C1, баллы 0, 1, 2 по кругу — всего 9 из 20. */
@@ -595,6 +751,47 @@ describe('недельный тест и чекпоинт недели', () => {
     bad({ record: { questions: questions(), max: 10 } }, /max 10/)
     bad({ record: 'десять вопросов' }, /нужна запись теста/)
     bad({ record: { week: 1 } }, /нужен список/)
+  })
+
+  it('прогноз перед тестом пишется в запись этого запуска; у пересдачи — свой; без него запись прежняя', () => {
+    const p = weekDone()
+    expect(addWeeklyTest(plan, p, { week: 1, date: '2026-11-20', record: questions(), note: 'сдавал с телефона', forecast: 12 })).toBe(
+      'Тест недели 1 записан: 9 из 20. По трекам: A 6 из 12, C1 3 из 8. Прогноз был 12 из 20: на деле на 3 меньше.',
+    )
+    expect(p.weeklyTests[0]).toMatchObject({ week: 1, date: '2026-11-20', score: 9, max: 20, note: 'сдавал с телефона', forecast: 12 })
+    expect(Object.keys(p.weeklyTests[0])).toEqual(['week', 'date', 'score', 'max', 'questions', 'note', 'forecast'])
+    // пересдача: прогноз лежит в самой записи теста, первой попытке он не достаётся
+    const retake = { week: 1, date: '2026-11-21', forecast: 15, questions: questions({ points: 2 }) }
+    expect(addWeeklyTest(plan, p, { record: retake })).toMatch(/20 из 20\. По трекам: [^.]+\. Прогноз был 15 из 20: на деле на 5 больше\. Попыток по этой неделе: 2, лучшая — 20 из 20/)
+    expect(p.weeklyTests.map((t) => [t.date, t.forecast])).toEqual([
+      ['2026-11-20', 12],
+      ['2026-11-21', 15],
+    ])
+    // прогноз из ключа важнее того, что в записи; ноль и максимум — тоже прогноз
+    expect(addWeeklyTest(plan, p, { record: { ...retake, date: '2026-11-22' }, forecast: 20 })).toMatch(/Прогноз был 20 из 20: совпал с результатом\./)
+    expect(addWeeklyTest(plan, p, { record: { ...retake, date: '2026-11-23' }, forecast: 0 })).toMatch(/Прогноз был 0 из 20: на деле на 20 больше\./)
+    expect(p.weeklyTests.slice(-2).map((t) => t.forecast)).toEqual([20, 0])
+    // прогноз необязателен: без него поля нет
+    const plain = weekDone()
+    addWeeklyTest(plan, plain, { week: 1, date: '2026-11-20', record: questions() })
+    expect('forecast' in plain.weeklyTests[0]).toBe(false)
+  })
+
+  it('прогноз теста: целое от 0 до максимума теста; к записанному тесту не дописывается', () => {
+    const bad = (input, pattern, p = weekDone()) => {
+      const snapshot = structuredClone(p)
+      expect(() => addWeeklyTest(plan, p, { week: 1, date: '2026-11-20', record: questions(), ...input })).toThrow(pattern)
+      expect(p).toEqual(snapshot)
+    }
+    bad({ forecast: -1 }, /forecast: прогноз — целое число баллов от 0 до 20, получено «-1»/)
+    bad({ forecast: 21 }, /от 0 до 20, получено «21»/)
+    bad({ forecast: 14.5 }, /целое число баллов от 0 до 20, получено «14.5»/)
+    bad({ record: { questions: questions(), forecast: '14' } }, /целое число баллов от 0 до 20 без кавычек, получено «14»/)
+    // тот же тест ещё раз, теперь с прогнозом: прогноз называют до теста
+    const done = weekDone()
+    addWeeklyTest(plan, done, { week: 1, date: '2026-11-20', record: questions() })
+    bad({ forecast: 12 }, /этот тест недели 1 за 2026-11-20 уже записан\. Прогноз называют до теста: к записанному тесту он не дописывается/, done)
+    bad({}, /этот тест недели 1 за 2026-11-20 уже записан$/, done)
   })
 
   it('неделя закрывается по чекпоинту один раз и только когда закрыты все её дни', () => {
@@ -1453,6 +1650,115 @@ describe('команда целиком', () => {
     expect(out).toMatch(/"do":"repair","id":"sawmill-1"/)
     for (const name of ['weekly', 'sync', 'ledger', 'town', 'deck']) expect(out, name).toMatch(new RegExp(`${name} .*--file \\S+\\.json .*${name === 'weekly' ? '…' : name} --json -`))
   })
+
+  it('help знает свою строку и прогнозы: ключ, пример и то, что очков за них нет', () => {
+    const { out } = cli(['help'])
+    expect(out).toMatch(/session --date \S+ --from \S+ --to \S+ --topic "[^"]+" .*\[--insight "…"\]/)
+    expect(out).toMatch(/--insight — своя строка после занятия: что Baudi понял, его словами\. Одна строка до 280 знаков/)
+    expect(out).toMatch(/летопись города и отчёт недели, очков не даёт; её можно не называть/)
+    expect(out).toMatch(/^ +session --date \S+ --from \S+ --insight "[^"]+"$/m)
+    expect(out).toMatch(/--forecast — прогноз перед попыткой на таймере \(timed-…, duel\): сколько минут Baudi ожидал потратить, целое от 1 до 180/)
+    expect(out).toMatch(/^ +problem --id \d+ --date \S+ --kind timed-\d+ --forecast \d+ --minutes \d+ --result solved --self yes$/m)
+    expect(out).toMatch(/--forecast — прогноз перед тестом: сколько баллов из 20 Baudi ожидал набрать, целое от 0 до 20/)
+    expect(out).toMatch(/^ +weekly --week \d --date \S+ --forecast \d+ --file \S+\.json$/m)
+    // и у попытки, и у теста: называется заранее, очков за точность нет
+    expect(out.match(/очков за точность нет/g)).toHaveLength(2)
+    expect(out).toMatch(/Называется до попытки, к записанной не дописывается/)
+    expect(out).toMatch(/Называется до теста/)
+  })
+
+  /** Маленький журнал во временной папке — план и журнал из начала этого файла: с RECORD_ROOT команда пишет туда. */
+  const withJournal = (progress, run) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'record-test-'))
+    try {
+      const file = path.join(root, 'data/cycles/01-test/progress.json')
+      fs.mkdirSync(path.dirname(file), { recursive: true })
+      fs.writeFileSync(path.join(path.dirname(file), 'plan.json'), JSON.stringify(plan))
+      fs.writeFileSync(file, JSON.stringify(progress, null, 2) + '\n')
+      return run({ RECORD_ROOT: root }, () => JSON.parse(fs.readFileSync(file, 'utf8')), () => fs.readFileSync(file, 'utf8'), root)
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true })
+    }
+  }
+
+  it('своя строка через команду: пробный запуск не пишет, настоящий пишет, замена говорит, что было; отказы объясняют причину', () =>
+    withJournal(fresh(), (env, journal, text) => {
+      const before = text()
+      const first = ['session', '--date', '2026-11-19', '--from', '16:00', '--to', '17:10', '--topic', 'команды Gradle', '--insight', 'wrapper держит версию Gradle']
+      expect(cli([...first, '--dry'], env)).toMatchObject({ code: 0, out: expect.stringMatching(/Занятие 2026-11-19 16:00–17:10 записано: день 2, тем 1\. Своя строка записана\.\nПробный запуск: .*progress\.json — без изменений на диске\./) })
+      expect(text()).toBe(before)
+      expect(cli(first, env)).toMatchObject({ code: 0, out: expect.stringMatching(/Своя строка записана\.\nЗаписано в .*progress\.json\. Проверь: npm test/) })
+      expect(journal().sessions.at(-1)).toEqual({ date: '2026-11-19', from: '16:00', to: '17:10', day: 2, topics: ['команды Gradle'], insight: 'wrapper держит версию Gradle' })
+
+      // к записанному занятию строка дописывается позже: пробно — без записи, потом по-настоящему; начало можно не называть — занятие за дату одно
+      const later = ['session', '--date', '2026-11-17', '--insight', 'слои нужны, чтобы экран не знал про базу']
+      const recorded = text()
+      expect(cli([...later, '--dry'], env)).toMatchObject({ code: 0, out: expect.stringMatching(/Занятие 2026-11-17 16:00–17:00, день 1: своя строка записана\.\nПробный запуск/) })
+      expect(text()).toBe(recorded)
+      expect(cli(later, env).code).toBe(0)
+      expect(journal().sessions[0]).toMatchObject({ from: '16:00', to: '17:00', topics: ['тема'], insight: 'слои нужны, чтобы экран не знал про базу' })
+      // замена — той же командой: ответ говорит, что было; повторный запуск файл не трогает
+      const replaced = ['session', '--date', '2026-11-19', '--from', '16:00', '--insight', 'wrapper — это версия Gradle в самом проекте']
+      expect(cli(replaced, env)).toMatchObject({ code: 0, out: expect.stringMatching(/своя строка заменена \(было: «wrapper держит версию Gradle»\)\.\nЗаписано/) })
+      expect(cli(replaced, env)).toMatchObject({ code: 0, out: expect.stringMatching(/своя строка — без изменений\.\nДанные не изменились: файлы не тронуты\./) })
+      expect(journal().sessions).toHaveLength(2)
+
+      // отказы: файл остаётся как был
+      const kept = text()
+      const refused = (argv, pattern) => expect(cli(argv, env), argv.join(' ')).toMatchObject({ code: 1, out: expect.stringMatching(pattern) })
+      refused(['session', '--date', '2026-11-20', '--insight', 'мысль'], /Не записано: занятий за 2026-11-20 в журнале нет\. Свою строку дописывают к записанному занятию/)
+      refused(['session', '--date', '2026-11-19', '--from', '16:30', '--insight', 'мысль'], /Не записано: занятия 2026-11-19 с 16:30 в журнале нет: за эту дату записаны занятия с 16:00/)
+      refused(['session', '--date', '2026-11-19', '--from', '16:00', '--insight', 'первая строка\nвторая строка'], /Не записано: insight: своя строка — одна строка, а в тексте есть перевод строки/)
+      refused(['session', '--date', '2026-11-19', '--from', '16:00', '--insight', 'я'.repeat(281)], /не длиннее 280 знаков, сейчас 281/)
+      refused(['session', '--date', '2026-11-19', '--from', '16:00', '--insight', ' '], /insight: нужен непустой текст/)
+      refused(['session', '--date', '2026-11-19', '--from', '16:00', '--insight'], /у ключа --insight нет значения/)
+      refused(['session', '--date', '2026-11-19', '--from', '16:00', '--insight', 'одна мысль', '--insight', 'другая мысль'], /своя строка одна на занятие, а --insight назван несколько раз \(2\): оставь один/)
+      expect(text()).toBe(kept)
+    }))
+
+  it('прогнозы через команду: тест и попытка на таймере — пробно и по-настоящему; не на таймере и вне границ — отказ', () =>
+    withJournal(weekDone(), (env, journal, text, root) => {
+      const before = text()
+      const refused = (argv, pattern) => expect(cli(argv, env), argv.join(' ')).toMatchObject({ code: 1, out: expect.stringMatching(pattern) })
+      const file = path.join(root, 'тест.json')
+      fs.writeFileSync(file, JSON.stringify(questions()))
+
+      // недельный тест
+      const weekly = ['weekly', '--week', '1', '--date', '2026-11-20', '--forecast', '12', '--file', file]
+      expect(cli([...weekly, '--dry'], env)).toMatchObject({ code: 0, out: expect.stringMatching(/Тест недели 1 записан: 9 из 20\. .*Прогноз был 12 из 20: на деле на 3 меньше\.\nПробный запуск/) })
+      expect(text()).toBe(before)
+      refused(['weekly', '--week', '1', '--date', '2026-11-20', '--forecast', '21', '--file', file], /Не записано: forecast: прогноз — целое число баллов от 0 до 20, получено «21»/)
+      refused(['weekly', '--week', '1', '--date', '2026-11-20', '--forecast', '12.5', '--file', file], /целое число баллов от 0 до 20/)
+      refused(['weekly', '--week', '1', '--date', '2026-11-20', '--forecast', 'много', '--file', file], /--forecast: нужно число, получено «много»/)
+      expect(text()).toBe(before)
+      expect(cli(weekly, env).code).toBe(0)
+      expect(journal().weeklyTests).toMatchObject([{ week: 1, date: '2026-11-20', score: 9, max: 20, forecast: 12 }])
+      // без прогноза всё как раньше: пересдача без поля forecast
+      expect(cli(['weekly', '--week', '1', '--date', '2026-11-21', '--file', file], env)).toMatchObject({ code: 0, out: expect.not.stringMatching(/Прогноз/) })
+      expect('forecast' in journal().weeklyTests[1]).toBe(false)
+      refused(weekly, /этот тест недели 1 за 2026-11-20 уже записан\. Прогноз называют до теста/)
+
+      // попытка на таймере
+      const tested = text()
+      const solve = ['problem', '--id', '217', '--date', '2026-11-23', '--kind', 'timed-20', '--forecast', '10', '--minutes', '14', '--result', 'solved', '--self', 'yes']
+      expect(cli([...solve, '--dry'], env)).toMatchObject({ code: 0, out: expect.stringMatching(/2026-11-23 timed-20, 14 мин, прогноз 10 мин — решил сам\)\. Статус: solved-self\.\nПробный запуск/) })
+      expect(text()).toBe(tested)
+      expect(cli(solve, env).code).toBe(0)
+      expect(journal().leetcode[0].attempts).toEqual([{ date: '2026-11-23', kind: 'timed-20', minutes: 14, result: 'solved', selfSolved: true, forecast: 10 }])
+      // список попыток: прогноз — поле forecast; дуэль его тоже принимает
+      const list = JSON.stringify([{ date: '2026-11-30', kind: 'duel', minutes: 9, result: 'solved', selfSolved: true, forecast: 11 }])
+      expect(cli(['problem', '--id', '217', '--json', list], env)).toMatchObject({ code: 0, out: expect.stringMatching(/duel, 9 мин, прогноз 11 мин/) })
+      expect(journal().leetcode[0].attempts.map((a) => a.forecast)).toEqual([10, 11])
+      // отказы: файл остаётся как был
+      const kept = text()
+      const repeat = ['problem', '--id', '217', '--date', '2026-11-24', '--kind', 'from-empty-editor', '--minutes', '9', '--result', 'solved', '--self', 'yes', '--forecast', '8']
+      refused(repeat, /Не записано: попытка: прогноз называют перед попыткой на таймере \(timed-<минут>\) или дуэлью \(duel\), а это from-empty-editor\. Убери forecast \(--forecast\)/)
+      refused(['problem', '--id', '217', '--date', '2026-11-24', '--kind', 'timed-20', '--minutes', '9', '--result', 'solved', '--self', 'yes', '--forecast', '0'], /целое число минут от 1 до 180, получено «0»/)
+      refused(['problem', '--id', '217', '--date', '2026-11-24', '--kind', 'timed-20', '--minutes', '9', '--result', 'solved', '--self', 'yes', '--forecast', '181', '--dry'], /от 1 до 180, получено «181»/)
+      refused(['problem', '--id', '217', '--forecast', '10', '--json', list], /попытки заданы и списком, и ключами \(--forecast\): оставь что-то одно/)
+      refused(solve, /уже записана \(2026-11-23, timed-20\)\. Прогноз называют до попытки/)
+      expect(text()).toBe(kept)
+    }))
 
   it('JSON, испорченный оболочкой, не записывается: ответ говорит, что случилось и как передать запись', () => {
     // так аргумент приходит из Windows PowerShell 5.1: кавычки съедены; с пробелами в записи он ещё и распадается на слова

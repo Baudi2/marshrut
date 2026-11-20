@@ -220,6 +220,11 @@ export class TownScene {
     const open = openPlots(view.tier)
     const marks: Mark[] = []
     const pickables: { id: string; box: THREE.Box3 }[] = []
+    // Редкие постройки стоят вне сетки участков: под них расчищается лес и кладётся своя площадка.
+    const rare = view.buildings.flatMap((b) => {
+      const plot = plotOf(b.id)
+      return plot?.rare ? [plot] : []
+    })
     const jobs: Promise<unknown>[] = []
     const queue: (() => void)[] = []
     /** Собрать облик сейчас, поставить потом: сцена меняется разом, без мигания. */
@@ -275,8 +280,9 @@ export class TownScene {
       if (!plot) continue
       const type = buildingType(building.type)
       const z = plot.z
-      const title =
-        building.level > 0 ? `${levelName(building.type, building.level)} · ур. ${building.level}${building.broken ? ' · сломано' : ''}` : `${type?.name ?? ''}: строится`
+      // У редкой постройки уровней нет: в подписи только имя.
+      const grade = type?.rare ? '' : ` · ур. ${building.level}`
+      const title = building.level > 0 ? `${levelName(building.type, building.level)}${grade}${building.broken ? ' · сломано' : ''}` : `${type?.name ?? ''}: строится`
       const look = building.level > 0 ? levelLook(building.type, building.level, plot.n - 1) : constructionLook
       put(
         look,
@@ -346,7 +352,8 @@ export class TownScene {
     const crowd: PeopleInput = {
       tier: view.tier,
       population: view.population,
-      sites: view.buildings.map((b) => ({ id: b.id, type: b.type, level: b.level, pending: !!b.pending })),
+      // К редким постройкам улиц нет: носильщики туда не ходят.
+      sites: view.buildings.filter((b) => !plotOf(b.id)?.rare).map((b) => ({ id: b.id, type: b.type, level: b.level, pending: !!b.pending })),
       tierPending: !!view.tierPending,
       open,
       quiet: view.neglect >= 2,
@@ -356,7 +363,7 @@ export class TownScene {
     jobs.push(People.preload(crowd))
 
     // Лес: по куску карты на каждую породу, чтобы невидимые куски не рисовались.
-    const trees = forest(view.tier, specials.length, monuments.length)
+    const trees = forest(view.tier, specials.length, monuments.length, rare)
     const treeLooks = TREE_MODELS.map((key, kind) => buildLook((b) => b.model(key, { center: true }), ctx, kind))
     jobs.push(...treeLooks)
 
@@ -374,6 +381,7 @@ export class TownScene {
       pads: view.tier === 0 ? view.buildings.flatMap((b) => plotOf(b.id) ?? []) : open,
       specials: specials.length,
       monuments: monuments.length,
+      rare,
       quarter,
       neglect: view.neglect,
     })

@@ -214,6 +214,16 @@ describe('монеты, камни и лавка', () => {
     expect(world.wallet.gems).toBe(4)
   })
 
+  it('чертёж редкой постройки даёт недельный тест, сданный от 70%; считается лучшая попытка', () => {
+    const tests = (...scores: number[]) =>
+      buildWorld([weekOneDone((p) => (p.weeklyTests = scores.map((score, i) => ({ week: 1, date: `2026-11-2${i}`, score, max: 20 }))))], [], '2026-11-24')
+    expect(buildWorld([weekOneDone()], [], '2026-11-20').means.blueprints).toBe(0)
+    expect(tests(13).means.blueprints).toBe(0)
+    expect(tests(14).means.blueprints).toBe(1)
+    // Пересдача: слабая первая попытка не мешает, но один тест — один чертёж.
+    expect(tests(9, 19).means.blueprints).toBe(1)
+  })
+
   it('при пересдаче считается лучшая попытка', () => {
     const world = buildWorld(
       [
@@ -371,7 +381,7 @@ describe('город в общем расчёте', () => {
   it('без действий город — стоянка, а особые постройки считаются из файлов', () => {
     const world = buildWorld([raw], [], '2026-11-18')
     expect(world.town).toMatchObject({ tier: 0, population: 0 })
-    expect(world.means).toEqual({ coins: 110, gems: 2, specials: 2 })
+    expect(world.means).toEqual({ coins: 110, gems: 2, specials: 2, blueprints: 0 })
   })
 
   it('траты на город списываются из общего кошелька, ходы идут по дням занятий', () => {

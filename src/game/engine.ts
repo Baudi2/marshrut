@@ -22,7 +22,7 @@ import type {
   SelfAssessment,
   WeeklyTest,
 } from '../data/types'
-import { damageFor, repairsSpent, type Damage } from './repair'
+import { repairsSpent, type Damage } from './repair'
 import { shopItem, walletFor, type Wallet } from './shop'
 import { SIGN_GEMS, redeemedGems } from './rewards'
 import { trophiesFor, type Trophy } from './trophies'
@@ -35,7 +35,6 @@ import {
   RETURN_PAUSE_MIN_DAYS,
   XP,
   GEMS_PER_PASS,
-  conditionLevel,
   gemsForScore,
   levelFor,
   missedWorkdays,
@@ -226,7 +225,7 @@ export interface World {
   side: RatedSide[]
   /** За что получены камни: недельные тесты и пройденные перевалы. */
   gemLog: { label: string; gems: number; date: string | null }[]
-  /** Сломанные постройки лагеря. */
+  /** Сломанные украшения из лавки. Сломанные постройки города — town.buildings[].broken. */
   damage: Damage[]
   /** Даты всех занятий по возрастанию — по ним считаются перерывы. */
   sessionDates: string[]
@@ -287,7 +286,7 @@ function pathMatches(pattern: string, path: string): boolean {
   return new RegExp(`^${escaped}$`).test(path)
 }
 
-function lastDate(dates: string[] | undefined): string | null {
+export function lastDate(dates: string[] | undefined): string | null {
   return dates && dates.length ? [...dates].sort()[dates.length - 1] : null
 }
 
@@ -524,7 +523,7 @@ const solvedBy = (p: ProblemView, kind: string) =>
   !!p.progress?.attempts.some((a) => a.kind === kind && a.result === 'solved')
 
 /** Что уже выполнено для ранга трека в этом цикле. */
-function rankProgress(cycle: CycleView, track: PlanTrack): RankProgress {
+export function rankProgress(cycle: CycleView, track: PlanTrack): RankProgress {
   const item = (label: string, have: number, need: number, detail?: string): RankItem => ({
     label,
     have,
@@ -708,7 +707,8 @@ export function buildWorld(
     }
   }
 
-  const town = replayTown(ledger.town ?? [], sessionDates, now, ledger.purchases)
+  // Поломки считает сам город: ему нужны сегодняшняя дата, плановые перерывы и ремонты украшений.
+  const town = replayTown(ledger.town ?? [], sessionDates, now, ledger.purchases, { today: todayISO, paused, repairs: ledger.repairs })
   // Памятные знаки: по одному на пройденный перевал. Запись не к месту не считается и камней не стоит.
   const signs: MemorialSign[] = []
   for (const sign of ledger.signs ?? []) {
@@ -725,8 +725,9 @@ export function buildWorld(
   const specials = cycles.flatMap((c) => c.buildings).filter((b) => b.stage >= 2).length
   // Запас дров: дровник прикрывает столько рабочих дней пропуска, сколько в нём запаса.
   // Мир начинает зарастать и ломаться только после того, как дрова кончились.
-  const covered = Math.min(missed, town.firewood)
-  const neglect = conditionLevel(missed - covered)
+  // Считает это город (town.idle) — тем же правилом, что и для прошедших перерывов.
+  const covered = town.idle.covered
+  const neglect = town.idle.level
 
   return {
     cycles,
@@ -747,8 +748,8 @@ export function buildWorld(
     means: { coins: wallet.coins, gems: wallet.gems, specials },
     gemLog,
     side,
-    // Сторожевая башня: под её присмотром за один перерыв ломается не больше одного украшения.
-    damage: damageFor(sessionDates, ledger.purchases, ledger.repairs, todayISO, neglect, paused, town.buildings.some((b) => b.type === 'tower' && b.level > 0) ? 1 : 2),
+    // Сломанные украшения; сломанные постройки города — в town.buildings[].broken.
+    damage: town.damage,
     sessionDates,
     lastActivity,
     missedWorkdays: missed,

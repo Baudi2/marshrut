@@ -2,7 +2,7 @@
 // Здесь только числа и расчёты, без three.js: файл проверяется тестами. Отрисовка и движение — people.ts.
 import type { Phase, WeatherKind } from '../world/sky'
 import type { GearPart } from './gear'
-import { GLADE, MEADOWS, PITCH, PLAZA, STREET_X, STREET_Z, centerSite, forest, inMeadow, meadowEdge, plotOf, seeded, type AnimalSpot, type Plot, type Tree } from './plan'
+import { GLADE, MEADOWS, PITCH, PLAZA, PORT_PUSH, STREET_X, STREET_Z, centerSite, connectors, forest, inMeadow, meadowEdge, plotOf, seeded, type AnimalSpot, type Plot, type Tree } from './plan'
 
 /** Точка на земле: x и z в метрах. */
 export type Point = [number, number]
@@ -281,6 +281,8 @@ export interface Trunk {
 export interface Net {
   /** Открытые участки на суше: настоящие улицы идут только вдоль них и вокруг площади. */
   open: Set<string>
+  /** Соединительные дороги к участкам, стоящим особняком: середины отрезков. По ним ходят как по улице. */
+  roads: Set<string>
   /** Постройки, которые выходят на улицу: в обход. */
   blocks: Rect[]
   /** Стволы у самых улиц: лес подступает к краю города вплотную. */
@@ -316,14 +318,15 @@ export function trunkOf(tree: Tree): Trunk {
 }
 
 export function streetNet(open: Plot[], sites: Site[] = [], trees: Tree[] = []): Net {
-  const net: Net = { open: new Set(), blocks: [], trunks: [] }
+  const net: Net = { open: new Set(), roads: new Set(), blocks: [], trunks: [] }
   for (const plot of open) if (!plot.water) net.open.add(cell(plot.x, plot.z))
+  for (const road of connectors(open)) net.roads.add(cell((road.x0 + road.x1) / 2, (road.z0 + road.z1) / 2))
   for (const site of sites) {
-    // Пристани четвёртого и пятого уровня длиннее своего участка: дальний от воды край стоит на южной улице.
+    // Пристани четвёртого и пятого уровня длиннее своего участка: дальний от воды край подходит к южной улице вплотную.
     const plot = plotOf(site.id)
     if (!plot?.water || site.level < 4) continue
     const [x0, x1] = site.level >= 5 ? [-6.5, 7.5] : [-2.5, 4.5]
-    net.blocks.push({ minX: plot.x + x0, maxX: plot.x + x1, minZ: plot.z - 5.8, maxZ: plot.z - 1 })
+    net.blocks.push({ minX: plot.x + x0, maxX: plot.x + x1, minZ: plot.z - 5.8 + PORT_PUSH, maxZ: plot.z - 1 })
   }
   // Запоминаем только стволы у улиц: остальные идущим не мешают.
   const [west, east] = [STREET_X[0] - 3, STREET_X[COLS - 1] + 3]
@@ -403,7 +406,7 @@ function price(net: Net, x0: number, z0: number, x1: number, z1: number): number
   const plazaA = onPlaza(a[0], a[1])
   const plazaB = onPlaza(b[0], b[1])
   if (plazaA && plazaB) return Infinity
-  const paved = plazaA || plazaB || net.open.has(cell(a[0], a[1])) || net.open.has(cell(b[0], b[1]))
+  const paved = plazaA || plazaB || net.open.has(cell(a[0], a[1])) || net.open.has(cell(b[0], b[1])) || net.roads.has(cell(mx, mz))
   let through = 0
   for (const block of net.blocks) {
     const reach = 0.8

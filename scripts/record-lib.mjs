@@ -26,10 +26,111 @@ const needTime = (value, name) => (value == null ? null : TIME.test(value) ? val
 const needMinutes = (value, name) => (Number.isFinite(value) && value > 0 ? value : fail(`${name}: нужно число минут больше нуля`))
 /** Текст без лишних пробелов: края обрезаны, пробелы внутри схлопнуты — как tidy в src/game/rewards.ts. */
 const tidy = (text) => text.trim().replace(/\s+/g, ' ')
+/** Один и тот же текст, если не смотреть на регистр букв и лишние пробелы: так ловятся повторные запуски команды. */
+const sameText = (a, b) => typeof a === 'string' && typeof b === 'string' && tidy(a).toLowerCase() === tidy(b).toLowerCase()
+/** Минуты от полуночи для времени ЧЧ:ММ. */
+const clockMinutes = (time) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3))
+/** Занятие, перешедшее за полночь, длиннее этого не бывает: такое время — опечатка. */
+const OVERNIGHT_MAX_MINUTES = 6 * 60
+/** Рабочих дней (пн–пт) между двумя датами, обе включительно, — как pausedDays в src/game/rules.ts. */
+const workdays = (from, to) => {
+  let count = 0
+  for (let n = dayNumber(from); n <= dayNumber(to); n++) {
+    const weekday = new Date(n * DAY_MS).getUTCDay()
+    if (weekday !== 0 && weekday !== 6) count++
+  }
+  return count
+}
+
+// --- JSON из ключей команды: что на деле дошло от оболочки ---
+
+/** Что делать, когда JSON по дороге испортился. */
+const JSON_HOW = 'Положи запись в файл и дай --file путь или подай её на стандартный ввод: --json -'
+
+/**
+ * Байты файла или стандартного ввода — в текст. UTF-8; метка порядка байтов убирается (PowerShell ставит её перед текстом,
+ * иногда дважды); UTF-16 с меткой читается как есть — так пишут файлы `>` и Out-File в Windows PowerShell 5.1.
+ * where — откуда текст: «файл запись.json», «стандартный ввод».
+ */
+export function decodeText(bytes, where) {
+  const data = Buffer.from(bytes)
+  let text
+  if (data[0] === 0xff && data[1] === 0xfe) text = data.subarray(2).toString('utf16le')
+  else if (data[0] === 0xfe && data[1] === 0xff) text = Buffer.from(data.subarray(2, 2 + ((data.length - 2) & ~1))).swap16().toString('utf16le')
+  else text = data.toString('utf8')
+  text = text.replace(/^﻿+/, '')
+  if (text.includes('\u0000')) fail(`${where}: это не UTF-8 — похоже на UTF-16 без метки. Сохрани запись в UTF-8`)
+  if (text.includes('�')) fail(`${where}: это не UTF-8 — так выглядит файл в кодировке Windows (её ставит Set-Content в Windows PowerShell). Сохрани запись в UTF-8`)
+  return text
+}
+
+/**
+ * Кириллица, прочитанная не в той кодировке: UTF-8, принятый за Windows-1252 или Windows-1251 («Ð—Ð°Ñ‡ÐµÐ¼» вместо «Зачем»).
+ * Так выходит в PowerShell у Get-Content без -Encoding UTF8. Возвращает, каким текст был на деле, или null — текст цел.
+ * Обычный русский текст сюда не попадает: его буквы обратно в UTF-8 не складываются.
+ */
+function misreadCyrillic(text) {
+  if (!/[^\x00-\x7f]/.test(text)) return null
+  for (const label of ['windows-1252', 'windows-1251']) {
+    let table
+    try {
+      const decoder = new TextDecoder(label)
+      table = new Map(Array.from({ length: 128 }, (_, i) => [decoder.decode(Uint8Array.of(i + 128)), i + 128]))
+    } catch {
+      continue // в сборке Node без полного ICU этих кодировок нет: проверку пропускаем
+    }
+    const bytes = []
+    for (const char of text) {
+      const byte = char.charCodeAt(0) < 128 ? char.charCodeAt(0) : table.get(char)
+      if (byte === undefined) break
+      bytes.push(byte)
+    }
+    if (bytes.length !== [...text].length) continue
+    const back = Buffer.from(bytes).toString('utf8')
+    if (!back.includes('�') && /[А-Яа-яЁё]/.test(back)) return back
+  }
+  return null
+}
+
+/**
+ * JSON, пришедший от оболочки: из ключа --json (source 'json'), из файла ('file') или со стандартного ввода ('stdin').
+ * Испорченный по дороге текст не разбирается и не записывается: ошибка говорит, что случилось и как передать запись.
+ * what — что это за запись: «запись из браузера», «вопросы теста».
+ */
+export function parseJsonInput(text, what, source = 'json') {
+  const body = String(text ?? '').replace(/^﻿+/, '').trim()
+  if (!body) fail(`${what}: пусто${source === 'stdin' ? ' на стандартном вводе — подай запись через конвейер или дай --file путь' : ''}`)
+  const sample = (value) => (value.length > 40 ? value.slice(0, 40) + '…' : value)
+  const how = source === 'file' ? 'Проверь, что файл сохранён в UTF-8' : 'Положи запись в файл в UTF-8 и дай --file путь'
+  if (!/[^\x00-\x7f]/.test(body) && /\?{3,}/.test(body)) {
+    fail(`${what}: вместо русских букв пришли знаки вопроса («${sample(body.match(/\?{3,}[^"]*/)[0])}») — оболочка передала текст не в UTF-8. ${how}`)
+  }
+  const real = misreadCyrillic(body)
+  if (real) {
+    const word = real.match(/[А-Яа-яЁё]+/)[0]
+    const garbled = body.slice(Math.max(0, body.search(/[^\x00-\x7f]/))).slice(0, word.length * 2)
+    fail(
+      `${what}: русский текст прочитан не в той кодировке — «${garbled}» вместо «${word}». ` +
+        `Так бывает в PowerShell у Get-Content без -Encoding UTF8. ${source === 'file' ? how : 'Дай файл прямо: --file путь'}`,
+    )
+  }
+  try {
+    return JSON.parse(body)
+  } catch (error) {
+    // Windows PowerShell 5.1 при вызове программ выбрасывает двойные кавычки из аргумента: {"town":[…]} приходит как {town:[…]}.
+    if (source === 'json' && /^[[{]/.test(body) && !body.includes('"')) {
+      fail(`${what}: в JSON не осталось ни одной двойной кавычки («${sample(body)}») — их съела оболочка, так делает Windows PowerShell. ${JSON_HOW}`)
+    }
+    fail(`${what}: не читается как JSON (${error.message})${source === 'json' ? `. Если запись верная, её испортила оболочка. ${JSON_HOW}` : ''}`)
+  }
+}
+
+/** JSON из --json распался на несколько аргументов: PowerShell съел кавычки, и пробелы внутри записи стали границами слов. */
+export const splitJsonHint = (word) => `лишнее слово «${word}»: JSON из --json распался на части — кавычки съела оболочка, так делает Windows PowerShell. ${JSON_HOW}`
 
 export const DAY_STATUSES = ['minimum', 'core', 'extension', 'skipped']
 const CLOSED = ['minimum', 'core', 'extension']
-export const TOWN_DOES = ['tier', 'build', 'upgrade', 'trade']
+export const TOWN_DOES = ['tier', 'build', 'upgrade', 'trade', 'repair']
 const GOODS = ['food', 'wood', 'brick']
 export const OFFPLAN_KINDS = ['video', 'article', 'meetup', 'mock-interview', 'session', 'artifact', 'problem-self', 'problem-walkthrough']
 /** Сколько выводов нужно, чтобы запись засчиталась: как в src/game/side.ts. */
@@ -68,7 +169,12 @@ export function addSession(plan, progress, input) {
   const date = needDate(input.date, 'date')
   const from = needTime(input.from, 'from')
   const to = needTime(input.to, 'to')
-  if (from && to && to <= from) fail(`время: конец ${to} не позже начала ${from}`)
+  if (to && !from) fail(`время: конец ${to} назван без начала — назови и начало (--from)`)
+  // Конец раньше начала — занятие перешло за полночь: сайт так его и читает (sessionMinutes в src/game/report.ts).
+  // Слишком длинное «через полночь» — скорее опечатка, чем занятие.
+  const overnight = from && to && to < from ? clockMinutes(to) + 24 * 60 - clockMinutes(from) : null
+  if (from && to && (to === from || overnight > OVERNIGHT_MAX_MINUTES)) fail(`время: конец ${to} не позже начала ${from}`)
+  const late = overnight ? `\nВнимание: конец раньше начала — занятие записано как перешедшее за полночь, ${overnight} мин. Дата занятия — день начала.` : ''
   const topics = (input.topics ?? []).map((topic) => needText(topic, 'topic'))
   const known = progress.sessions.find((s) => s.date === date && s.from === from)
   if (known && from && to && known.to == null) {
@@ -76,17 +182,21 @@ export function addSession(plan, progress, input) {
     known.to = to
     known.topics = [...new Set([...known.topics, ...topics])]
     touch(progress, date)
-    return `Занятие ${date} ${from}–${to} дописано: день ${known.day}, тем ${known.topics.length}.`
+    return `Занятие ${date} ${from}–${to} дописано: день ${known.day}, тем ${known.topics.length}.${late}`
+  }
+  if (known) {
+    const about = [known.to ? `до ${known.to}` : null, `день ${known.day}`].filter(Boolean).join(', ')
+    const how = from && known.to == null ? 'Конец допиши той же командой с --to' : 'Время и темы записанного занятия правятся в файле'
+    fail(`занятие ${date}${from ? ' с ' + from : ' без времени'} уже записано (${about}). ${how}`)
   }
   const day = input.day ?? progress.position.currentDay
   planDay(plan, day)
   if (!topics.length) fail('нужна хотя бы одна тема занятия (--topic)')
-  if (known) fail(`занятие ${date}${from ? ' с ' + from : ''} уже записано`)
   progress.sessions.push({ date, from, to, day, topics })
   progress.sessions.sort((a, b) => (a.date + (a.from ?? '')).localeCompare(b.date + (b.from ?? '')))
   dayRecord(progress, day, date)
   touch(progress, date)
-  return `Занятие ${date}${from ? ' ' + from : ''}${to ? '–' + to : ''} записано: день ${day}, тем ${topics.length}.`
+  return `Занятие ${date}${from ? ' ' + from : ''}${to ? '–' + to : ''} записано: день ${day}, тем ${topics.length}.${late}`
 }
 
 /** Шаги дня сделаны: stepsDone, stepsOpen и позиция. */
@@ -116,8 +226,21 @@ export function closeDay(plan, progress, input) {
   const day = input.day ?? progress.position.currentDay
   planDay(plan, day)
   if (!DAY_STATUSES.includes(input.status)) fail(`статус «${input.status ?? ''}»: нужен один из ${DAY_STATUSES.join(', ')}`)
-  const date = input.status === 'skipped' && input.date === undefined ? undefined : needDate(input.date, 'date')
-  const record = dayRecord(progress, day, input.status === 'skipped' ? undefined : date)
+  const closing = input.status !== 'skipped'
+  const date = !closing && input.date === undefined ? undefined : needDate(input.date, 'date')
+  const was = progress.days.find((d) => d.day === day)?.status
+  // День без единого занятия закрывать нечем. Так же ловится повторный запуск: первый уже перевёл позицию на следующий день.
+  if (closing && !progress.sessions.some((s) => s.day === day)) {
+    const before = plan.days.filter((d) => d.day < day).at(-1)?.day
+    // dayByPosition — день не назван, а взят из позиции (команда передаёт его номером, чтобы записать итог в тот же день)
+    const moved = (input.day === undefined || input.dayByPosition) && CLOSED.includes(progress.days.find((d) => d.day === before)?.status)
+    fail(
+      `у дня ${day} в журнале нет ни одного занятия: закрывать нечего. Сначала запиши занятие: session --date ${date} --topic "…"` +
+        (moved ? `. Если ты закрывал день ${before} — он уже закрыт, позиция перешла на день ${day}` : ''),
+    )
+  }
+  if (!closing && CLOSED.includes(was)) fail(`день ${day} уже закрыт (${was}): пропущенным его не отметить. Если это ошибка записи, статус правится в файле`)
+  const record = dayRecord(progress, day, closing ? date : undefined)
   record.status = input.status
   if (input.status === 'core' || input.status === 'extension') delete record.stepsOpen
   progress.position.daysDone = progress.days.filter((d) => CLOSED.includes(d.status)).length
@@ -128,10 +251,21 @@ export function closeDay(plan, progress, input) {
     delete progress.position.currentStepTitle
   }
   touch(progress, date)
-  return `День ${day}: статус ${input.status}. Закрыто дней: ${progress.position.daysDone} из ${progress.position.daysTotal}. Позиция: день ${progress.position.currentDay}, шаг ${progress.position.currentStep}.`
+  const changed = CLOSED.includes(was) && was !== input.status
+  const lines = [
+    `День ${day}: статус ${input.status}${changed ? `, был ${was}` : ''}. Закрыто дней: ${progress.position.daysDone} из ${progress.position.daysTotal}. Позиция: день ${progress.position.currentDay}, шаг ${progress.position.currentStep}.`,
+  ]
+  if (changed && CLOSED.indexOf(input.status) < CLOSED.indexOf(was)) lines.push(`Внимание: статус дня понижен с ${was} до ${input.status} — очков за день на сайте станет меньше. Проверь, что это не опечатка.`)
+  return lines.join('\n')
 }
 
-/** Плановый перерыв. Лимит рабочих дней на цикл проверяет npm test. */
+/** Сколько рабочих дней планового перерыва даётся на цикл — как BREAK_LIMIT в src/game/rules.ts. */
+const BREAK_LIMIT = 10
+
+/**
+ * Плановый перерыв. На цикл даётся BREAK_LIMIT рабочих дней: перерыв сверх лимита не записывается —
+ * сайт такие дни всё равно считает пропуском, а npm test такую запись не пропустит.
+ */
 export function addBreak(progress, input) {
   const from = needDate(input.from, 'from')
   const to = needDate(input.to, 'to')
@@ -139,25 +273,39 @@ export function addBreak(progress, input) {
   const breaks = progress.breaks ?? []
   const clash = breaks.find((item) => item.from <= to && from <= item.to)
   if (clash) fail(`перерыв пересекается с уже записанным ${clash.from} — ${clash.to}`)
+  const used = breaks.reduce((sum, item) => sum + workdays(item.from, item.to), 0)
+  const asked = workdays(from, to)
+  if (used + asked > BREAK_LIMIT) {
+    fail(
+      `перерыв ${from} — ${to} — это рабочих дней: ${asked}, а на цикл их даётся ${BREAK_LIMIT}, занято уже ${used}. ` +
+        (used < BREAK_LIMIT ? `Перерыв можно записать не длиннее, чем на ${BREAK_LIMIT - used}; ` : '') +
+        'дни сверх лимита — обычный пропуск',
+    )
+  }
   const item = { from, to }
   if (input.reason) item.reason = needText(input.reason, 'reason')
   progress.breaks = [...breaks, item].sort((a, b) => a.from.localeCompare(b.from))
   touch(progress, input.today)
-  return `Плановый перерыв ${from} — ${to} записан. Лимит рабочих дней на цикл проверит npm test.`
+  const lines = [`Плановый перерыв ${from} — ${to} записан: рабочих дней ${asked}, всего занято ${used + asked} из ${BREAK_LIMIT} на цикл.`]
+  if (input.today && from < input.today) lines.push(`Внимание: перерыв начинается задним числом (${from}). Так записывают, только если Baudi прямо попросил.`)
+  return lines.join('\n')
 }
 
 /** Проверка понимания: первый ответ как есть и вердикт. */
 export function addCheck(plan, progress, input) {
   const date = needDate(input.date, 'date')
   if (!VERDICTS.includes(input.verdict)) fail(`вердикт «${input.verdict ?? ''}»: нужен один из ${VERDICTS.join(', ')}`)
-  progress.knowledgeChecks.push({
+  const check = {
     date,
     track: needTrack(plan, input.track),
     question: needText(input.question, 'question'),
     firstAnswer: needText(input.firstAnswer, 'first'),
     verdict: input.verdict,
     answer: needText(input.answer, 'answer'),
-  })
+  }
+  // Номер карточки сайт считает по дате и тексту вопроса: вторая такая запись новой карточкой не станет.
+  if (progress.knowledgeChecks.some((other) => other.date === date && sameText(other.question, check.question))) fail(`проверка понимания с таким вопросом за ${date} уже записана`)
+  progress.knowledgeChecks.push(check)
   touch(progress, date)
   return `Проверка понимания записана: трек ${input.track}, вердикт ${input.verdict}.`
 }
@@ -166,15 +314,23 @@ export function addCheck(plan, progress, input) {
 export function addMistake(plan, progress, input) {
   const date = needDate(input.date, 'date')
   if (input.problemId != null && !plan.leetcode.some((p) => p.id === input.problemId)) fail(`в плане нет задачи ${input.problemId}`)
-  progress.mistakes.push({ date, track: needTrack(plan, input.track), problemId: input.problemId ?? null, text: needText(input.text, 'text') })
+  const mistake = { date, track: needTrack(plan, input.track), problemId: input.problemId ?? null, text: needText(input.text, 'text') }
+  const twin = progress.mistakes.findIndex((other) => other.date === date && sameText(other.text, mistake.text))
+  if (twin >= 0) fail(`такая ошибка за ${date} уже записана: №${twin + 1} в журнале`)
+  progress.mistakes.push(mistake)
   touch(progress, date)
-  return `Ошибка записана: трек ${input.track}.`
+  return `Ошибка записана: трек ${input.track}, №${progress.mistakes.length} в журнале.`
 }
 
 /** Хвосты прошлых занятий: добавить или снять по номеру (с единицы). */
 export function editTodo(progress, input) {
+  if (input.add !== undefined && input.done !== undefined) fail('хвост: за один запуск — или добавить (--add), или снять (--done)')
+  if (input.add === undefined && input.done === undefined) fail('хвост: нужно --add "текст" — добавить или --done N — снять по номеру')
   if (input.add !== undefined) {
-    progress.openItems.push(needText(input.add, 'add'))
+    const text = needText(input.add, 'add')
+    const twin = progress.openItems.findIndex((other) => sameText(other, text))
+    if (twin >= 0) fail(`такой хвост уже записан: №${twin + 1}`)
+    progress.openItems.push(text)
     touch(progress, input.today)
     return `Хвост записан, всего ${progress.openItems.length}.`
   }
@@ -205,6 +361,7 @@ export function addTownActions(file, actions) {
     if (!TOWN_DOES.includes(action.do)) fail(`${where}: поле do — одно из ${TOWN_DOES.join(', ')}`)
     if (action.do === 'build' && !action.type) fail(`${where}: у стройки нужен type`)
     if (action.do === 'upgrade' && !action.id) fail(`${where}: у улучшения нужен id`)
+    if (action.do === 'repair' && !(typeof action.id === 'string' && action.id.trim())) fail(`${where}: у починки нужен id постройки, например sawmill-1`)
     if (action.do === 'trade' && !GOODS.includes(action.type)) fail(`${where}: у обмена type — ${GOODS.join(', ')}`)
     const item = { at: action.at, do: action.do }
     if (action.type) item.type = action.type
@@ -226,15 +383,23 @@ export function addOffplan(plan, file, input) {
   const takeaways = (input.takeaways ?? []).map((text) => needText(text, 'takeaway'))
   const need = TAKEAWAYS[input.kind] ?? 0
   if (takeaways.length < need) fail(`для ${input.kind} нужно выводов: ${need}, получено ${takeaways.length}. Спроси их у Baudi, не придумывай`)
+  const twice = takeaways.find((text, i) => takeaways.findIndex((other) => sameText(other, text)) !== i)
+  if (twice) fail(`вывод «${twice}» записан дважды: выводы должны быть разными`)
   const entry = { date, kind: input.kind, title: needText(input.title, 'title') }
   if (input.source) entry.source = needText(input.source, 'source')
   if (input.track) entry.track = needTrack(plan, input.track)
   if (input.minutes !== undefined) entry.minutes = Number.isFinite(input.minutes) && input.minutes > 0 ? input.minutes : fail('minutes: нужно число минут')
   if (input.with) entry.with = needText(input.with, 'with')
   if (takeaways.length) entry.takeaways = takeaways
+  // Повторный запуск: у задач, файлов и занятий вне плана сайт засчитал бы вторую такую же запись ещё раз.
+  if (file.entries.some((other) => other.date === date && other.kind === entry.kind && sameText(other.title, entry.title))) fail(`такая запись уже есть: ${entry.kind} «${entry.title}» за ${date}`)
+  // Видео, статья, встреча и собеседование засчитываются по одной каждого вида в день (rateSide в src/game/side.ts).
+  const counted = need > 0 && file.entries.some((other) => other.date === date && other.kind === entry.kind && (other.takeaways ?? []).filter((text) => text.trim()).length >= need)
   file.entries.push(entry)
   file.entries.sort((a, b) => a.date.localeCompare(b.date))
-  return `Стороннее развитие записано: ${input.kind}, «${entry.title}», выводов ${takeaways.length}.`
+  const lines = [`Стороннее развитие записано: ${input.kind}, «${entry.title}», выводов ${takeaways.length}.`]
+  if (counted) lines.push(`Внимание: за ${date} уже есть засчитанная запись вида ${entry.kind} — сайт засчитывает по одной такой в день, эта очков не даст.`)
+  return lines.join('\n')
 }
 
 /**
@@ -246,18 +411,31 @@ export function mergeLedger(file, shopIds, record) {
   const text = (value) => typeof value === 'string' && value.trim() !== ''
   const price = (value) => Number.isInteger(value) && value > 0
   const bought = (p) => shopIds.includes(p.item) && isDate(p.date)
+  const boughtNeed = 'нужны item — id предмета из лавки и date — дата ГГГГ-ММ-ДД'
   const rules = {
-    purchases: { title: 'покупок', key: (p) => p.item, ok: bought },
-    repairs: { title: 'ремонтов', key: (p) => `${p.item}|${p.date}`, ok: bought },
-    rewards: { title: 'наград в список', key: (r) => r.id, ok: (r) => text(r.id) && text(r.name) && price(r.gems) },
-    redeemed: { title: 'выкупов', key: (r) => `${r.at}|${r.name}`, ok: (r) => text(r.at) && !Number.isNaN(Date.parse(r.at)) && text(r.name) && price(r.gems) },
-    signs: { title: 'знаков', key: (s) => `${s.cycle}|${s.day}`, ok: (s) => text(s.cycle) && Number.isInteger(s.day) && text(s.text) && isDate(s.date) },
+    purchases: { title: 'покупок', key: (p) => p.item, ok: bought, need: boughtNeed },
+    repairs: { title: 'ремонтов', key: (p) => `${p.item}|${p.date}`, ok: bought, need: boughtNeed },
+    rewards: { title: 'наград в список', key: (r) => r.id, ok: (r) => text(r.id) && text(r.name) && price(r.gems), need: 'нужны id, name и gems — целое число камней больше нуля' },
+    redeemed: {
+      title: 'выкупов',
+      key: (r) => `${r.at}|${r.name}`,
+      ok: (r) => text(r.at) && !Number.isNaN(Date.parse(r.at)) && text(r.name) && price(r.gems),
+      need: 'нужны at — время ISO, name и gems — целое число камней больше нуля',
+    },
+    signs: {
+      title: 'знаков',
+      key: (s) => `${s.cycle}|${s.day}`,
+      ok: (s) => text(s.cycle) && Number.isInteger(s.day) && text(s.text) && isDate(s.date),
+      need: 'нужны cycle — папка цикла, day — номер дня числом, text и date — дата ГГГГ-ММ-ДД',
+    },
   }
   for (const [name, rule] of Object.entries(rules)) {
     const incoming = record[name] ?? []
     if (!Array.isArray(incoming)) fail(`${name}: нужен список`)
     incoming.forEach((item, i) => {
-      if (!item || typeof item !== 'object' || !rule.ok(item)) fail(`${name}, запись ${i + 1}: не тот формат`)
+      if (!item || typeof item !== 'object') fail(`${name}, запись ${i + 1}: не тот формат — ${rule.need}`)
+      if (rule.ok === bought && text(item.item) && !shopIds.includes(item.item)) fail(`${name}, запись ${i + 1}: предмета «${item.item}» в лавке нет, есть ${shopIds.join(', ')}`)
+      if (!rule.ok(item)) fail(`${name}, запись ${i + 1}: не тот формат — ${rule.need}`)
     })
   }
   const added = []
@@ -305,7 +483,7 @@ export function addDeckReviews(file, reviews) {
 /** Границы своей карточки — как в src/game/deck.ts: по ним же data/deck.json проверяет npm test. */
 const CARD = { questionMin: 3, questionMax: 200, answerMax: 600, perDay: 5 }
 const CARD_SOURCES = ['note', 'mistake']
-const sameQuestion = (a, b) => typeof a === 'string' && typeof b === 'string' && tidy(a).toLowerCase() === tidy(b).toLowerCase()
+const sameQuestion = sameText
 
 /**
  * Своя карточка в том виде, в каком она ляжет в файл: тексты обрезаны и со схлопнутыми пробелами,
@@ -672,7 +850,9 @@ const WEEKLY_POINTS = [0, 1, 2]
 
 /** Неделя плана: какие её дни ещё не закрыты и дата последнего занятия. Тест открыт, когда закрыты все, — так же решает сайт. */
 function weekState(plan, progress, n) {
-  const week = plan.weeks.find((w) => w.n === n) ?? fail(`в плане нет недели ${n ?? ''}: есть ${plan.weeks.map((w) => w.n).join(', ')}`)
+  const numbers = plan.weeks.map((w) => w.n).join(', ')
+  if (n === undefined || n === null) fail(`не назван номер недели: в плане есть ${numbers}`)
+  const week = plan.weeks.find((w) => w.n === n) ?? fail(`в плане нет недели ${n}: есть ${numbers}`)
   const days = plan.days.filter((d) => d.week === week.n).map((d) => d.day)
   const records = progress.days.filter((d) => days.includes(d.day))
   const open = days.filter((day) => !CLOSED.includes(records.find((d) => d.day === day)?.status))
@@ -700,6 +880,7 @@ export function addWeeklyTest(plan, progress, input) {
     const where = `вопрос ${i + 1}`
     if (!item || typeof item !== 'object') fail(`${where}: нужен объект { q, track, points, note }`)
     const question = { q: needText(item.q, `${where}: q`), track: needTrack(plan, item.track, `${where}: `) }
+    if (typeof item.points === 'string') fail(`${where}: points — число 0, 1 или 2 без кавычек, а пришла строка «${item.points}»`)
     question.points = WEEKLY_POINTS.includes(item.points) ? item.points : fail(`${where}: points — 0, 1 или 2, получено «${item.points ?? ''}»`)
     if (item.note != null && item.note !== '') question.note = needText(item.note, `${where}: note`)
     return question
@@ -765,7 +946,8 @@ export function describeDay(plan, progress, input) {
     record[key] = value
     changed = true
     if (key === 'wallClockMinutes') return `на деле ${value} мин${old ? ` (было ${old})` : ''}`
-    return `${names[key]} ${old ? `заменён${key === 'note' ? 'а' : ''} (было: «${old}»)` : `записан${key === 'note' ? 'а' : ''}`}`
+    if (old) return `${names[key]} ${key === 'note' ? 'заменена' : 'заменён'} (было: «${old}»)`
+    return `${names[key]} ${key === 'note' ? 'записана' : 'записан'}`
   })
   if (changed) touch(progress, date)
   return `День ${day}: ${said.join('; ')}.`
@@ -818,6 +1000,8 @@ export function setArtifact(plan, progress, input) {
 
   const house = camp.find((item) => item.repo === repo && pathMatches(item.path, path))
   const lines = [`День ${day}: ${path} (${repo}) — ${was ? `${was} → ${input.state}` : input.state}.${house ? ` Домик лагеря: «${house.title ?? house.id}».` : ''}`]
+  const isBuilt = (state) => ARTIFACT_STATES.indexOf(state) < 3
+  if (was && isBuilt(was) && !isBuilt(input.state)) lines.push(`Внимание: файл был построен (${was}), а теперь снова стройка (${input.state}) — домик и очки за файл на сайте пропадут. Проверь, что это не опечатка.`)
   if (!house) {
     const paths = camp.filter((item) => item.repo === repo).map((item) => item.path)
     lines.push(

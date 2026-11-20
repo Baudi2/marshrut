@@ -4,6 +4,7 @@
 import type { Painter } from './kit'
 import { KIND } from './kit'
 import { modelDims, type LookBuilder, type LookFn } from './look'
+import { PORT_PUSH } from './plan'
 
 const C = {
   wood: '#876a44',
@@ -796,8 +797,8 @@ export const LOOKS: Record<string, TypeLooks> = {
       },
       { name: 'Рыбацкий причал', look: one((b) => port(b, 'r/port_first_age_level_1', 1)) },
       { name: 'Причал с сушильней', look: one((b) => port(b, 'r/port_first_age_level_3', 2)) },
-      { name: 'Пристань', look: one((b) => port(b, 'r/port_second_age_level_1', 2)) },
-      { name: 'Рыбная пристань', look: one((b) => port(b, 'r/port_second_age_level_3', 3)) },
+      { name: 'Пристань', look: one((b) => port(b, 'r/port_second_age_level_1', 2, PORT_PUSH)) },
+      { name: 'Рыбная пристань', look: one((b) => port(b, 'r/port_second_age_level_3', 3, PORT_PUSH)) },
     ],
   },
 
@@ -1058,14 +1059,15 @@ export const LOOKS: Record<string, TypeLooks> = {
 const WATER = -0.7
 const SHORE = 8.6
 
-function port(b: LookBuilder, key: string, boats: number) {
+function port(b: LookBuilder, key: string, boats: number, push = 0) {
   // Дальний край причала выносится за кромку воды, какой бы длины ни была модель.
   const dims = modelDims(key)
   const depth = (dims.max[2] - dims.min[2]) * 5
-  b.model(key, { center: true, at: [0, 0, SHORE - depth / 2] })
-  b.model('s/boat', { at: [4.6, WATER, SHORE - 1.4], rot: 15 })
-  if (boats >= 2) b.model('s/boat_w_sail', { at: [-5, WATER, SHORE - 0.6], rot: -25 })
-  if (boats >= 3) b.model('s/boat', { at: [-6.4, WATER, SHORE - 2.6], rot: 80 })
+  const shore = SHORE + push
+  b.model(key, { center: true, at: [0, 0, shore - depth / 2] })
+  b.model('s/boat', { at: [4.6, WATER, shore - 1.4], rot: 15 })
+  if (boats >= 2) b.model('s/boat_w_sail', { at: [-5, WATER, shore - 0.6], rot: -25 })
+  if (boats >= 3) b.model('s/boat', { at: [-6.4, WATER, shore - 2.6], rot: 80 })
   b.model('r/barrel', { at: [3.4, 0, -0.6], s: 1.2 })
   // Вешала с рыбой.
   b.beam([-3.6, 0, -1], [-3.6, 2, -1], 0.1, C.woodDark)
@@ -1241,6 +1243,38 @@ export function specialLook(kind: string, stage: number): LookFn {
       b.box(0, 0, 3.4, 3, 0.5, 0.5, '#5f8f4c')
       b.box(3.2, 0, 0.8, 0.5, 0.5, 3, '#5f8f4c')
     }
+  }
+}
+
+// ——— Памятник закрытого цикла ———
+
+/**
+ * Памятник цикла: обелиск из светлого камня на двух ступенях, на цоколе — бронзовая табличка.
+ * Бронзовых поясков на стволе столько, каков номер цикла: памятники стоят в ряд и не повторяют друг друга.
+ */
+export const monumentLook = (n: number): LookFn => (b) => {
+  const pale = '#d0cabb'
+  const base = '#bdb6a6'
+  const bronze = '#9c7a48'
+  // Четырёхгранник с гранями по сторонам света: радиус — до угла.
+  const corner = (half: number) => half * Math.SQRT2
+  const turn = Math.PI / 4
+  b.box(0, 0, 0, 3.6, 0.28, 3.6, base)
+  b.box(0, 0.28, 0, 2.7, 0.28, 2.7, pale)
+  b.box(0, 0.56, 0, 1.7, 1, 1.7, base)
+  b.box(0, 1.56, 0, 1.92, 0.14, 1.92, pale)
+  const foot = 0.62
+  const neck = 0.4
+  const shaft = 3.5
+  b.cylinder(0, 1.7, 0, corner(foot), corner(neck), shaft, 4, pale, 0, turn)
+  b.cylinder(0, 1.7 + shaft, 0, corner(neck), 0, 0.75, 4, base, 0, turn)
+  // Табличка смотрит на юг, к слободе: оттуда на памятник и смотрят.
+  b.box(0, 0.76, 0.86, 1.08, 0.58, 0.06, bronze)
+  const bands = Math.max(1, Math.min(5, n))
+  for (let i = 0; i < bands; i++) {
+    const y = 2.15 + i * 0.36
+    const half = foot - ((y - 1.7) / shaft) * (foot - neck) + 0.035
+    b.box(0, y, 0, half * 2, 0.13, half * 2, bronze)
   }
 }
 

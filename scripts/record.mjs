@@ -10,14 +10,17 @@ const HELP = `Запись в данные сайта. Даты — ГГГГ-М�
 День по умолчанию — текущий из position. Под каждой командой — пример; в квадратных скобках — необязательное.
 
 Занятие
-  session      занятие: строка в sessions и дата в записи дня. Записал в начале без --to — та же команда с --to допишет конец
+  session      занятие: строка в sessions и дата в записи дня. Записал в начале без --to — та же команда с --to допишет конец.
+               Конец раньше начала — занятие перешло за полночь (не длиннее шести часов); дата — день начала
                session --date 2026-11-19 --from 16:00 --to 17:10 --topic "команды Gradle" [--topic "…"] [--day 3]
   steps        шаги дня сделаны; позиция уходит на следующий шаг
                steps --done 2,3 --date 2026-11-19 [--day 3]
   day          день закрыт (minimum, core, extension) или пропущен (skipped); позиция уходит на следующий день.
+               Закрыть можно день, у которого записано хотя бы одно занятие (session); пропуск — только с номером дня.
                Итог дня, заметку и минуты на деле можно записать сразу или отдельно, без --status
                day --status core --date 2026-11-19 [--summary "Gradle 1: команды и заметка"] [--note "…"] [--minutes 75] [--day 3]
                day --summary "Сделан шаг 1 из трёх" [--note "шаг 3 ждёт ноутбука"] [--minutes 70] [--day 3]
+               day --status skipped --day 6
   artifact     файл дня и его состояние: created, saved, committed — построен; not-saved, given-by-tutor, unknown — стройка.
                Путь уже записан — меняется состояние; без --day берётся день, где он записан, иначе текущий
                artifact --path build/gradle-anatomy.md --state saved [--repo prep-basic] [--day 3] [--date 2026-11-19]
@@ -40,7 +43,7 @@ const HELP = `Запись в данные сайта. Даты — ГГГГ-М�
                Несколько попыток одного занятия — списком, по порядку (поля как в progress.json):
                problem --id 217 --json '[{"date":"2026-11-23","kind":"timed-20","minutes":20,"result":"not-solved"},{"date":"2026-11-23","kind":"rewrite-after-walkthrough","minutes":8,"result":"solved"}]'
   weekly       недельный тест: 10 вопросов, у каждого баллы 0–2 и код трека; score и max считает команда. Пересдача — новая запись
-               weekly --week 1 --date 2026-11-20 --json '[{"q":"Что такое task?","track":"C1","points":2,"note":"…"}, …]' [--note "…"]   |   weekly --file тест.json
+               weekly --week 1 --date 2026-11-20 --file тест.json [--note "…"]   |   … --json -   |   … --json '[{"q":"Что такое task?","track":"C1","points":2,"note":"…"}, …]'
   week         неделя закрыта по чекпоинту: все её дни закрыты, результат недели подтверждён
                week --n 1 --date 2026-11-20
   baseline     замер в начале (start) или в конце (final) цикла: минуты и результат задачи на таймере, самооценка по трекам от 1 до 5.
@@ -53,7 +56,8 @@ const HELP = `Запись в данные сайта. Даты — ГГГГ-М�
                event --type ci-fixed --date 2026-11-27 [--note "в workflow был не тот JDK"]
 
 Перерывы
-  break        плановый перерыв: объявляют заранее, рабочие дни внутри не считаются пропуском
+  break        плановый перерыв: объявляют заранее, рабочие дни внутри не считаются пропуском.
+               На цикл даётся 10 рабочих дней: перерыв сверх лимита не записывается
                break --from 2026-12-28 --to 2027-01-08 [--reason "отпуск"]
   pause        пауза, которая уже случилась: привал на карте. Записывается по возвращении, после первого занятия
                pause --from 2026-10-28 --to 2026-11-10 [--note "вернулся и продолжил с дня 2"]
@@ -68,15 +72,36 @@ const HELP = `Запись в данные сайта. Даты — ГГГГ-М�
 Записи из браузера
   sync         единая запись с сайта (кнопка «Скопировать запись»): лавка, город и колода разом; применяется вся или никак.
                Понимает и старые виды записи — те же, что у ledger, town и deck
-               sync --json '{"ledger":{"purchases":[…]},"town":[…],"deck":{"reviews":[…],"cards":[…]}}'   |   sync --file запись.json
+               sync --file запись.json   |   sync --json -   |   sync --json '{"ledger":{"purchases":[…]},"town":[…],"deck":{"reviews":[…],"cards":[…]}}'
   purchase     покупка из лавки; repair — то же для ремонта
                purchase --item lantern --date 2026-11-19   |   repair --item lantern --date 2026-12-01
   ledger       запись из лавки: покупки, ремонты, свои награды, выкупы, знаки
-               ledger --json '{"purchases":[…],"redeemed":[…],"signs":[…]}'   |   ledger --file запись.json
-  town         журнал действий в городе
-               town --json '[{"at":"2026-11-20T18:20:00","do":"build","type":"house"}]'   |   town --file журнал.json
+               ledger --file запись.json   |   ledger --json -   |   ledger --json '{"purchases":[…],"redeemed":[…],"signs":[…]}'
+  town         журнал действий в городе: tier — новая ступень, build — стройка (type), upgrade — улучшение (id),
+               trade — обмен (type: food, wood, brick), repair — починка постройки (id)
+               town --file журнал.json   |   town --json -   |   town --json '[{"at":"2026-11-20T18:20:00","do":"build","type":"house"},{"at":"2026-12-02T10:00:00","do":"repair","id":"sawmill-1"}]'
   deck         запись колоды: ответы по карточкам и свои карточки (или просто список ответов)
-               deck --json '{"reviews":[{"card":"…","at":"…","ok":true}],"cards":[…]}'   |   deck --file запись.json
+               deck --file запись.json   |   deck --json -   |   deck --json '{"reviews":[{"card":"…","at":"…","ok":true}],"cards":[…]}'
+
+Как передать JSON (weekly, problem, sync, ledger, town, deck)
+  --file путь  запись лежит в файле (UTF-8). Работает в любой оболочке — это способ по умолчанию:
+               файл создай инструментом записи файлов, не перенаправлением вывода в PowerShell
+  --json -     запись приходит со стандартного ввода:
+               bash:        node scripts/record.mjs sync --json - < запись.json   |   cat запись.json | node scripts/record.mjs sync --json -
+               PowerShell:  Get-Content запись.json -Raw -Encoding UTF8 | node scripts/record.mjs sync --json -
+               PowerShell, запись прямо в команде — здесь-строкой: три строки, закрывающее '@ стоит с начала строки
+                            @'
+                            {"town":[{"at":"2026-11-20T18:20:00","do":"tier"}]}
+                            '@ | node scripts/record.mjs sync --json -
+               Если за три секунды на ввод ничего не пришло, команда не ждёт дальше и говорит об этом.
+  --json '…'   запись прямо в аргументе — только в bash, в одинарных кавычках.
+               Windows PowerShell 5.1 выбрасывает из аргумента двойные кавычки: {"town":[…]} приходит как {town:[…]},
+               а запись с пробелами ещё и распадается на слова. Команда такую запись не пишет, а говорит, что кавычки съедены.
+  Испорченный по дороге текст команда не записывает и в других случаях: знаки вопроса вместо русских букв,
+  текст не в той кодировке (Get-Content без -Encoding UTF8), файл не в UTF-8. Метка BOM и UTF-16 с меткой читаются.
+  Текст обычных ключей PowerShell портит так же: --summary 'Разобрал "кэш"' придёт без кавычек — пиши «ёлочки».
+  В Git Bash значение, которое начинается с косой черты, превращается в путь Windows ("/gradlew" → "C:/Program Files/Git/gradlew"):
+  начинай текст не с неё.
 
 Общее
   --dry        показать итог и ничего не записать
@@ -132,7 +157,7 @@ const wrong = (message) => {
 const args = {}
 function parseArgs() {
   for (let i = 0; i < rest.length; i++) {
-    if (!rest[i].startsWith('--')) wrong(`лишнее слово «${rest[i]}»: значения с пробелами бери в кавычки`)
+    if (!rest[i].startsWith('--')) wrong(rest.includes('--json') ? lib.splitJsonHint(rest[i]) : `лишнее слово «${rest[i]}»: значения с пробелами бери в кавычки`)
     const key = rest[i].slice(2)
     const value = i + 1 < rest.length && !rest[i + 1].startsWith('--') ? rest[++i] : true
     args[key] = key in args ? [].concat(args[key], value) : value
@@ -159,14 +184,53 @@ const today = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
-function run() {
+/**
+ * Сколько ждать первых данных со стандартного ввода. Без конвейера ввод может так и не закрыться: команда не должна зависнуть.
+ * RECORD_STDIN_WAIT_MS — другой срок: так тест проверяет это быстро.
+ */
+const STDIN_WAIT_MS = Number(process.env.RECORD_STDIN_WAIT_MS) || 3000
+
+/** Стандартный ввод целиком; null — ввода нет: команда запущена с клавиатуры или за STDIN_WAIT_MS ничего не пришло. */
+function readStdin() {
+  if (process.stdin.isTTY) return Promise.resolve(null)
+  return new Promise((resolve) => {
+    const chunks = []
+    const giveUp = () => {
+      process.stdin.removeAllListeners()
+      process.stdin.destroy()
+      resolve(null)
+    }
+    const timer = setTimeout(giveUp, STDIN_WAIT_MS)
+    process.stdin.on('data', (chunk) => {
+      clearTimeout(timer)
+      chunks.push(chunk)
+    })
+    process.stdin.on('end', () => {
+      clearTimeout(timer)
+      resolve(Buffer.concat(chunks))
+    })
+    process.stdin.on('error', () => {
+      clearTimeout(timer)
+      giveUp()
+    })
+  })
+}
+let stdin = null
+
+async function run() {
   parseArgs()
   if (command === 'help' || args.help) return console.log(HELP)
   if (!FLAGS[command]) wrong(`команды «${command}» нет. Список: node scripts/record.mjs help`)
+  const known = (key) => FLAGS[command].includes(key) || COMMON_FLAGS.includes(key)
   for (const key of Object.keys(args)) {
-    if (!FLAGS[command].includes(key) && !COMMON_FLAGS.includes(key)) wrong(`у команды ${command} нет ключа --${key}. Есть: ${FLAGS[command].map((name) => '--' + name).join(', ')}`)
-    if ([].concat(args[key]).includes(true) && !SWITCHES.includes(key)) wrong(`у ключа --${key} нет значения`)
+    if (!known(key)) wrong(`у команды ${command} нет ключа --${key}. Есть: ${FLAGS[command].map((name) => '--' + name).join(', ')}`)
+    if ([].concat(args[key]).includes(true) && !SWITCHES.includes(key)) {
+      // Значение, которое начинается с «--», разбор принял за следующий ключ.
+      const taken = Object.keys(args).find((other) => !known(other))
+      wrong(`у ключа --${key} нет значения${taken ? `: «--${taken}» команда приняла за ключ — текст значения не должен начинаться с «--»` : ''}`)
+    }
   }
+  if (one('json') === '-') stdin = await readStdin()
 
   const cycles = fs.readdirSync(path.join(root, 'data/cycles')).sort()
   const cycle = one('cycle') ?? cycles[cycles.length - 1]
@@ -190,10 +254,12 @@ function run() {
       inProgress((p) => {
         // Номер дня берём до закрытия: оно переводит позицию на следующий день.
         const day = num('day') ?? p.position.currentDay
+        // Пропуск без номера дня повторный запуск не отличит от нового: вторая такая команда пропустила бы и следующий день.
+        if (one('status') === 'skipped' && num('day') === undefined) wrong(`пропуск дня: назови день явно — day --status skipped --day ${day}. Без номера повторный запуск пропустил бы и следующий день`)
         const about = { summary: one('summary'), note: one('note'), minutes: num('minutes') }
         const described = Object.values(about).some((value) => value !== undefined)
         const lines = []
-        if (one('status') !== undefined || !described) lines.push(lib.closeDay(plan, p, { day, status: one('status'), date: one('date') }))
+        if (one('status') !== undefined || !described) lines.push(lib.closeDay(plan, p, { day, dayByPosition: num('day') === undefined, status: one('status'), date: one('date') }))
         if (described) lines.push(lib.describeDay(plan, p, { day, ...about, date: one('date'), today: today() }))
         return lines.join('\n')
       }),
@@ -275,15 +341,22 @@ function shopIds() {
   return [...text.matchAll(/\{ id: '([^']+)', group:/g)].map((match) => match[1])
 }
 
-/** JSON из --json или из файла --file. */
+/** JSON из ключа --json, из файла --file или со стандартного ввода (--json -). Что дошло испорченным — разбирает lib.parseJsonInput. */
 function jsonInput(what) {
-  const text = one('file') ? fs.readFileSync(path.resolve(one('file')), 'utf8') : one('json')
-  if (!text) wrong(`нужен JSON (${what}): --json '…' или --file путь`)
-  try {
-    return JSON.parse(text)
-  } catch {
-    return wrong(`${what}: не читается как JSON`)
+  const file = one('file')
+  const json = one('json')
+  if (file !== undefined && json !== undefined) wrong('запись задана и в --json, и в --file: оставь что-то одно')
+  if (file !== undefined) {
+    const full = path.resolve(file)
+    if (!fs.existsSync(full) || !fs.statSync(full).isFile()) wrong(`файла «${file}» нет${path.isAbsolute(file) ? '' : ` (искал ${full})`}`)
+    return lib.parseJsonInput(lib.decodeText(fs.readFileSync(full), `файл ${file}`), what, 'file')
   }
+  if (json === '-') {
+    if (stdin === null) wrong(`${what}: на стандартный ввод ничего не пришло. Подай запись через конвейер (… | node scripts/record.mjs ${command} --json -) или дай --file путь`)
+    return lib.parseJsonInput(lib.decodeText(stdin, 'стандартный ввод'), what, 'stdin')
+  }
+  if (json === undefined) wrong(`нужен JSON (${what}): --file путь, --json - (со стандартного ввода) или --json '…'`)
+  return lib.parseJsonInput(json, what, 'json')
 }
 
 /** Журнал города: одна запись или список. */
@@ -318,7 +391,7 @@ function scoresInput() {
 }
 
 try {
-  run()
+  await run()
 } catch (error) {
   if (!(error instanceof lib.RecordError)) throw error
   console.error(`Не записано: ${error.message}`)

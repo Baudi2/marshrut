@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import type { Season } from '../world/sky'
 import { KIND } from './kit'
 import { worldMaterial, type WorldUniforms } from './material'
-import { BRIDGE_X, GLADE, LAND, PITCH, PLAZA, PLOT, QUARTER, RIVER, groundHeight, quarterSlot, riverCenter, seeded, type Plot } from './plan'
+import { BRIDGE_X, GLADE, LAND, MONUMENT, PITCH, PLAZA, PLOT, QUARTER, RIVER, connectors, groundHeight, monumentSpot, quarterSlot, riverCenter, seeded, type Plot } from './plan'
 
 const EARTH: Record<Season, { grass: string; light: string; dark: string; dirt: string; pad: string; sand: string; water: string; stone: string }> = {
   spring: { grass: '#a7bd7a', light: '#b6c98a', dark: '#93ab6b', dirt: '#c9b88c', pad: '#bcb184', sand: '#d6c79c', water: '#77afbf', stone: '#c5bfae' },
@@ -22,6 +22,8 @@ export interface GroundInput {
   pads: Plot[]
   /** Сколько мест слободы занято. Ноль, пока слобода не открыта. */
   specials: number
+  /** Сколько памятников закрытых циклов стоит на берегу. */
+  monuments: number
   /** Мост и слобода уже есть: тогда к ним ведёт тропа. */
   quarter: boolean
   /** Запустение 0–3: улицы зарастают. */
@@ -112,6 +114,8 @@ function paintMap(input: GroundInput): HTMLCanvasElement {
     line([[plot.x - h, plot.z - h], [plot.x - h, plot.z + h]], 2.2)
     line([[plot.x + h, plot.z - h], [plot.x + h, plot.z + h]], 2.2)
   }
+  // Дороги через лес к участкам, стоящим особняком.
+  for (const road of connectors(input.open)) line([[road.x0, road.z0], [road.x1, road.z1]], 2.2)
   g.globalAlpha = 1
 
   // Площадь: вытоптанная поляна, потом утоптанная земля, с «Деревни» — камень.
@@ -154,6 +158,13 @@ function paintMap(input: GroundInput): HTMLCanvasElement {
     const slot = quarterSlot(i)
     line([[BRIDGE_X, slot.z + QUARTER.plot / 2 + 0.6], [slot.x, slot.z + QUARTER.plot / 2 + 0.6]], 1.8)
   }
+  // Дорожка от моста вдоль ряда памятников: идёт перед ними, со стороны слободы.
+  if (input.quarter && input.monuments > 0) {
+    const front = MONUMENT.size / 2 + 1.1
+    const path: [number, number][] = [[BRIDGE_X, monumentSpot(0).z + front]]
+    for (let i = 0; i < input.monuments; i++) path.push([monumentSpot(i).x, monumentSpot(i).z + front])
+    line(path, 1.6)
+  }
   g.globalAlpha = 1
 
   // Участки: земля под постройками чуть светлее травы.
@@ -164,6 +175,7 @@ function paintMap(input: GroundInput): HTMLCanvasElement {
     const slot = quarterSlot(i)
     rect(slot.x, slot.z, QUARTER.plot, QUARTER.plot, 1.2)
   }
+  if (input.quarter) for (let i = 0; i < input.monuments; i++) rect(monumentSpot(i).x, monumentSpot(i).z, MONUMENT.size + 1.6, MONUMENT.size + 1.6, 1)
   g.globalAlpha = 1
 
   // Запустение: трава выходит на улицы.

@@ -1,8 +1,9 @@
 import { TRADE_COINS, tradeYield } from './town'
 import { describe, expect, it } from 'vitest'
-import { toISO } from './rules'
+import { pickBroken, repairPrice } from './repair'
+import { pausedDays, toISO, type ConditionLevel } from './rules'
 import { SHOP } from './shop'
-import { BUILDINGS, COMFORT, TIERS, arrivalPace, blockers, buildCost, buildingType, comfortRoom, maxLevel, moodOf, replayTown, type Means, type Town, type TownAction } from './town'
+import { BUILDINGS, COMFORT, TIERS, arrivalPace, blockers, buildCost, buildHours, buildingType, comfortRoom, maxLevel, moodOf, replayTown, type Means, type Town, type TownAction } from './town'
 
 const day = (n: number) => toISO(new Date(2026, 10, 18 + n))
 /** Действие в 18:00 дня n. */
@@ -339,5 +340,317 @@ describe('рынок', () => {
     const busy = withMarket([])
     busy.builders = { total: 1, busy: 1 }
     expect(blockers(busy, { do: 'trade', type: 'wood' }, rich)).toEqual([])
+  })
+})
+
+// --- Поломки после долгого перерыва ---
+
+describe('поломки после перерыва', () => {
+  // Ноябрь 2026: 2-е — понедельник. Занятия 2, 3 и 4 ноября, дальше перерыв.
+  // К 10.11 пропущено 3 рабочих дня, к 11.11 — 4 (ломается одна вещь), к 17.11 — 8 (две).
+  const start = ['2026-11-02', '2026-11-03', '2026-11-04']
+  const at = (date: string, time: string, action: Omit<TownAction, 'at'>): TownAction => ({ at: `${date}T${time}:00`, ...action })
+  /** Постройки первого уровня, поставленные вечером 2 ноября: к утру все стоят. Журнал правила стройки не проверяет. */
+  const builds = (...types: string[]) => types.map((type, i) => at('2026-11-02', `18:0${i}`, { do: 'build', type }))
+  interface Setup {
+    /** Занятия после перерыва; без них перерыв ещё идёт. */
+    back?: string[]
+    /** Занятия до перерыва, если нужны не три первых дня ноября. */
+    days?: string[]
+    decor?: { item: string; date: string }[]
+    paused?: Set<string>
+    forcedLevel?: ConditionLevel | null
+    /** Час, на который считается город; по умолчанию — вечер. */
+    clock?: string
+  }
+  /** Город в день today. */
+  const play = (actions: TownAction[], today: string, setup: Setup = {}): Town =>
+    replayTown(actions, [...(setup.days ?? start), ...(setup.back ?? [])], new Date(`${today}T${setup.clock ?? '23:00'}:00`), setup.decor ?? [], {
+      today,
+      paused: setup.paused,
+      forcedLevel: setup.forcedLevel,
+    })
+  const broken = (town: Town) => town.buildings.filter((b) => b.broken).map((b) => b.id)
+  /** Всё сломанное: постройки и украшения. */
+  const all = (town: Town) => [...broken(town), ...town.damage.map((d) => d.item)].sort()
+  const trio = builds('house', 'garden', 'sawmill')
+  const workdays = (from: string, to: string) => {
+    const list: string[] = []
+    for (const cursor = new Date(`${from}T12:00:00`); toISO(cursor) <= to; cursor.setDate(cursor.getDate() + 1)) {
+      if (cursor.getDay() !== 0 && cursor.getDay() !== 6) list.push(toISO(cursor))
+    }
+    return list
+  }
+
+  it('перерыв в 4–7 рабочих дней ломает одну постройку, от 8 — две, короче — ничего', () => {
+    expect(broken(play(trio, '2026-11-04'))).toEqual([])
+    expect(broken(play(trio, '2026-11-10'))).toEqual([])
+    expect(broken(play(trio, '2026-11-11'))).toHaveLength(1)
+    expect(broken(play(trio, '2026-11-17'))).toHaveLength(2)
+    // после возвращения — столько же
+    expect(broken(play(trio, '2026-11-10', { back: ['2026-11-10'] }))).toEqual([])
+    expect(broken(play(trio, '2026-11-11', { back: ['2026-11-11'] }))).toHaveLength(1)
+    expect(broken(play(trio, '2026-11-17', { back: ['2026-11-17'] }))).toHaveLength(2)
+  })
+
+  it('без сегодняшней даты считаются только прошедшие перерывы', () => {
+    const late = new Date('2026-11-17T23:00:00')
+    expect(broken(replayTown(trio, start, late))).toEqual([])
+    expect(broken(replayTown(trio, [...start, '2026-11-17'], late))).toHaveLength(2)
+  })
+
+  it('украшения и постройки — один список: вместе ломается не больше двух вещей, экипировка цела', () => {
+    const decor = [
+      { item: 'pot', date: '2026-11-02' },
+      { item: 'bench', date: '2026-11-02' },
+      { item: 'hat', date: '2026-11-02' },
+    ]
+    expect(all(play(trio, '2026-11-11', { decor }))).toHaveLength(1)
+    const two = all(play(trio, '2026-11-17', { decor }))
+    expect(two).toHaveLength(2)
+    // выбор — то же правило, что у украшений: порядок зависит только от перерыва и вещи
+    expect(two).toEqual(pickBroken('2026-11-04', ['pot', 'bench', 'house-1', 'garden-1', 'sawmill-1'], 3, false).sort())
+  })
+
+  it('пока перерыв длится, выбор не перетасовывается; после возвращения сломано то же', () => {
+    const one = all(play(trio, '2026-11-11'))
+    const two = all(play(trio, '2026-11-17'))
+    expect(two).toContain(one[0])
+    expect(all(play(trio, '2026-11-13'))).toEqual(one)
+    expect(all(play(trio, '2026-11-20'))).toEqual(two)
+    expect(all(play(trio, '2026-11-17', { back: ['2026-11-17'] }))).toEqual(two)
+  })
+
+  it('сломанная лесопилка не даёт дерева два хода и чинится на третьем занятии', () => {
+    const mill = builds('sawmill')
+    // до перерыва — два хода с лесопилкой
+    expect(play(mill, '2026-11-04')).toMatchObject({ wood: 4, perTurn: { wood: 2 } })
+    // пока перерыв идёт, поломка уже видна, срок починки неизвестен
+    const away = play(mill, '2026-11-11')
+    expect(away.buildings[0].broken).toEqual({ since: '2026-11-04', healsIn: null, cost: 10 })
+    expect(away.perTurn.wood).toBe(0)
+    const first = play(mill, '2026-11-11', { back: ['2026-11-11'] })
+    expect(first).toMatchObject({ wood: 4, perTurn: { wood: 0 } })
+    expect(first.buildings[0].broken).toEqual({ since: '2026-11-04', healsIn: 2, cost: 10 })
+    const second = play(mill, '2026-11-12', { back: ['2026-11-11', '2026-11-12'] })
+    expect(second.wood).toBe(4)
+    expect(second.buildings[0].broken?.healsIn).toBe(1)
+    const third = play(mill, '2026-11-13', { back: ['2026-11-11', '2026-11-12', '2026-11-13'] })
+    expect(third).toMatchObject({ wood: 6, perTurn: { wood: 2 } })
+    expect(third.buildings[0].broken).toBeNull()
+  })
+
+  it('починка за монеты сразу возвращает работу и списывает пятую часть цены', () => {
+    const mill = builds('sawmill')
+    const fix = (date: string, time: string) => at(date, time, { do: 'repair', id: 'sawmill-1' })
+    expect([20, 50, 240, 600].map(repairPrice)).toEqual([10, 10, 50, 120])
+    // починили вечером в день возвращения: ход этого дня прошёл без лесопилки, следующий — уже с ней
+    const after = play([...mill, fix('2026-11-11', '18:00')], '2026-11-12', { back: ['2026-11-11', '2026-11-12'] })
+    expect(after).toMatchObject({ wood: 6, spent: { coins: 60 } })
+    expect(after.buildings[0].broken).toBeNull()
+    // починили, пока перерыв ещё шёл: к возвращению лесопилка цела и ход идёт с ней
+    const early = [...mill, fix('2026-11-12', '12:00')]
+    const back = play(early, '2026-11-17', { back: ['2026-11-17'] })
+    expect(back).toMatchObject({ wood: 6, spent: { coins: 60 } })
+    expect(back.buildings[0].broken).toBeNull()
+    // перерыв продолжается — починенное этим перерывом заново не ломается
+    expect(play(early, '2026-11-20').buildings[0].broken).toBeNull()
+  })
+
+  it('починка целой постройки — пустое действие: ничего не стоит и от будущего перерыва не защищает', () => {
+    const mill = [...builds('sawmill'), at('2026-11-03', '18:00', { do: 'repair', id: 'sawmill-1' }), at('2026-11-04', '18:00', { do: 'repair', id: 'sawmill-1' })]
+    const town = play(mill, '2026-11-04')
+    expect(town.spent.coins).toBe(50)
+    expect(blockers(town, { do: 'repair', id: 'sawmill-1' }, rich)).toEqual(['постройка цела'])
+    expect(blockers(town, { do: 'repair', id: 'well-7' }, rich)).toEqual(['такой постройки нет'])
+    const later = play(mill, '2026-11-11')
+    expect(broken(later)).toEqual(['sawmill-1'])
+    expect(later.spent.coins).toBe(50)
+    expect(blockers(later, { do: 'repair', id: 'sawmill-1' }, rich)).toEqual([])
+    expect(blockers(later, { do: 'repair', id: 'sawmill-1' }, { coins: 4, gems: 0, specials: 0 })).toEqual(['не хватает монет: 6'])
+    // строители починке не нужны
+    later.builders = { total: 1, busy: 1 }
+    expect(blockers(later, { do: 'repair', id: 'sawmill-1' }, rich)).toEqual([])
+  })
+
+  it('сломанную постройку нельзя улучшать, пока она не починена', () => {
+    const mill = builds('sawmill')
+    const upgrade = at('2026-11-11', '18:10', { do: 'upgrade', id: 'sawmill-1' })
+    const back = { back: ['2026-11-11'] }
+    expect(blockers(play(mill, '2026-11-11', back), { do: 'upgrade', id: 'sawmill-1' }, rich)).toEqual(['постройка сломана: сначала почини её'])
+    // запись в журнале правило не обходит
+    expect(play([...mill, upgrade], '2026-11-11', back)).toMatchObject({ spent: { coins: 50 }, buildings: [{ level: 1, pending: null }] })
+    const fixed = play([...mill, at('2026-11-11', '18:00', { do: 'repair', id: 'sawmill-1' }), upgrade], '2026-11-11', back)
+    expect(fixed.buildings[0]).toMatchObject({ level: 2, broken: null })
+  })
+
+  it('жильё сломанного жилища остаётся: жители не уходят', () => {
+    const home = builds('house', 'garden')
+    expect(play(home, '2026-11-04')).toMatchObject({ population: 2, housing: 2, food: 4 })
+    const after = play(home, '2026-11-17', { back: ['2026-11-17'] })
+    expect(broken(after)).toEqual(['house-1', 'garden-1'])
+    // огород сломан — еды за ход нет, двое едят из запаса; жилище сломано только на вид
+    expect(after).toMatchObject({ population: 2, housing: 2, food: 2, perTurn: { food: 0, eaten: 2 } })
+  })
+
+  it('запасы в сломанном амбаре и на сломанном складе не пропадают', () => {
+    // рабочие дни с 5 октября по 4 ноября: постройки стоят с первого вечера, запасы копятся 22 хода
+    const days = workdays('2026-10-05', '2026-11-04')
+    const early = (...types: string[]) => types.map((type, i) => at('2026-10-05', `18:0${i}`, { do: 'build', type }))
+    const back = { days, back: ['2026-11-17', '2026-11-18'] }
+    const food = early('barn', 'garden')
+    expect(play(food, '2026-11-04', { days })).toMatchObject({ food: 60, foodCap: 60 })
+    const pantry = play(food, '2026-11-18', back)
+    expect(broken(pantry)).toEqual(['barn-1', 'garden-1'])
+    expect(pantry).toMatchObject({ food: 60, foodCap: 60 })
+    const wood = early('store', 'sawmill')
+    expect(play(wood, '2026-11-04', { days })).toMatchObject({ wood: 44, materialCap: 70 })
+    const yard = play(wood, '2026-11-18', back)
+    expect(broken(yard)).toEqual(['store-1', 'sawmill-1'])
+    expect(yard).toMatchObject({ wood: 44, materialCap: 70 })
+  })
+
+  it('центр поселения не ломается', () => {
+    const town = play([at('2026-11-02', '18:00', { do: 'tier' })], '2026-11-17', { back: ['2026-11-17'] })
+    expect(town).toMatchObject({ tier: 1, buildings: [], damage: [] })
+    expect(play([at('2026-11-02', '18:00', { do: 'tier' })], '2026-11-17').idle.level).toBe(3)
+  })
+
+  it('строящееся и улучшаемое не ломается', () => {
+    // жилище улучшают за полчаса до полуночи перед возвращением: в день возвращения оно в лесах
+    const house = [...builds('house'), at('2026-11-10', '23:30', { do: 'upgrade', id: 'house-1' })]
+    expect(play(house, '2026-11-11', { back: ['2026-11-11'] }).buildings[0]).toMatchObject({ level: 2, broken: null })
+    expect(broken(play(builds('house'), '2026-11-11', { back: ['2026-11-11'] }))).toEqual(['house-1'])
+    // стройка, начатая за две минуты до полуночи, в день возвращения ещё идёт
+    const fresh = [at('2026-11-10', '23:58', { do: 'build', type: 'house' })]
+    expect(play(fresh, '2026-11-11', { back: ['2026-11-11'] }).buildings[0]).toMatchObject({ level: 1, broken: null })
+    // перерыв ещё идёт: в лесах постройка цела, а достроенная уже может сломаться
+    expect(play(house, '2026-11-11', { clock: '00:10' }).buildings[0]).toMatchObject({ level: 1, pending: { level: 2 }, broken: null })
+    expect(broken(play(house, '2026-11-11'))).toEqual(['house-1'])
+  })
+
+  it('запас дров прикрывает перерыв одинаково, идёт он или уже прошёл', () => {
+    const bare = builds('house')
+    const stocked = builds('house', 'woodshed')
+    // 4 пропущенных рабочих дня: без дров ломается одна вещь, с запасом на день — ничего
+    expect(all(play(bare, '2026-11-11'))).toHaveLength(1)
+    expect(all(play(bare, '2026-11-11', { back: ['2026-11-11'] }))).toHaveLength(1)
+    expect(play(stocked, '2026-11-11')).toMatchObject({ firewood: 1, idle: { missed: 4, covered: 1, level: 1 } })
+    expect(all(play(stocked, '2026-11-11'))).toEqual([])
+    expect(all(play(stocked, '2026-11-11', { back: ['2026-11-11'] }))).toEqual([])
+    // 5 дней: один прикрыт, остальные четыре ломают одну вещь
+    expect(all(play(stocked, '2026-11-12'))).toHaveLength(1)
+    expect(all(play(stocked, '2026-11-12', { back: ['2026-11-12'] }))).toHaveLength(1)
+  })
+
+  it('запас считается по дровнику до перерыва: сломавшись в этот перерыв, дровник его всё равно прикрывает', () => {
+    const shed = builds('woodshed')
+    const five = play(shed, '2026-11-12')
+    expect(broken(five)).toEqual(['woodshed-1'])
+    expect(five).toMatchObject({ firewood: 0, idle: { missed: 5, covered: 1, level: 2 } })
+    // 8 дней: без прикрытого дня это было бы третье запустение
+    expect(play(shed, '2026-11-17').idle).toEqual({ missed: 8, covered: 1, level: 2 })
+  })
+
+  it('дровник, сломанный прошлым перерывом, следующий перерыв не прикрывает', () => {
+    // первый перерыв (5 дней) ломает дровник; 12.11 возвращение, вечером ставят жилище; дальше ещё 4 пропуска
+    const town = [...builds('woodshed'), at('2026-11-12', '18:00', { do: 'build', type: 'house' })]
+    const second = (actions: TownAction[]) => play(actions, '2026-11-19', { back: ['2026-11-12'] })
+    const open = second(town)
+    expect(open.idle).toEqual({ missed: 4, covered: 0, level: 2 })
+    expect(open.buildings.filter((b) => b.broken?.since === '2026-11-12')).toHaveLength(1)
+    // дровник починили за монеты в день возвращения — запас снова работает
+    const mended = second([...town, at('2026-11-12', '18:10', { do: 'repair', id: 'woodshed-1' })])
+    expect(mended.idle).toEqual({ missed: 4, covered: 1, level: 1 })
+    expect(broken(mended)).toEqual([])
+  })
+
+  it('плановый перерыв пропуском не считается: ничего не ломается', () => {
+    const paused = pausedDays([{ from: '2026-11-05', to: '2026-11-13' }])
+    expect(all(play(trio, '2026-11-17'))).toHaveLength(2)
+    expect(play(trio, '2026-11-17', { paused }).idle).toEqual({ missed: 1, covered: 0, level: 0 })
+    expect(all(play(trio, '2026-11-17', { paused }))).toEqual([])
+    expect(all(play(trio, '2026-11-17', { paused, back: ['2026-11-17'] }))).toEqual([])
+  })
+
+  it('сторожевая башня: под её присмотром ломается одна вещь, а не две', () => {
+    const guarded = builds('house', 'garden', 'tower')
+    expect(all(play(trio, '2026-11-17'))).toHaveLength(2)
+    expect(all(play(guarded, '2026-11-17'))).toHaveLength(1)
+    expect(all(play(guarded, '2026-11-17', { back: ['2026-11-17'] }))).toHaveLength(1)
+  })
+
+  it('сломанная башня не сторожит: следующий перерыв ломает две вещи', () => {
+    // первый перерыв ломает башню — больше ломаться нечему; 17.11 возвращение, вечером ставят два жилища
+    const town = [...builds('tower'), at('2026-11-17', '18:00', { do: 'build', type: 'house' }), at('2026-11-17', '18:01', { do: 'build', type: 'house' })]
+    expect(play(town, '2026-11-17', { back: ['2026-11-17'] }).buildings[0].broken).toMatchObject({ since: '2026-11-04', healsIn: 2 })
+    // к 30.11 — ещё 8 пропущенных рабочих дней
+    const second = (actions: TownAction[]) => play(actions, '2026-11-30', { back: ['2026-11-17'] }).buildings.filter((b) => b.broken?.since === '2026-11-17')
+    expect(second(town)).toHaveLength(2)
+    // башню починили за монеты в день возвращения — она снова сторожит
+    expect(second([...town, at('2026-11-17', '18:02', { do: 'repair', id: 'tower-1' })])).toHaveLength(1)
+  })
+
+  it('сломанное не работает: уют, строители, хлеб', () => {
+    // в каждом городе одна постройка — она и ломается
+    const lone = (type: string, today = '2026-11-11') => play(builds(type), today)
+    expect(lone('well', '2026-11-04').comfort).toMatchObject({ wells: 2, total: 3 })
+    expect(lone('well').comfort).toMatchObject({ wells: 0, total: 1 })
+    expect(lone('tavern', '2026-11-04').comfort.tavern).toBe(4)
+    expect(lone('tavern').comfort.tavern).toBe(0)
+    const shop = lone('workshop', '2026-11-04')
+    expect(shop.builders.total).toBe(2)
+    expect(buildHours(shop, 2)).toBeCloseTo(0.94)
+    expect(lone('workshop').builders.total).toBe(1)
+    expect(buildHours(lone('workshop'), 2)).toBe(1)
+    // мельница и пекарня: что бы из двух ни сломалось, хлеба нет
+    const bread = builds('mill', 'bakery')
+    expect(play(bread, '2026-11-04').perTurn.food).toBe(15)
+    const stale = play(bread, '2026-11-11')
+    expect(broken(stale)).toHaveLength(1)
+    expect(stale.perTurn.food).toBe(0)
+  })
+
+  it('сломанный рынок не торгует, пока его не починят', () => {
+    const market = builds('market')
+    const trade = at('2026-11-11', '12:00', { do: 'trade', type: 'food' })
+    const town = play([...market, trade], '2026-11-11')
+    expect(town).toMatchObject({ food: 0, spent: { coins: 350 } })
+    expect(blockers(town, { do: 'trade', type: 'food' }, rich)).toEqual(['рынок сломан: сначала почини его'])
+    const mended = play([...market, at('2026-11-11', '11:00', { do: 'repair', id: 'market-1' }), trade], '2026-11-11')
+    expect(mended).toMatchObject({ food: 10, spent: { coins: 350 + 70 + TRADE_COINS } })
+  })
+
+  it('сломанный колодец не поит новых жителей: сверх шести не приходят, но никто не уходит', () => {
+    // Четверг 29.10: две ступени (уют 5 и без колодца), колодец, пять жилищ, четыре огорода. За четыре хода приходят восемь жителей.
+    const days = ['2026-10-29', '2026-10-30', ...start]
+    const first = (time: string, action: Omit<TownAction, 'at'>) => at('2026-10-29', time, action)
+    const town = [
+      first('18:00', { do: 'tier' }),
+      first('18:10', { do: 'tier' }),
+      first('18:11', { do: 'build', type: 'well' }),
+      ...[1, 2, 3, 4, 5].map((i) => first(`18:2${i}`, { do: 'build', type: 'house' })),
+      ...[1, 2, 3, 4].map((i) => first(`18:3${i}`, { do: 'build', type: 'garden' })),
+    ]
+    expect(play(town, '2026-11-04', { days })).toMatchObject({ tier: 2, population: 8, housing: 10 })
+    // без перерыва девятый житель приходит на следующем же ходу
+    expect(play(town, '2026-11-05', { days, back: ['2026-11-05'] }).population).toBe(9)
+    // Жилища и огороды улучшают за полчаса до возвращения: в лесах они не ломаются, остаётся колодец.
+    const ids = [...[1, 2, 3, 4, 5].map((i) => `house-${i}`), ...[1, 2, 3, 4].map((i) => `garden-${i}`)]
+    const scaffold = ids.map((id, i) => at('2026-11-10', `23:3${i}`, { do: 'upgrade', id }))
+    const after = play([...town, ...scaffold], '2026-11-11', { days, back: ['2026-11-11'] })
+    expect(broken(after)).toEqual(['well-1'])
+    // уюта без колодца хватило бы и девятому — не пускает именно сломанный колодец
+    expect(after).toMatchObject({ population: 8, housing: 15, comfort: { wells: 0, total: 5 } })
+    expect(arrivalPace(after)).toBe('normal')
+  })
+
+  it('предпросмотр: как будто идущий перерыв уже дошёл до нужного уровня', () => {
+    const look = (today: string, forcedLevel: ConditionLevel | null) => all(play(trio, today, { forcedLevel }))
+    expect(look('2026-11-04', null)).toEqual([])
+    expect(look('2026-11-04', 2)).toHaveLength(1)
+    expect(look('2026-11-04', 3)).toHaveLength(2)
+    expect(look('2026-11-04', 3)).toEqual(look('2026-11-17', null))
+    expect(look('2026-11-17', 0)).toEqual([])
   })
 })

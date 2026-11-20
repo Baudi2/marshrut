@@ -1,14 +1,24 @@
 // Что показывает сцена города: настоящее состояние из журнала или предпросмотр будущей ступени.
-import type { World } from '../game/engine'
+import type { CycleView, World } from '../game/engine'
 import { SHOP, shopItem } from '../game/shop'
 import { BUILDINGS, TIERS, maxLevel } from '../game/town'
 import type { Season } from '../world/sky'
 import { QUARTER_SLOTS } from './plan'
-import type { TownSpecialView, TownView } from './town'
+import type { TownMonumentView, TownSpecialView, TownView } from './town'
 
-/** Особые постройки: файлы всех циклов по порядку появления. */
-export function specialsOf(world: World): TownSpecialView[] {
+type Cycles = Pick<CycleView, 'id' | 'n' | 'name' | 'done' | 'buildings'>[]
+
+/**
+ * Цикл свёрнут в памятник: он закрыт, и после него уже начат следующий.
+ * Пока следующего цикла нет, постройки-файлы закрытого цикла стоят в слободе как стояли —
+ * памятник появляется рядом, а место в слободе освобождается, только когда оно понадобится.
+ */
+export const folded = (cycle: Cycles[number], cycles: Cycles): boolean => cycle.done && cycles.some((other) => other.n > cycle.n)
+
+/** Особые постройки: файлы всех несвёрнутых циклов по порядку появления. */
+export function specialsOf(world: { cycles: Cycles }): TownSpecialView[] {
   return world.cycles
+    .filter((cycle) => !folded(cycle, world.cycles))
     .flatMap((cycle) =>
       cycle.buildings.map((b) => ({
         id: `file:${cycle.id}:${b.item.id}`,
@@ -21,13 +31,22 @@ export function specialsOf(world: World): TownSpecialView[] {
     .slice(0, QUARTER_SLOTS)
 }
 
+/** Памятники: по одному на каждый закрытый цикл, по порядку циклов. */
+export function monumentsOf(world: { cycles: Cycles }): TownMonumentView[] {
+  return world.cycles
+    .filter((cycle) => cycle.done)
+    .sort((a, b) => a.n - b.n)
+    .map((cycle) => ({ id: `cycle:${cycle.id}`, n: cycle.n, title: `Памятник цикла ${cycle.n}: ${cycle.name}` }))
+}
+
 export function townView(world: World, season: Season, neglect: number, gear: string[] = []): TownView {
   const { town } = world
   return {
     tier: town.tier,
     tierPending: town.tierPending,
-    buildings: town.buildings.map((b) => ({ id: b.id, type: b.type, level: b.level, pending: b.pending })),
+    buildings: town.buildings.map((b) => ({ id: b.id, type: b.type, level: b.level, pending: b.pending, broken: !!b.broken })),
     specials: specialsOf(world),
+    monuments: monumentsOf(world),
     population: town.population,
     season,
     neglect,
@@ -59,6 +78,8 @@ export function previewView(tier: number, world: World, season: Season, neglect:
     tierPending: null,
     buildings,
     specials,
+    // Памятники — только настоящие: предпросмотр не обещает закрытых циклов.
+    monuments: monumentsOf(world),
     population: Math.max(TIERS[tier].residents, tier * 3),
     season,
     neglect,

@@ -4,6 +4,7 @@ import type { ConditionLevel } from '../game/rules'
 import { ConditionPreview, DAYS, RichText, TrackBadge, fmtDate, plural } from '../ui/bits'
 import { timeReport } from '../game/report'
 import { SIGN_GEMS, SIGN_MAX } from '../game/rewards'
+import { cycleCaption } from '../game/summary'
 import { GemIcon } from '../world/extras'
 import { MapScene, NODE_LABEL } from '../world/MapScene'
 import { trackColor } from '../world/sprites'
@@ -82,12 +83,20 @@ export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi,
 
       <WeekReport cycle={cycle} />
 
+      {/* Вход на страницу «Итог цикла»: она без вкладки, открывается отсюда. */}
+      <a className="card deck-link" href={`#/cycle/${cycle.id}`}>
+        <span>
+          <b>Итог цикла.</b> {cycleCaption(cycle)}
+        </span>
+        <span aria-hidden="true">→</span>
+      </a>
+
       <SkyCard api={skyApi} />
 
       <ConditionPreview
         real={world.condition.level}
         missed={world.missedWorkdays}
-        firewood={world.town.firewood}
+        firewood={Math.max(world.town.firewood, world.covered)}
         covered={world.covered}
         breaks={world.breaks}
         value={preview}

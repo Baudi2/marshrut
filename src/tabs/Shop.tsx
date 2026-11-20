@@ -70,7 +70,7 @@ export function Shop({ shop, groups, sync }: { shop: ShopApi; groups?: ('gear' |
         <div className="repair">
           <h4>Ремонт</h4>
           <p>
-            Долгий перерыв сломал {damage.length} {plural(damage.length, ['постройку', 'постройки', 'построек'])}. Платить
+            Долгий перерыв сломал {damage.length} {plural(damage.length, ['украшение', 'украшения', 'украшений'])}. Платить
             не обязательно: всё чинится само за {HEAL_SESSIONS} занятия после возвращения. Монеты только ускоряют.
           </p>
           <ul>

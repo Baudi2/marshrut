@@ -1,9 +1,9 @@
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { addDeckReviews, beatMistake } from './record-lib.mjs'
+import { addDeckReviews, beatMistake, decodeText, parseJsonInput } from './record-lib.mjs'
 import { RecordError, addBreak, addCheck, addMistake, addOffplan, addPurchase, addSession, addTownActions, closeDay, editTodo, markSteps, mergeLedger } from './record-lib.mjs'
 import {
   addAttempts,
@@ -92,10 +92,35 @@ describe('запись занятия', () => {
     // без нового времени конца дописывать нечего; чужой день не подходит
     const open = fresh()
     addSession(plan, open, { date: '2026-11-19', from: '15:30', topics: ['тема'] })
-    expect(() => addSession(plan, open, { date: '2026-11-19', from: '15:30', topics: ['тема'] })).toThrow(/уже записано/)
+    expect(() => addSession(plan, open, { date: '2026-11-19', from: '15:30', topics: ['тема'] })).toThrow(/уже записано \(день 2\)\. Конец допиши той же командой с --to/)
     expect(() => addSession(plan, open, { date: '2026-11-19', from: '15:30', to: '16:40', day: 1 })).toThrow(/записано в дне 2, а не 1/)
     expect(() => addSession(plan, open, { date: '2026-11-19', from: '15:30', to: '15:00' })).toThrow(/не позже начала/)
     expect(open.sessions.at(-1).to).toBeNull()
+  })
+
+  it('занятие с уже записанным концом — повтор, даже если тем не назвали: ответ говорит, что записано', () => {
+    const p = fresh()
+    addSession(plan, p, { date: '2026-11-19', from: '15:30', to: '16:40', topics: ['тема'] })
+    const snapshot = structuredClone(p)
+    expect(() => addSession(plan, p, { date: '2026-11-19', from: '15:30', to: '17:00' })).toThrow(/занятие 2026-11-19 с 15:30 уже записано \(до 16:40, день 2\)\. Время и темы записанного занятия правятся в файле/)
+    expect(() => addSession(plan, p, { date: '2026-11-17', topics: ['тема'] })).not.toThrow()
+    expect(() => addSession(plan, p, { date: '2026-11-17', topics: ['тема'] })).toThrow(/занятие 2026-11-17 без времени уже записано \(день 2\)/)
+    p.sessions = snapshot.sessions
+    // конец без начала — не время занятия
+    expect(() => addSession(plan, p, { date: '2026-11-20', to: '17:10', topics: ['тема'] })).toThrow(/конец 17:10 назван без начала/)
+    expect(p.sessions).toEqual(snapshot.sessions)
+  })
+
+  it('занятие через полночь принимается с предупреждением, как его читает сайт; длинное «через полночь» — опечатка', () => {
+    const p = fresh()
+    const late = addSession(plan, p, { date: '2026-11-19', from: '23:30', to: '00:40', topics: ['тема'] })
+    expect(late).toMatch(/^Занятие 2026-11-19 23:30–00:40 записано: день 2, тем 1\.\nВнимание: конец раньше начала — занятие записано как перешедшее за полночь, 70 мин\./)
+    expect(p.sessions.at(-1)).toMatchObject({ date: '2026-11-19', from: '23:30', to: '00:40' })
+    // дописанный конец — то же правило
+    addSession(plan, p, { date: '2026-11-20', from: '22:00', topics: ['тема'] })
+    expect(addSession(plan, p, { date: '2026-11-20', from: '22:00', to: '01:15' })).toMatch(/дописано: день 2, тем 1\.\nВнимание: .*195 мин/)
+    expect(() => addSession(plan, p, { date: '2026-11-21', from: '16:00', to: '09:59', topics: ['тема'] })).toThrow(/конец 09:59 не позже начала 16:00/)
+    expect(() => addSession(plan, p, { date: '2026-11-21', from: '16:00', to: '16:00', topics: ['тема'] })).toThrow(/не позже начала/)
   })
 
   it('не принимает повтор, плохую дату, день не из плана и занятие без тем', () => {
@@ -123,7 +148,8 @@ describe('запись занятия', () => {
 
   it('закрытие дня считает закрытые дни и переводит позицию на следующий день', () => {
     const p = fresh()
-    expect(closeDay(plan, p, { status: 'core', date: '2026-11-19' })).toMatch(/Закрыто дней: 2 из 3/)
+    addSession(plan, p, { date: '2026-11-19', topics: ['тема'] })
+    expect(closeDay(plan, p, { status: 'core', date: '2026-11-19' })).toMatch(/^День 2: статус core\. Закрыто дней: 2 из 3/)
     expect(p.days.find((d) => d.day === 2)).toMatchObject({ status: 'core', dates: ['2026-11-19'] })
     expect(p.position).toMatchObject({ currentDay: 3, currentStep: 1, daysDone: 2 })
     // пропущенный день закрытым не считается; последний день позицию не двигает
@@ -131,6 +157,37 @@ describe('запись занятия', () => {
     expect(p.position).toMatchObject({ currentDay: 3, daysDone: 2 })
     expect(() => closeDay(plan, fresh(), { status: 'done', date: '2026-11-19' })).toThrow(/статус/)
     expect(() => closeDay(plan, fresh(), { status: 'core' })).toThrow(/date/)
+  })
+
+  it('день без занятий не закрывается: повторный запуск не закроет следующий день', () => {
+    const p = fresh()
+    const untouched = structuredClone(p)
+    expect(() => closeDay(plan, p, { status: 'core', date: '2026-11-19' })).toThrow(/у дня 2 в журнале нет ни одного занятия: закрывать нечего\. Сначала запиши занятие: session --date 2026-11-19/)
+    expect(p).toEqual(untouched)
+    addSession(plan, p, { date: '2026-11-19', topics: ['тема'] })
+    closeDay(plan, p, { status: 'core', date: '2026-11-19' })
+    // та же команда второй раз: позиция уже на дне 3, а занятий у него нет
+    const closed = structuredClone(p)
+    expect(() => closeDay(plan, p, { status: 'core', date: '2026-11-19' })).toThrow(/у дня 3 .*нет ни одного занятия.*Если ты закрывал день 2 — он уже закрыт, позиция перешла на день 3/)
+    expect(p).toEqual(closed)
+    // день назван явно — подсказки про повторный запуск нет
+    expect(() => closeDay(plan, p, { status: 'core', date: '2026-11-19', day: 3 })).toThrow(/session --date 2026-11-19 --topic "…"$/)
+  })
+
+  it('статус закрытого дня: повышение — молча, понижение — с предупреждением, пропуском закрытый день не становится', () => {
+    const p = fresh()
+    addSession(plan, p, { date: '2026-11-19', topics: ['тема'] })
+    closeDay(plan, p, { status: 'minimum', date: '2026-11-19' })
+    const up = closeDay(plan, p, { status: 'extension', date: '2026-11-20', day: 2 })
+    expect(up).toMatch(/^День 2: статус extension, был minimum\. Закрыто дней: 2 из 3\. Позиция: день 3, шаг 1\.$/)
+    const down = closeDay(plan, p, { status: 'core', date: '2026-11-20', day: 2 })
+    expect(down).toMatch(/статус core, был extension\./)
+    expect(down).toMatch(/Внимание: статус дня понижен с extension до core/)
+    // тот же статус ещё раз — без «был» и без предупреждения
+    expect(closeDay(plan, p, { status: 'core', date: '2026-11-20', day: 2 })).toMatch(/^День 2: статус core\. Закрыто дней: 2 из 3\. Позиция: день 3, шаг 1\.$/)
+    const snapshot = structuredClone(p)
+    expect(() => closeDay(plan, p, { status: 'skipped', day: 2 })).toThrow(/день 2 уже закрыт \(core\): пропущенным его не отметить/)
+    expect(p).toEqual(snapshot)
   })
 
   it('проверка понимания, ошибка и хвосты', () => {
@@ -147,6 +204,28 @@ describe('запись занятия', () => {
     expect(p.openItems).toEqual(['шаг 3 ждёт ноутбука'])
     expect(() => editTodo(p, { done: 5 })).toThrow(RecordError)
   })
+
+  it('повторный запуск не плодит двойников: проверка понимания, ошибка и хвост', () => {
+    const p = fresh()
+    const check = { date: '2026-11-19', track: 'C1', question: 'Что делает wrapper?', firstAnswer: 'качает Gradle', verdict: 'partial', answer: 'фиксирует версию Gradle' }
+    addCheck(plan, p, check)
+    expect(() => addCheck(plan, p, check)).toThrow(/проверка понимания с таким вопросом за 2026-11-19 уже записана/)
+    expect(() => addCheck(plan, p, { ...check, question: '  что делает  WRAPPER? ', verdict: 'correct' })).toThrow(/уже записана/)
+    // тот же вопрос в другой день — новая проверка и новая карточка
+    addCheck(plan, p, { ...check, date: '2026-11-26', verdict: 'correct' })
+    expect(p.knowledgeChecks).toHaveLength(2)
+
+    expect(addMistake(plan, p, { date: '2026-11-19', track: 'A', text: 'перепутал .length и .size' })).toBe('Ошибка записана: трек A, №1 в журнале.')
+    expect(() => addMistake(plan, p, { date: '2026-11-19', track: 'A', text: 'Перепутал  .length и .size' })).toThrow(/такая ошибка за 2026-11-19 уже записана: №1 в журнале/)
+    expect(addMistake(plan, p, { date: '2026-11-26', track: 'A', text: 'перепутал .length и .size' })).toMatch(/№2 в журнале/)
+    expect(p.mistakes).toHaveLength(2)
+
+    const before = structuredClone(p.openItems)
+    expect(() => editTodo(p, { add: ' Дочитать  статью ' })).toThrow(/такой хвост уже записан: №1/)
+    expect(() => editTodo(p, { add: 'новый хвост', done: 1 })).toThrow(/или добавить \(--add\), или снять \(--done\)/)
+    expect(() => editTodo(p, {})).toThrow(/нужно --add "текст" — добавить или --done N — снять по номеру/)
+    expect(p.openItems).toEqual(before)
+  })
 })
 
 describe('итог дня и артефакты', () => {
@@ -159,6 +238,7 @@ describe('итог дня и артефакты', () => {
     expect(p.meta.updatedAt).toBe('2026-11-19')
     // новый итог заменяет старый, и старый виден в ответе команды
     expect(describeDay(plan, p, { day: 1, summary: 'Старт: репозиторий и pet-проект', minutes: 110 })).toMatch(/итог заменён \(было: «Старт: репозиторий»\); на деле 110 мин \(было 100\)/)
+    expect(describeDay(plan, p, { day: 1, note: 'шаг 2 подтверждён' })).toBe('День 1: заметка заменена (было: «шаг 2 в чате не подтверждён»).')
     // без номера дня — текущий день; записи о нём ещё нет, она заводится начатой
     describeDay(plan, p, { summary: 'Замер' })
     expect(p.days.find((d) => d.day === 2)).toMatchObject({ status: 'in_progress', summary: 'Замер' })
@@ -221,6 +301,16 @@ describe('итог дня и артефакты', () => {
     expect(p.days.find((d) => d.day === 2).artifacts).toHaveLength(4)
     // записанный путь помнит свой репозиторий
     expect(setArtifact(plan, p, { path: 'notes/idea.md', state: 'committed' })).toMatch(/saved → committed/)
+  })
+
+  it('построенный файл снова стал стройкой — предупреждение: домик и очки на сайте пропадут', () => {
+    const p = fresh()
+    expect(setArtifact(plan, p, { path: 'notes/baseline.md', state: 'not-saved' })).not.toMatch(/Внимание/)
+    expect(setArtifact(plan, p, { path: 'notes/baseline.md', state: 'saved' })).not.toMatch(/Внимание/)
+    expect(setArtifact(plan, p, { path: 'notes/baseline.md', state: 'committed' })).not.toMatch(/Внимание/)
+    const back = setArtifact(plan, p, { path: 'notes/baseline.md', state: 'not-saved' })
+    expect(back).toMatch(/committed → not-saved\. Домик лагеря: «Замер»\.\nВнимание: файл был построен \(committed\), а теперь снова стройка \(not-saved\)/)
+    expect(p.days.find((d) => d.day === 2).artifacts).toEqual([{ repo: 'prep-basic', path: 'notes/baseline.md', state: 'not-saved' }])
   })
 
   it('артефакт: проверки ввода', () => {
@@ -483,7 +573,7 @@ describe('недельный тест и чекпоинт недели', () => {
       expect(p).toEqual(snapshot)
     }
     bad({ week: 7 }, /в плане нет недели 7: есть 1, 2/)
-    bad({ week: undefined }, /в плане нет недели/)
+    bad({ week: undefined }, /не назван номер недели: в плане есть 1, 2/)
     bad({ date: 'вчера' }, /date/)
     // тест открыт, когда закрыты все дни недели; пропущенный день закрытым не считается
     bad({}, /тест недели 1 ещё закрыт: не закрыты дни 2/, fresh())
@@ -498,7 +588,7 @@ describe('недельный тест и чекпоинт недели', () => {
     bad({ record: questions({ track: undefined }) }, /вопрос 1: трек/)
     bad({ record: questions({ points: 3 }) }, /вопрос 1: points — 0, 1 или 2/)
     bad({ record: questions({ points: 1.5 }) }, /points/)
-    bad({ record: questions({ points: '2' }) }, /points/)
+    bad({ record: questions({ points: '2' }) }, /вопрос 1: points — число 0, 1 или 2 без кавычек, а пришла строка «2»/)
     bad({ record: questions({ q: 'Один и тот же' }) }, /вопрос «Один и тот же» в тесте дважды/)
     bad({ record: questions({ q: ' ' }) }, /вопрос 1: q/)
     bad({ record: { questions: questions(), score: 16 } }, /в записи score 16, а по вопросам выходит 9/)
@@ -516,6 +606,7 @@ describe('недельный тест и чекпоинт недели', () => {
     expect(() => closeWeek(plan, p, { n: 1, date: '2026-11-21' })).toThrow(/неделя 1 уже закрыта по чекпоинту \(2026-11-20\)/)
     expect(() => closeWeek(plan, p, { n: 2, date: '2026-11-21' })).toThrow(/неделя 2 ещё идёт: не закрыты дни 3/)
     expect(() => closeWeek(plan, p, { n: 9, date: '2026-11-21' })).toThrow(/нет недели 9/)
+    expect(() => closeWeek(plan, p, { date: '2026-11-21' })).toThrow(/не назван номер недели/)
     expect(p).toEqual(snapshot)
     expect(() => closeWeek(plan, weekDone(), { n: 1 })).toThrow(/date/)
     expect(() => closeWeek(plan, weekDone(), { n: 1, date: '2026-11-18' })).toThrow(/раньше последнего занятия недели/)
@@ -662,10 +753,29 @@ describe('CI, события, замер, наблюдения и паузы', (
 describe('запись вне занятия', () => {
   it('плановый перерыв: даты по порядку, без пересечений', () => {
     const p = fresh()
-    addBreak(p, { from: '2026-12-28', to: '2027-01-08', reason: 'отпуск' })
+    expect(addBreak(p, { from: '2026-12-28', to: '2027-01-08', reason: 'отпуск' })).toBe('Плановый перерыв 2026-12-28 — 2027-01-08 записан: рабочих дней 10, всего занято 10 из 10 на цикл.')
     expect(p.breaks).toEqual([{ from: '2026-12-28', to: '2027-01-08', reason: 'отпуск' }])
     expect(() => addBreak(p, { from: '2027-01-05', to: '2027-01-06' })).toThrow(/пересекается/)
     expect(() => addBreak(p, { from: '2027-02-05', to: '2027-02-01' })).toThrow(/раньше/)
+  })
+
+  it('плановый перерыв: на цикл десять рабочих дней, сверх лимита запись не делается', () => {
+    const p = fresh()
+    // пн–пт и выходные по краям: в счёт идут только рабочие дни
+    expect(addBreak(p, { from: '2026-12-05', to: '2026-12-13', reason: 'болезнь', today: '2026-12-04' })).toMatch(/рабочих дней 5, всего занято 5 из 10/)
+    const snapshot = structuredClone(p)
+    expect(() => addBreak(p, { from: '2026-12-28', to: '2027-01-08' })).toThrow(
+      /перерыв 2026-12-28 — 2027-01-08 — это рабочих дней: 10, а на цикл их даётся 10, занято уже 5\. Перерыв можно записать не длиннее, чем на 5; дни сверх лимита — обычный пропуск/,
+    )
+    expect(p).toEqual(snapshot)
+    expect(addBreak(p, { from: '2026-12-28', to: '2027-01-01' })).toMatch(/рабочих дней 5, всего занято 10 из 10/)
+    expect(() => addBreak(p, { from: '2027-02-01', to: '2027-02-01' })).toThrow(/занято уже 10\. дни сверх лимита/)
+    // выходные лимит не тратят
+    expect(addBreak(p, { from: '2027-02-06', to: '2027-02-07' })).toMatch(/рабочих дней 0, всего занято 10 из 10/)
+    // задним числом — предупреждение: так записывают только по прямой просьбе
+    const late = fresh()
+    expect(addBreak(late, { from: '2026-11-16', to: '2026-11-17', today: '2026-11-19' })).toMatch(/Внимание: перерыв начинается задним числом \(2026-11-16\)/)
+    expect(addBreak(late, { from: '2026-11-19', to: '2026-11-20', today: '2026-11-19' })).not.toMatch(/Внимание/)
   })
 
   it('покупка: только предмет из лавки и только один раз; ремонт можно повторять в другой день', () => {
@@ -692,9 +802,14 @@ describe('запись вне занятия', () => {
     expect(file.purchases).toHaveLength(2)
     expect(file.signs).toEqual(record.signs)
     const bad = { purchases: [{ item: 'hat', date: '2026-11-21' }], signs: [{ cycle: '01-basic-month', day: 'два', text: 'т', date: '2026-11-21' }] }
-    expect(() => mergeLedger(file, ['pot', 'bench', 'hat'], bad)).toThrow(/signs, запись 1/)
+    expect(() => mergeLedger(file, ['pot', 'bench', 'hat'], bad)).toThrow(/signs, запись 1: не тот формат — нужны cycle — папка цикла, day — номер дня числом/)
     expect(file.purchases).toHaveLength(2)
     expect(() => mergeLedger(file, ['pot'], [])).toThrow(RecordError)
+    // ошибка называет причину: предмета нет в лавке или не та дата
+    expect(() => mergeLedger(file, ['pot', 'bench'], { purchases: [{ item: 'castle', date: '2026-11-21' }] })).toThrow(/purchases, запись 1: предмета «castle» в лавке нет, есть pot, bench/)
+    expect(() => mergeLedger(file, ['pot', 'bench'], { repairs: [{ item: 'pot', date: '21.11.2026' }] })).toThrow(/repairs, запись 1: не тот формат — нужны item — id предмета из лавки и date — дата ГГГГ-ММ-ДД/)
+    expect(() => mergeLedger(file, ['pot'], { rewards: [{ id: 'r2', name: 'Книга', gems: '5' }] })).toThrow(/rewards, запись 1: не тот формат — нужны id, name и gems/)
+    expect(file.purchases).toHaveLength(2)
   })
 
   it('журнал города: записи добавляются как есть, повторы пропускаются, порядок по времени', () => {
@@ -711,6 +826,30 @@ describe('запись вне занятия', () => {
     expect(() => addTownActions(file, [{ at: '2026-11-21T10:00:00', do: 'trade', type: 'gold' }])).toThrow(/обмена/)
   })
 
+  it('журнал города: починка постройки — действие repair с id постройки', () => {
+    const file = { actions: [{ at: '2026-11-20T18:05:00', do: 'tier' }] }
+    const repair = { at: '2026-12-02T10:00:00', do: 'repair', id: 'sawmill-1' }
+    expect(addTownActions(file, [repair, { ...repair, id: 'house-2' }])).toBe('Действий добавлено: 2, уже были в журнале: 0.')
+    expect(file.actions.slice(1)).toEqual([repair, { at: '2026-12-02T10:00:00', do: 'repair', id: 'house-2' }])
+    // повтор пропускается, как у остальных действий; та же постройка в другое время — новая починка
+    expect(addTownActions(file, [repair, { ...repair, at: '2026-12-20T09:00:00' }])).toBe('Действий добавлено: 1, уже были в журнале: 1.')
+    expect(file.actions).toHaveLength(4)
+    const snapshot = structuredClone(file)
+    expect(() => addTownActions(file, [{ at: '2026-12-21T10:00:00', do: 'repair' }])).toThrow(/действие 1: у починки нужен id постройки, например sawmill-1/)
+    expect(() => addTownActions(file, [{ at: '2026-12-21T10:00:00', do: 'repair', id: ' ' }])).toThrow(/у починки нужен id/)
+    expect(() => addTownActions(file, [{ at: '2026-12-21T10:00:00', do: 'repair', type: 'sawmill' }])).toThrow(/у починки нужен id/)
+    expect(() => addTownActions(file, [{ at: '2026-12-21T10:00:00', do: 'demolish', id: 'sawmill-1' }])).toThrow(/поле do — одно из tier, build, upgrade, trade, repair/)
+    expect(file).toEqual(snapshot)
+    // в единой записи из браузера — то же: одно действие и раздел town
+    expect(browserSections(repair)).toEqual({ town: [repair] })
+    const f = files()
+    expect(syncBrowser(plan, f, ['pot'], [], { town: [repair] })).toBe('Город. Действий добавлено: 1, уже были в журнале: 0.')
+    expect(syncBrowser(plan, f, ['pot'], [], { town: [repair] })).toBe('Город. Действий добавлено: 0, уже были в журнале: 1.')
+    expect(f.town.actions).toEqual([repair])
+    expect(() => syncBrowser(plan, f, ['pot'], [], { ledger: { purchases: [{ item: 'pot', date: '2026-12-02' }] }, town: [{ at: '2026-12-03T10:00:00', do: 'repair' }] })).toThrow(/город: действие 1: у починки нужен id/)
+    expect(f.ledger.purchases).toEqual([])
+  })
+
   it('стороннее развитие: без нужного числа выводов запись не принимается', () => {
     const file = { entries: [] }
     const video = { date: '2026-11-20', kind: 'video', title: 'Доклад про Gradle', source: 'YouTube', track: 'C1', minutes: 40 }
@@ -719,6 +858,24 @@ describe('запись вне занятия', () => {
     expect(file.entries[0]).toEqual({ ...video, takeaways: ['первая', 'вторая'] })
     expect(() => addOffplan(plan, file, { date: '2026-11-20', kind: 'mock-interview', title: 'Собеседование', takeaways: ['1', '2'] })).toThrow(/нужно выводов: 3/)
     expect(() => addOffplan(plan, file, { date: '2026-11-20', kind: 'podcast', title: 'Подкаст' })).toThrow(/kind/)
+  })
+
+  it('стороннее развитие: повторный запуск и одинаковые выводы не проходят; вторая запись вида за день — с предупреждением', () => {
+    const file = { entries: [] }
+    const video = { date: '2026-11-20', kind: 'video', title: 'Доклад про Gradle', takeaways: ['первая', 'вторая'] }
+    expect(addOffplan(plan, file, video)).toBe('Стороннее развитие записано: video, «Доклад про Gradle», выводов 2.')
+    expect(() => addOffplan(plan, file, { ...video, title: ' доклад про  gradle ' })).toThrow(/такая запись уже есть: video «доклад про +gradle» за 2026-11-20/)
+    expect(() => addOffplan(plan, file, { ...video, title: 'Другой доклад', takeaways: ['Мысль', ' мысль '] })).toThrow(/вывод « ?мысль ?» записан дважды: выводы должны быть разными/i)
+    // у задач вне плана выводов нет: без проверки повтора сайт засчитал бы вторую такую же запись ещё раз
+    const solved = { date: '2026-11-20', kind: 'problem-self', title: 'LeetCode 1: Two Sum' }
+    addOffplan(plan, file, solved)
+    expect(() => addOffplan(plan, file, solved)).toThrow(/такая запись уже есть: problem-self/)
+    expect(file.entries).toHaveLength(2)
+    // второе видео за тот же день записывается, но очков не даст — об этом сказано
+    const second = addOffplan(plan, file, { ...video, title: 'Второй доклад', takeaways: ['третья', 'четвёртая'] })
+    expect(second).toMatch(/записано: video, «Второй доклад», выводов 2\.\nВнимание: за 2026-11-20 уже есть засчитанная запись вида video/)
+    expect(addOffplan(plan, file, { ...video, date: '2026-11-21', title: 'Второй доклад' })).not.toMatch(/Внимание/)
+    expect(file.entries).toHaveLength(4)
   })
 })
 
@@ -992,6 +1149,66 @@ describe('единая запись из браузера', () => {
   })
 })
 
+describe('JSON от оболочки: что дошло испорченным, не записывается', () => {
+  const record = '{"deck":{"cards":[{"question":"Зачем нужен слой data?","answer":"Прячет «источники» — за репозиторием"}]}}'
+  const utf8 = Buffer.from(record, 'utf8')
+  const bom = Buffer.from([0xef, 0xbb, 0xbf])
+
+  it('байты в текст: метка порядка байтов убирается, UTF-16 с меткой читается; не UTF-8 — ошибка с советом', () => {
+    expect(decodeText(utf8, 'файл')).toBe(record)
+    // Windows PowerShell ставит метку перед текстом, а при конвейере — бывает, и две
+    expect(decodeText(Buffer.concat([bom, utf8]), 'файл')).toBe(record)
+    expect(decodeText(Buffer.concat([bom, bom, utf8]), 'стандартный ввод')).toBe(record)
+    // так пишут файлы `>` и Out-File в Windows PowerShell 5.1
+    expect(decodeText(Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(record, 'utf16le')]), 'файл')).toBe(record)
+    expect(decodeText(Buffer.concat([Buffer.from([0xfe, 0xff]), Buffer.from(record, 'utf16le').swap16()]), 'файл')).toBe(record)
+    expect(() => decodeText(Buffer.from(record, 'utf16le'), 'файл запись.json')).toThrow(/файл запись\.json: это не UTF-8 — похоже на UTF-16 без метки/)
+    // кириллица в однобайтной кодировке Windows — не UTF-8
+    const ansi = Buffer.from([0x7b, 0x22, 0x71, 0x22, 0x3a, 0x22, 0xc7, 0xe0, 0xf7, 0xe5, 0xec, 0x22, 0x7d])
+    expect(() => decodeText(ansi, 'файл запись.json')).toThrow(/файл запись\.json: это не UTF-8 .*Сохрани запись в UTF-8/)
+    expect(decodeText(Buffer.alloc(0), 'файл')).toBe('')
+  })
+
+  it('годный JSON разбирается из любого источника; пустой и битый — ошибка с причиной', () => {
+    for (const source of ['json', 'file', 'stdin']) expect(parseJsonInput(` \n${record}\r\n`, 'запись', source)).toEqual(JSON.parse(record))
+    expect(parseJsonInput('[1, 2]', 'запись')).toEqual([1, 2])
+    expect(parseJsonInput('﻿{"town":[]}', 'запись')).toEqual({ town: [] })
+    expect(() => parseJsonInput('  ', 'запись из браузера')).toThrow(/^запись из браузера: пусто$/)
+    expect(() => parseJsonInput('', 'запись из браузера', 'stdin')).toThrow(/пусто на стандартном вводе — подай запись через конвейер или дай --file путь/)
+    expect(() => parseJsonInput('{"town":[', 'запись', 'file')).toThrow(/^запись: не читается как JSON \(.+\)$/)
+    expect(() => parseJsonInput('{"town":[},]}', 'запись', 'json')).toThrow(/не читается как JSON \(.+\)\. Если запись верная, её испортила оболочка\. Положи запись в файл и дай --file путь или подай её на стандартный ввод: --json -/)
+  })
+
+  it('съеденные кавычки: так приходит аргумент из Windows PowerShell 5.1', () => {
+    // node scripts/record.mjs sync --json '{"town":[{"at":"2026-11-20T18:20:00","do":"build","type":"house"}]}'
+    const eaten = '{town:[{at:2026-11-20T18:20:00,do:build,type:house}]}'
+    expect(() => parseJsonInput(eaten, 'запись из браузера')).toThrow(
+      /^запись из браузера: в JSON не осталось ни одной двойной кавычки \(«\{town:\[\{at:2026-11-20T18:20:00,do:build,…»\) — их съела оболочка, так делает Windows PowerShell\. Положи запись в файл и дай --file путь или подай её на стандартный ввод: --json -$/,
+    )
+    expect(() => parseJsonInput('[{q:Что такое task?,track:C1,points:2}]', 'вопросы теста')).toThrow(/не осталось ни одной двойной кавычки/)
+    // в файле кавычки никто не ест: там это просто негодный JSON
+    expect(() => parseJsonInput(eaten, 'запись из браузера', 'file')).toThrow(/^запись из браузера: не читается как JSON \(.+\)$/)
+  })
+
+  it('знаки вопроса вместо русских букв и текст не в той кодировке — отказ, а не запись мусора', () => {
+    // оболочка передала текст в ASCII: JSON цел, а букв нет
+    const lost = record.replace(/[^\x00-\x7f]/g, '?')
+    expect(JSON.parse(lost).deck.cards[0].question).toBe('????? ????? ???? data?')
+    expect(() => parseJsonInput(lost, 'запись из браузера', 'stdin')).toThrow(/вместо русских букв пришли знаки вопроса \(«\?\?\?\?\? \?\?\?\?\? \?\?\?\? data\?»\) — оболочка передала текст не в UTF-8\. Положи запись в файл в UTF-8 и дай --file путь/)
+    expect(() => parseJsonInput(lost, 'запись из браузера', 'file')).toThrow(/Проверь, что файл сохранён в UTF-8/)
+    // Get-Content без -Encoding UTF8: UTF-8 прочитан как однобайтная кодировка Windows
+    for (const label of ['windows-1252', 'windows-1251']) {
+      const misread = new TextDecoder(label).decode(utf8)
+      expect(() => JSON.parse(misread), label).not.toThrow()
+      expect(() => parseJsonInput(misread, 'запись из браузера', 'stdin'), label).toThrow(/русский текст прочитан не в той кодировке — «.+» вместо «Зачем»\. Так бывает в PowerShell у Get-Content без -Encoding UTF8\. Дай файл прямо: --file путь/)
+    }
+    // обычный текст под подозрение не попадает: знаки вопроса рядом с русскими буквами, типографика, латиница с диакритикой
+    const fine = { q: 'Что??? Зачем оператор ?: и что вернёт a ?: b — «Элвис»… №1', note: 'café, naïve, С» и Р°', code: 'x ??? y' }
+    expect(parseJsonInput(JSON.stringify(fine), 'запись')).toEqual(fine)
+    expect(parseJsonInput('{"town":[{"at":"2026-11-20T18:20:00","do":"tier"}]}', 'запись')).toEqual({ town: [{ at: '2026-11-20T18:20:00', do: 'tier' }] })
+  })
+})
+
 describe('что записала команда, то и понимает сайт', () => {
   // Правила сайта подключаются здесь, а не в начале файла: если их сейчас правят, остальные тесты команды не падают вместе с ними.
   const realPlan = JSON.parse(fs.readFileSync('data/cycles/01-basic-month/plan.json', 'utf8'))
@@ -1189,12 +1406,25 @@ describe('команда целиком', () => {
     'ci', 'event', 'break', 'pause', 'card', 'offplan', 'sync', 'purchase', 'repair', 'ledger', 'town', 'deck',
   ]
   const DATA = ['data/purchases.json', 'data/town.json', 'data/deck.json', 'data/offplan.json']
-  const cli = (argv, env = {}) => {
-    const run = spawnSync(process.execPath, ['scripts/record.mjs', ...argv], { encoding: 'utf8', env: { ...process.env, ...env } })
+  /** input — что подать команде на стандартный ввод: строка или байты. */
+  const cli = (argv, env = {}, input) => {
+    const run = spawnSync(process.execPath, ['scripts/record.mjs', ...argv], { encoding: 'utf8', env: { ...process.env, ...env }, input })
     return { out: run.stdout + run.stderr, code: run.status }
   }
   const cycleDir = `data/cycles/${fs.readdirSync('data/cycles').sort().at(-1)}`
   const read = (root, file) => fs.readFileSync(path.join(root, file), 'utf8')
+  /** Копия данных во временной папке: с RECORD_ROOT команда пишет туда, а не в настоящие файлы. */
+  const withCopy = (run) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'record-test-'))
+    try {
+      fs.cpSync('data', path.join(root, 'data'), { recursive: true })
+      fs.mkdirSync(path.join(root, 'src/game'), { recursive: true })
+      fs.copyFileSync('src/game/shop.ts', path.join(root, 'src/game/shop.ts'))
+      return run(root, { RECORD_ROOT: root })
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true })
+    }
+  }
 
   it('help называет каждую команду и даёт к ней пример', () => {
     const { out, code } = cli(['help'])
@@ -1207,10 +1437,94 @@ describe('команда целиком', () => {
     for (const name of COMMANDS) expect(cli([name, '--dry']).out, name).not.toMatch(/команды «/)
     expect(cli(['quest', '--dry'])).toMatchObject({ code: 1, out: expect.stringMatching(/Не записано: команды «quest» нет/) })
     expect(cli(['problem', '--id', '217', '--note', 'заметка', '--dry'])).toMatchObject({ code: 1, out: expect.stringMatching(/у команды problem нет ключа --note\. Есть: --id, --date, --kind/) })
-    expect(cli(['todo', '--add', '--dry'])).toMatchObject({ code: 1, out: expect.stringMatching(/у ключа --add нет значения/) })
+    expect(cli(['todo', '--add', '--dry'])).toMatchObject({ code: 1, out: expect.stringMatching(/у ключа --add нет значения\n/) })
+    expect(cli(['todo', '--add', '--force это ключ Gradle', '--dry'])).toMatchObject({ code: 1, out: expect.stringMatching(/у ключа --add нет значения: «--force это ключ Gradle» команда приняла за ключ — текст значения не должен начинаться с «--»/) })
     expect(cli(['week', '--n', 'первая', '--date', '2026-11-20', '--dry'])).toMatchObject({ code: 1, out: expect.stringMatching(/--n: нужно число/) })
     expect(cli(['observation', '--text', 'проба', '--cycle', '99-нет'])).toMatchObject({ code: 1, out: expect.stringMatching(/цикла «99-нет» нет/) })
   })
+
+  it('help говорит, как передать JSON из любой оболочки, и знает починку в городе', () => {
+    const { out } = cli(['help'])
+    expect(out).toMatch(/Как передать JSON/)
+    expect(out).toMatch(/--file путь +запись лежит в файле/)
+    expect(out).toMatch(/--json - +запись приходит со стандартного ввода/)
+    expect(out).toMatch(/Get-Content запись\.json -Raw -Encoding UTF8 \| node scripts\/record\.mjs sync --json -/)
+    expect(out).toMatch(/Windows PowerShell 5\.1 выбрасывает из аргумента двойные кавычки/)
+    expect(out).toMatch(/"do":"repair","id":"sawmill-1"/)
+    for (const name of ['weekly', 'sync', 'ledger', 'town', 'deck']) expect(out, name).toMatch(new RegExp(`${name} .*--file \\S+\\.json .*${name === 'weekly' ? '…' : name} --json -`))
+  })
+
+  it('JSON, испорченный оболочкой, не записывается: ответ говорит, что случилось и как передать запись', () => {
+    // так аргумент приходит из Windows PowerShell 5.1: кавычки съедены; с пробелами в записи он ещё и распадается на слова
+    expect(cli(['sync', '--dry', '--json', '{town:[{at:2099-01-05T10:00:00,do:tier}]}'])).toMatchObject({
+      code: 1,
+      out: expect.stringMatching(/Не записано: запись из браузера: в JSON не осталось ни одной двойной кавычки .* — их съела оболочка, так делает Windows PowerShell\. Положи запись в файл и дай --file путь или подай её на стандартный ввод: --json -/),
+    })
+    expect(cli(['sync', '--dry', '--json', '{deck: {cards: [{question: Зачем', 'нужен', 'слой}]}}'])).toMatchObject({
+      code: 1,
+      out: expect.stringMatching(/Не записано: лишнее слово «нужен»: JSON из --json распался на части — кавычки съела оболочка/),
+    })
+    expect(cli(['weekly', '--week', '1', '--date', '2099-01-05', '--dry', '--json', '[{q:Что такое task?,track:C1,points:2}]'])).toMatchObject({ code: 1, out: expect.stringMatching(/вопросы теста: в JSON не осталось ни одной двойной кавычки/) })
+    // без --json лишнее слово — это текст без кавычек
+    expect(cli(['todo', '--add', 'шаг', '3', '--dry'])).toMatchObject({ code: 1, out: expect.stringMatching(/лишнее слово «3»: значения с пробелами бери в кавычки/) })
+    expect(cli(['sync', '--dry'])).toMatchObject({ code: 1, out: expect.stringMatching(/нужен JSON \(запись из браузера\): --file путь, --json - \(со стандартного ввода\) или --json '…'/) })
+    expect(cli(['sync', '--dry', '--file', 'нет-такого-файла.json'])).toMatchObject({ code: 1, out: expect.stringMatching(/Не записано: файла «нет-такого-файла\.json» нет \(искал .*нет-такого-файла\.json\)/) })
+    expect(cli(['sync', '--dry', '--file', 'package.json', '--json', '-'])).toMatchObject({ code: 1, out: expect.stringMatching(/запись задана и в --json, и в --file: оставь что-то одно/) })
+    // на стандартном вводе пусто
+    expect(cli(['sync', '--dry', '--json', '-'], {}, '')).toMatchObject({ code: 1, out: expect.stringMatching(/Не записано: запись из браузера: пусто на стандартном вводе — подай запись через конвейер или дай --file путь/) })
+  })
+
+  it('--json - без конвейера не зависает: ждёт недолго и говорит, что делать', async () => {
+    // стандартный ввод открыт и молчит — так бывает, когда команду запустили без конвейера
+    const child = spawn(process.execPath, ['scripts/record.mjs', 'sync', '--dry', '--json', '-'], { env: { ...process.env, RECORD_STDIN_WAIT_MS: '300' }, stdio: ['pipe', 'pipe', 'pipe'] })
+    let out = ''
+    child.stdout.on('data', (chunk) => (out += chunk))
+    child.stderr.on('data', (chunk) => (out += chunk))
+    const started = Date.now()
+    const code = await new Promise((resolve) => child.on('close', resolve))
+    child.stdin.destroy()
+    expect(code).toBe(1)
+    expect(out).toMatch(/Не записано: запись из браузера: на стандартный ввод ничего не пришло\. Подай запись через конвейер \(… \| node scripts\/record\.mjs sync --json -\) или дай --file путь/)
+    expect(Date.now() - started).toBeLessThan(3000)
+  }, 15_000)
+
+  it('запись со стандартного ввода и из файлов, как их делает PowerShell: метка перед текстом и UTF-16 не мешают', () =>
+    withCopy((root, env) => {
+      const track = JSON.parse(read(root, `${cycleDir}/plan.json`)).tracks[0].code
+      const own = { date: '2099-01-05', track, question: `Проба ввода ${Date.now()}: зачем «ёлочки»?`, answer: 'Чтобы "кавычки" не съела оболочка: C:\\Users.', source: 'note' }
+      const record = { town: [{ at: '2099-01-05T10:00:00', do: 'repair', id: 'sawmill-1' }], deck: { cards: [own] } }
+      const text = JSON.stringify(record)
+      const bom = Buffer.from([0xef, 0xbb, 0xbf])
+      const data = () => DATA.map((file) => read(root, file))
+      const before = data()
+      // пробный запуск со стандартного ввода ничего не пишет
+      expect(cli(['sync', '--json', '-', '--dry'], env, text)).toMatchObject({ code: 0, out: expect.stringMatching(/Город\. Действий добавлено: 1[^]*Своих карточек добавлено: 1[^]*Пробный запуск: data\/town\.json, data\/deck\.json/) })
+      expect(data()).toEqual(before)
+      // конвейер PowerShell: метка перед текстом (бывает и две) и перевод строки в конце
+      expect(cli(['sync', '--json', '-'], env, Buffer.concat([bom, bom, Buffer.from(text + '\r\n')]))).toMatchObject({ code: 0, out: expect.stringMatching(/Записано в data\/town\.json, data\/deck\.json\./) })
+      expect(JSON.parse(read(root, 'data/town.json')).actions).toContainEqual(record.town[0])
+      expect(JSON.parse(read(root, 'data/deck.json')).cards).toContainEqual(own)
+      const synced = data()
+      // та же запись из файлов: UTF-8 с меткой (Set-Content -Encoding UTF8) и UTF-16 (`>` и Out-File в Windows PowerShell 5.1) — повторы пропущены
+      const files = { 'utf8-bom.json': Buffer.concat([bom, Buffer.from(text)]), 'utf16.json': Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(text, 'utf16le')]) }
+      for (const [name, bytes] of Object.entries(files)) {
+        fs.writeFileSync(path.join(root, name), bytes)
+        expect(cli(['sync', '--file', path.join(root, name)], env), name).toMatchObject({ code: 0, out: expect.stringMatching(/Город\. Действий добавлено: 0, уже были в журнале: 1\.[^]*Данные не изменились: файлы не тронуты\./) })
+      }
+      // испорченная по дороге запись: буквы стали знаками вопроса или прочитаны не в той кодировке — JSON цел, но в файлы не идёт
+      const next = { deck: { cards: [{ ...own, question: 'Что такое слой domain?' }] } }
+      const lost = JSON.stringify(next).replace(/[^\x00-\x7f]/g, '?')
+      expect(cli(['sync', '--json', '-'], env, lost)).toMatchObject({ code: 1, out: expect.stringMatching(/Не записано: запись из браузера: вместо русских букв пришли знаки вопроса/) })
+      const misread = new TextDecoder('windows-1252').decode(Buffer.from(JSON.stringify(next)))
+      expect(cli(['sync', '--json', '-'], env, misread)).toMatchObject({ code: 1, out: expect.stringMatching(/русский текст прочитан не в той кодировке — «.+» вместо «Что»/) })
+      fs.writeFileSync(path.join(root, 'ansi.json'), Buffer.from([0x7b, 0x22, 0x71, 0x22, 0x3a, 0x22, 0xc7, 0xe0, 0xf7, 0xe5, 0xec, 0x22, 0x7d]))
+      expect(cli(['sync', '--file', path.join(root, 'ansi.json')], env)).toMatchObject({ code: 1, out: expect.stringMatching(/Не записано: файл .*ansi\.json: это не UTF-8/) })
+      expect(data()).toEqual(synced)
+      // недельный тест и попытки по задаче читаются оттуда же
+      const attempts = JSON.stringify([{ date: '2099-01-05', kind: 'timed-20', minutes: 20, result: 'not-solved' }, { date: '2099-01-05', kind: 'rewrite-after-walkthrough', minutes: 8, result: 'solved' }])
+      const untouched = JSON.parse(read(root, `${cycleDir}/plan.json`)).leetcode.find((item) => !JSON.parse(read(root, `${cycleDir}/progress.json`)).leetcode.some((got) => got.id === item.id))
+      if (untouched) expect(cli(['problem', '--id', String(untouched.id), '--json', '-', '--dry'], env, attempts)).toMatchObject({ code: 0, out: expect.stringMatching(/попыток добавлено 2[^]*Статус: solved-with-walkthrough/) })
+    }))
 
   it('пробный запуск на настоящих данных показывает итог и ничего не пишет', () => {
     const watched = [...DATA, `${cycleDir}/progress.json`]
@@ -1242,9 +1556,27 @@ describe('команда целиком', () => {
 
       // итог дня вместе со статусом: итог ложится в закрытый день, а не в следующий
       const day = progress.position.currentDay
+      expect(cli(['session', '--date', '2099-01-05', '--from', '10:00', '--to', '11:15', '--topic', 'проба'], env).code).toBe(0)
       expect(cli(['day', '--status', 'core', '--date', '2099-01-05', '--summary', 'проба: день закрыт', '--minutes', '75'], env).code).toBe(0)
       const closed = JSON.parse(read(root, progressFile)).days.find((d) => d.day === day)
       expect(closed).toMatchObject({ status: 'core', summary: 'проба: день закрыт', wallClockMinutes: 75 })
+      // та же команда ещё раз: позиция уже на следующем дне, занятий у него нет — он не закрывается
+      const moved = JSON.parse(read(root, progressFile))
+      if (moved.position.currentDay !== day && !moved.sessions.some((s) => s.day === moved.position.currentDay)) {
+        const afterClose = read(root, progressFile)
+        expect(cli(['day', '--status', 'core', '--date', '2099-01-05'], env)).toMatchObject({
+          code: 1,
+          out: expect.stringMatching(new RegExp(`у дня ${moved.position.currentDay} в журнале нет ни одного занятия: закрывать нечего[^]*Если ты закрывал день ${day} — он уже закрыт, позиция перешла на день ${moved.position.currentDay}`)),
+        })
+        // день назван явно — это не повторный запуск, подсказки нет
+        expect(cli(['day', '--status', 'core', '--date', '2099-01-05', '--day', String(moved.position.currentDay)], env)).toMatchObject({ code: 1, out: expect.not.stringMatching(/Если ты закрывал/) })
+        // пропуск — только с номером дня: без него вторая такая же команда пропустила бы и следующий день
+        const next = String(moved.position.currentDay)
+        expect(cli(['day', '--status', 'skipped'], env)).toMatchObject({ code: 1, out: expect.stringMatching(new RegExp(`Не записано: пропуск дня: назови день явно — day --status skipped --day ${next}\\.`)) })
+        expect(read(root, progressFile)).toBe(afterClose)
+        expect(cli(['day', '--status', 'skipped', '--day', next, '--dry'], env)).toMatchObject({ code: 0, out: expect.stringMatching(new RegExp(`День ${next}: статус skipped\\.`)) })
+        expect(read(root, progressFile)).toBe(afterClose)
+      }
 
       // задача, CI с событием и артефакт: берём то, чего в журнале ещё нет
       const planData = JSON.parse(read(root, `${cycleDir}/plan.json`))

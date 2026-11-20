@@ -543,6 +543,50 @@ describe('запас дров', () => {
       expect(after.damage.length, today).toBeLessThanOrEqual(before.damage.length)
     }
   })
+
+  it('дрова прикрывают и прошедший перерыв: после возвращения не ломается то, что они прикрыли', () => {
+    // 18.11 → 25.11: четыре пропущенных рабочих дня. Без дров ломается одна вещь, с запасом на день — ничего,
+    // и это не меняется оттого, что 25.11 записано занятие.
+    const back = withProgress((p) => p.sessions.push({ date: '2026-11-25', from: null, to: null, day: 3, topics: [] }))
+    const total = (cycle: RawCycle, actions: typeof town) => {
+      const world = buildWorld([cycle], [], '2026-11-25', { purchases, repairs: [], town: actions })
+      return world.damage.length + world.town.buildings.filter((b) => b.broken).length
+    }
+    expect(total(raw, [])).toBe(1)
+    expect(total(back, [])).toBe(1)
+    expect(total(raw, town)).toBe(0)
+    expect(total(back, town)).toBe(0)
+  })
+})
+
+describe('поломки построек города', () => {
+  // Лагерь и жилище поставлены 18.11, в день последнего занятия; к 7.12 пропущено больше восьми рабочих дней.
+  const town = [
+    { at: '2026-11-18T10:00:00', do: 'tier' as const },
+    { at: '2026-11-18T10:10:00', do: 'build' as const, type: 'house' },
+  ]
+  const world = (actions: { at: string; do: 'tier' | 'build' | 'repair'; type?: string; id?: string }[]) =>
+    buildWorld([raw], [], '2026-12-07', { purchases: [], repairs: [], town: actions })
+
+  it('центр и постройки-файлы не ломаются: перерыв на две вещи ломает одно жилище', () => {
+    const idle = world(town)
+    expect(idle.condition.level).toBe(3)
+    expect(idle.means.specials).toBe(2)
+    expect(idle.town.tier).toBe(1)
+    expect(idle.town.buildings.map((b) => b.broken)).toEqual([{ since: '2026-11-18', healsIn: null, cost: 10 }])
+    expect(idle.damage).toEqual([])
+  })
+
+  it('починка постройки списывается из общего кошелька', () => {
+    const fixed = world([...town, { at: '2026-12-07T12:00:00', do: 'repair', id: 'house-1' }])
+    expect(fixed.town.buildings[0].broken).toBeNull()
+    expect(world(town).wallet.coins - fixed.wallet.coins).toBe(10)
+  })
+
+  it('состояние мира и поломки считаются одним правилом: уровень запустения — из того же расчёта', () => {
+    const idle = world(town)
+    expect(idle.town.idle).toEqual({ missed: idle.missedWorkdays, covered: idle.covered, level: idle.condition.level })
+  })
 })
 
 describe('живые данные: перерывы', () => {

@@ -1,7 +1,9 @@
 // Город: ядро без интерфейса. Проект — docs/TOWN.md.
 // Состояние города нигде не хранится: оно считается заново из журнала действий и дат занятий.
 // Один день с занятием — один ход (еда, материалы, жители). По настоящим часам идёт только стройка.
-import { parseISO } from './rules'
+// Поломки тоже считаются: долгий перерыв между занятиями ломает постройки и украшения — правило в src/game/repair.ts.
+import { HEAL_SESSIONS, pickBroken, repairCost, repairPrice, stormLevel, type Damage } from './repair'
+import { conditionLevel, missedWorkdays, parseISO, toISO, type ConditionLevel } from './rules'
 import { shopItem } from './shop'
 
 export interface Tier {
@@ -136,13 +138,24 @@ export const tierCost = (n: number): Cost => ({ coins: TIERS[n].coins, gems: TIE
  * Действие игрока. at — момент по часам, от него идёт время стройки.
  * tier — перейти на следующую ступень; build — поставить постройку типа type;
  * upgrade — улучшить постройку с номером id;
- * trade — купить на рынке партию товара type: food, wood или brick.
+ * trade — купить на рынке партию товара type: food, wood или brick;
+ * repair — починить за монеты сломанную постройку с номером id.
  */
 export interface TownAction {
   at: string
-  do: 'tier' | 'build' | 'upgrade' | 'trade'
+  do: 'tier' | 'build' | 'upgrade' | 'trade' | 'repair'
   type?: string
   id?: string
+}
+
+/** Поломка после долгого перерыва: постройка стоит, но не работает. */
+export interface Breakage {
+  /** Последнее занятие перед перерывом, который сломал постройку. */
+  since: string
+  /** Через сколько занятий починится само; null — перерыв ещё идёт. */
+  healsIn: number | null
+  /** Цена починки в монетах: пятая часть монетной цены нынешнего уровня. */
+  cost: number
 }
 
 export interface TownBuilding {
@@ -152,6 +165,8 @@ export interface TownBuilding {
   level: number
   /** Идущая стройка или улучшение. */
   pending: { level: number; readyAt: number } | null
+  /** Сломана после долгого перерыва; null — цела. Жильё и склады сломанной постройки остаются. */
+  broken: Breakage | null
 }
 
 export interface Town {
@@ -171,24 +186,33 @@ export interface Town {
   turns: number
   /** Что даёт следующий ход при нынешних жителях. */
   perTurn: { food: number; eaten: number; wood: number; brick: number }
-  /** Рабочих дней защиты от запустения. */
+  /** Рабочих дней защиты от запустения: запас работающего дровника. */
   firewood: number
   /** Уют и из чего он складывается. decor — украшения из лавки. */
   comfort: { total: number; center: number; wells: number; tavern: number; decor: number }
+  /** Сломанные украшения из лавки. Сломанные постройки помечены полем broken. */
+  damage: Damage[]
+  /**
+   * Идущий перерыв: сколько рабочих дней пропущено, сколько из них прикрыл запас дров
+   * и до какого уровня дошло запустение. Запас считается по дровнику, каким он был до этого перерыва.
+   */
+  idle: { missed: number; covered: number; level: ConditionLevel }
 }
 
 const staffFor = (level: number) => (level >= 5 ? 3 : level >= 3 ? 2 : 1)
 const at = (values: number[] | undefined, level: number) => (values && level > 0 ? values[level - 1] : 0)
-const levelsOf = (town: Town, type: string) => town.buildings.filter((b) => b.type === type && b.level > 0)
+/** Работающие постройки типа: построены и не сломаны. */
+const levelsOf = (town: Town, type: string) => town.buildings.filter((b) => b.type === type && b.level > 0 && !b.broken)
 const topLevel = (town: Town, type: string) => Math.max(0, ...levelsOf(town, type).map((b) => b.level))
 
 function refresh(town: Town) {
-  const sum = (pick: (t: BuildingType) => number[] | undefined) =>
-    town.buildings.reduce((total, b) => total + at(pick(buildingType(b.type)!), b.level), 0)
+  const sum = (pick: (t: BuildingType) => number[] | undefined, working = false) =>
+    town.buildings.reduce((total, b) => total + (working && b.broken ? 0 : at(pick(buildingType(b.type)!), b.level)), 0)
+  // Жильё и склады сломанной постройки остаются: жители не уходят, запасы не пропадают.
   town.housing = sum((t) => t.housing)
   town.foodCap = BASE_FOOD_CAP + sum((t) => t.foodCap)
   town.materialCap = BASE_MATERIAL_CAP + sum((t) => t.materialCap)
-  town.firewood = sum((t) => t.firewood)
+  town.firewood = sum((t) => t.firewood, true)
   const center = COMFORT.base + COMFORT.tier * town.tier
   const wells = levelsOf(town, 'well').reduce((total, b) => total + b.level * COMFORT.well, 0)
   const tavern = topLevel(town, 'tavern') * COMFORT.tavern
@@ -200,7 +224,7 @@ function refresh(town: Town) {
   }
 }
 
-/** Что постройки дадут за ход. Путник тоже работает, иначе первый огород некому вскопать. */
+/** Что постройки дадут за ход. Путник тоже работает, иначе первый огород некому вскопать. Сломанные рук не занимают. */
 function yields(town: Town) {
   let free = town.population + 1
   const order = ['garden', 'pier', 'bakery', 'mill', 'sawmill', 'brickyard']
@@ -242,6 +266,8 @@ function settle(town: Town, time: number) {
  * Голода нет: если еды не хватает, новые жители просто не приходят.
  * Довольство: новичок приходит, только если и с ним уюта останется больше половины от числа жителей;
  * пока уюта хватает всем с запасом, за ход приходит на одного больше.
+ * Сломанная постройка в ходе не участвует: не даёт ни еды, ни материалов, ни уюта; пока сломаны все колодцы,
+ * жителей сверх шести не прибавляется. Жильё и запасы остаются: никто не уходит и ничего не пропадает.
  */
 function turn(town: Town) {
   const made = yields(town)
@@ -308,10 +334,11 @@ function act(town: Town, action: TownAction, time: number) {
     if (!type) return
     const n = town.buildings.filter((b) => b.type === type.id).length + 1
     pay(town, buildCost(type, 1))
-    town.buildings.push({ id: `${type.id}-${n}`, type: type.id, level: 0, pending: { level: 1, readyAt: time + buildHours(town, 1) * HOUR } })
-  } else {
+    town.buildings.push({ id: `${type.id}-${n}`, type: type.id, level: 0, pending: { level: 1, readyAt: time + buildHours(town, 1) * HOUR }, broken: null })
+  } else if (action.do === 'upgrade') {
     const b = town.buildings.find((x) => x.id === action.id)
-    if (!b || b.pending || b.level >= 5) return
+    // Сломанную постройку сначала чинят.
+    if (!b || b.pending || b.broken || b.level >= 5) return
     const level = b.level + 1
     pay(town, buildCost(buildingType(b.type)!, level))
     b.pending = { level, readyAt: time + buildHours(town, level) * HOUR }
@@ -319,12 +346,40 @@ function act(town: Town, action: TownAction, time: number) {
   refresh(town)
 }
 
+/** Что ещё нужно знать, чтобы посчитать поломки. */
+export interface ReplayExtra {
+  /**
+   * Сегодняшняя дата: по ней считается идущий перерыв — от последнего занятия до сегодня.
+   * Без неё на момент now видны только поломки прошедших перерывов.
+   */
+  today?: string
+  /** Дни плановых перерывов: пропуском не считаются. */
+  paused?: Set<string>
+  /** Ремонты украшений из лавки. Постройки чинит действие repair в журнале. */
+  repairs?: { item: string; date: string }[]
+  /** Предпросмотр: как будто идущий перерыв уже дошёл до этого уровня запустения. */
+  forcedLevel?: ConditionLevel | null
+}
+
 /**
  * Состояние города на момент now.
  * studyDays — даты занятий: каждая даёт один ход в начале дня, чтобы ресурсы были доступны в тот же день.
  * decor — покупки из лавки: украшение даёт уют со дня покупки, но ход того же дня уже прошёл.
+ *
+ * Поломки. Перерыв — промежуток между соседними днями занятий или от последнего занятия до сегодня.
+ * Его тяжесть — пропущенные рабочие дни минус запас дров; что сломается, выбирает pickBroken из украшений
+ * и построек, которые стоят и не улучшаются. Всё это берётся по городу, каким он был до этого перерыва:
+ * дровник и башня, сломанные прошлым перерывом, новый не смягчают, а сломанные этим — смягчают.
+ * Сломанное не работает с возвращения и чинится само на третьем занятии, считая занятие в день возвращения.
+ * Пока перерыв идёт, поломка уже видна; срок починки неизвестен.
  */
-export function replayTown(actions: TownAction[], studyDays: string[], now: Date, decor: { item: string; date: string }[] = []): Town {
+export function replayTown(
+  actions: TownAction[],
+  studyDays: string[],
+  now: Date,
+  decor: { item: string; date: string }[] = [],
+  extra: ReplayExtra = {},
+): Town {
   const town: Town = {
     tier: 0,
     tierPending: null,
@@ -342,6 +397,8 @@ export function replayTown(actions: TownAction[], studyDays: string[], now: Date
     perTurn: { food: 0, eaten: 0, wood: 0, brick: 0 },
     firewood: 0,
     comfort: { total: COMFORT.base, center: COMFORT.base, wells: 0, tavern: 0, decor: 0 },
+    damage: [],
+    idle: { missed: 0, covered: 0, level: 0 },
   }
   // Каждое украшение считается один раз, с самой ранней покупки.
   const bought = new Map<string, number>()
@@ -359,15 +416,143 @@ export function replayTown(actions: TownAction[], studyDays: string[], now: Date
     .filter((e) => e.time <= limit)
     .sort((a, b) => a.time - b.time || (a.day ? -1 : 1))
 
+  // --- Поломки: ничего не хранится, всё выводится из дат занятий и журнала ---
+  /** Украшения, которые могут сломаться. */
+  const fragile = decor.filter((p) => shopItem(p.item)?.group === 'camp')
+  /** Дни занятий, до которых дошёл пересчёт. */
+  const seen: string[] = []
+  /** Сломанное прошедшими перерывами: since — последнее занятие перед перерывом, n — номер занятия в день возвращения. */
+  const hits = new Map<string, { since: string; n: number }>()
+  /** Когда постройку чинили за монеты. */
+  const mended = new Map<string, number>()
+  /** Что ломает идущий перерыв, каким он виден в последний размеченный момент. */
+  const open = { from: '', ids: [] as string[] }
+  /** Остались ли на постройках метки с прошлой разметки. */
+  let marked = false
+
+  const breakage = (b: TownBuilding, since: string, left: number | null): Breakage => ({
+    since,
+    healsIn: left,
+    cost: repairPrice(buildCost(buildingType(b.type)!, b.level).coins),
+  })
+  /** Через сколько занятий починится само: занятие в день возвращения — первое из трёх. */
+  const healsIn = (hit: { n: number }) => HEAL_SESSIONS - (seen.length - hit.n)
+  /** Починка за монеты закрывает перерыв, если сделана уже после его начала. */
+  const mendedSince = (id: string, from: string) => {
+    const time = mended.get(id)
+    return time !== undefined && toISO(new Date(time)) > from
+  }
+
+  /** Метки поломок от прошедших перерывов; идущий перерыв в них не входит. */
+  const markPast = () => {
+    open.ids = []
+    if (!marked && !hits.size) return
+    marked = false
+    for (const b of town.buildings) {
+      const hit = hits.get(b.id)
+      b.broken = hit ? breakage(b, hit.since, healsIn(hit)) : null
+      if (hit) marked = true
+    }
+    refresh(town)
+  }
+
+  /**
+   * Перерыв от занятия from до дня day: тяжесть и что он ломает. Вызывается после markPast,
+   * поэтому запас дров и башня здесь — какими они были до этого перерыва.
+   * returned — в этот день вернулись к занятиям: купленное в день возвращения уже не ломается.
+   */
+  const strike = (from: string, day: string, returned: boolean, forced: ConditionLevel | null = null) => {
+    const missed = missedWorkdays(from, day, extra.paused)
+    const level = forced ?? stormLevel(missed, town.firewood)
+    const things =
+      level < 2
+        ? []
+        : [
+            ...fragile.filter((p) => (returned ? p.date < day : p.date <= day)).map((p) => p.item),
+            // Строящееся и улучшаемое не ломается.
+            ...town.buildings.filter((b) => b.level > 0 && !b.pending).map((b) => b.id),
+          ]
+    return { missed, covered: Math.min(missed, town.firewood), level, ids: pickBroken(from, things, level, topLevel(town, 'tower') > 0) }
+  }
+
+  /** Разметить поломки на день day: прошедшие перерывы и идущий, каким он виден в этот день. null — только прошедшие. */
+  const mark = (day: string | null, forced: ConditionLevel | null = null) => {
+    markPast()
+    town.idle = { missed: 0, covered: 0, level: 0 }
+    const from = seen[seen.length - 1]
+    if (day === null || from === undefined || (forced === null && day <= from)) return
+    const storm = strike(from, day, false, forced)
+    town.idle = { missed: storm.missed, covered: storm.covered, level: storm.level }
+    open.from = from
+    open.ids = storm.ids
+    let struck = false
+    for (const id of storm.ids) {
+      const b = town.buildings.find((x) => x.id === id)
+      if (!b || mendedSince(id, from)) continue
+      b.broken = breakage(b, from, null)
+      struck = true
+    }
+    if (!struck) return
+    marked = true
+    refresh(town)
+  }
+
+  /** День занятия: перерыв перед ним закончился. Что он сломал, сломано с этого дня. */
+  const arrive = (day: string) => {
+    const from = seen[seen.length - 1]
+    let struck: string[] = []
+    if (from !== undefined && conditionLevel(missedWorkdays(from, day, extra.paused)) >= 2) {
+      // Считается до того, как починится старое: дровник, простоявший перерыв сломанным, его не прикрывал.
+      markPast()
+      struck = strike(from, day, true).ids.filter((id) => !mendedSince(id, from))
+    }
+    seen.push(day)
+    for (const [id, hit] of hits) if (healsIn(hit) <= 0) hits.delete(id)
+    for (const id of struck) hits.set(id, { since: from!, n: seen.length - 1 })
+  }
+
+  /** Починка за монеты: мгновенная, строителей не занимает. Если постройка цела — пустое действие. */
+  const mend = (id: string | undefined, time: number) => {
+    const b = town.buildings.find((x) => x.id === id)
+    if (!b?.broken) return
+    town.spent.coins += b.broken.cost
+    b.broken = null
+    hits.delete(b.id)
+    mended.set(b.id, time)
+    refresh(town)
+  }
+
   for (const event of events) {
     town.comfort.decor = decorAt(event.time)
     settle(town, event.time)
-    if (event.action) act(town, event.action, event.time)
-    else turn(town)
+    if (event.action) {
+      // Действие видит город таким, каким его видел игрок: вместе с перерывом, который шёл в тот момент.
+      mark(toISO(new Date(event.time)))
+      if (event.action.do === 'repair') mend(event.action.id, event.time)
+      else act(town, event.action, event.time)
+    } else {
+      arrive(event.day!)
+      mark(null)
+      turn(town)
+    }
   }
   town.comfort.decor = decorAt(limit)
   settle(town, limit)
+  mark(extra.today ?? null, extra.forcedLevel ?? null)
   town.perTurn = { ...yields(town), eaten: town.population }
+
+  // Сломанные украшения. Их чинит запись в ledger.repairs, сделанная не раньше начала перерыва.
+  const repairs = extra.repairs ?? []
+  const damage = new Map<string, Damage>()
+  const note = (id: string, since: string, left: number | null) => {
+    const item = shopItem(id)
+    if (!item || town.buildings.some((b) => b.id === id)) return
+    if (repairs.some((r) => r.item === id && r.date >= since)) return
+    damage.set(id, { item: id, since, healsIn: left, cost: repairCost(item) })
+  }
+  for (const [id, hit] of hits) note(id, hit.since, healsIn(hit))
+  for (const id of open.ids) note(id, open.from, null)
+  town.damage = [...damage.values()]
   return town
 }
 
@@ -386,12 +571,19 @@ export function blockers(town: Town, action: Pick<TownAction, 'do' | 'type' | 'i
     // Торговле строители не нужны.
     const goods = action.type as Goods
     const amount = tradeYield(topLevel(town, 'market'), goods)
-    if (!amount) return ['нужен рынок']
+    if (!amount) return [town.buildings.some((b) => b.type === 'market' && b.broken) ? 'рынок сломан: сначала почини его' : 'нужен рынок']
     const have = goods === 'food' ? town.food : town[goods]
     const cap = goods === 'food' ? town.foodCap : town.materialCap
     if (have + amount > cap) why.push(`не поместится: на складе ${Math.floor(have)} из ${cap}`)
     if (means.coins < TRADE_COINS) why.push(`не хватает монет: ${TRADE_COINS - means.coins}`)
     return why
+  }
+  if (action.do === 'repair') {
+    // Починке строители не нужны.
+    const b = town.buildings.find((x) => x.id === action.id)
+    if (!b) return ['такой постройки нет']
+    if (!b.broken) return ['постройка цела']
+    return means.coins < b.broken.cost ? [`не хватает монет: ${b.broken.cost - means.coins}`] : []
   }
   if (town.builders.busy >= town.builders.total) why.push('все строители заняты')
   let cost: Cost
@@ -413,6 +605,7 @@ export function blockers(town: Town, action: Pick<TownAction, 'do' | 'type' | 'i
     const b = town.buildings.find((x) => x.id === action.id)
     if (!b) return ['такой постройки нет']
     if (b.pending) return ['уже строится']
+    if (b.broken) return ['постройка сломана: сначала почини её']
     if (b.level >= maxLevel(town.tier)) return ['выше уровень откроет следующая ступень']
     cost = buildCost(buildingType(b.type)!, b.level + 1)
   }

@@ -6,7 +6,7 @@ import type { Season, Sky } from '../world/sky'
 import type { Scenery } from './fx'
 import { makeGround, type Ground } from './ground'
 import { buildLook, type LookContext, type LookFn } from './look'
-import { CENTER, DECOR, constructionLook, lantern, levelLook, levelName, specialLook, tent, upgradeLook } from './looks'
+import { CENTER, DECOR, constructionLook, lantern, levelLook, levelName, monumentLook, specialLook, tent, upgradeLook } from './looks'
 import { KIND } from './kit'
 import { worldMaterial } from './material'
 import { People, type PeopleInput } from './people'
@@ -22,6 +22,7 @@ import {
   RIVER,
   fireSpot,
   forest,
+  monumentSpot,
   openPlots,
   plotOf,
   quarterOpen,
@@ -37,6 +38,8 @@ export interface TownBuildingView {
   type: string
   level: number
   pending: { level: number; readyAt: number } | null
+  /** Сломана после долгого перерыва: стоит покосившейся и серой, не дымит и не светится. */
+  broken?: boolean
 }
 
 export interface TownSpecialView {
@@ -48,11 +51,22 @@ export interface TownSpecialView {
   title: string
 }
 
+/** Памятник закрытого цикла. */
+export interface TownMonumentView {
+  /** «cycle:<id цикла>». */
+  id: string
+  /** Номер цикла: столько поясков на обелиске. */
+  n: number
+  title: string
+}
+
 export interface TownView {
   tier: number
   tierPending: { n: number; readyAt: number } | null
   buildings: TownBuildingView[]
   specials: TownSpecialView[]
+  /** Памятники закрытых циклов, по порядку циклов. */
+  monuments: TownMonumentView[]
   population: number
   season: Season
   neglect: number
@@ -66,7 +80,7 @@ export interface TownView {
 
 export interface Mark {
   id: string
-  kind: 'center' | 'building' | 'special'
+  kind: 'center' | 'building' | 'special' | 'monument'
   title: string
   /** Куда ставить метку: над крышей. */
   at: THREE.Vector3
@@ -185,7 +199,7 @@ export class TownScene {
     const mark = id ? this.marks.find((m) => m.id === id) : null
     this.ring.visible = !!mark
     if (mark) {
-      const radius = mark.kind === 'center' ? 9 : 6.6
+      const radius = mark.kind === 'center' ? 9 : mark.kind === 'monument' ? 3.4 : 6.6
       this.ring.position.set(mark.x, 0.12, mark.z)
       this.ring.scale.setScalar(radius)
     }
@@ -201,6 +215,8 @@ export class TownScene {
     // На стоянке нет ни моста, ни слободы: постройки-файлы появятся на карте вместе с лагерем.
     const quarter = quarterOpen(view.tier)
     const specials = quarter ? view.specials : []
+    // Памятники стоят за мостом, поэтому появляются вместе с ним.
+    const monuments = quarter ? view.monuments : []
     const open = openPlots(view.tier)
     const marks: Mark[] = []
     const pickables: { id: string; box: THREE.Box3 }[] = []
@@ -259,7 +275,8 @@ export class TownScene {
       if (!plot) continue
       const type = buildingType(building.type)
       const z = plot.z
-      const title = building.level > 0 ? `${levelName(building.type, building.level)} · ур. ${building.level}` : `${type?.name ?? ''}: строится`
+      const title =
+        building.level > 0 ? `${levelName(building.type, building.level)} · ур. ${building.level}${building.broken ? ' · сломано' : ''}` : `${type?.name ?? ''}: строится`
       const look = building.level > 0 ? levelLook(building.type, building.level, plot.n - 1) : constructionLook
       put(
         look,
@@ -277,6 +294,8 @@ export class TownScene {
         },
         ctx,
         plot.n - 1,
+        undefined,
+        !!building.broken && building.level > 0,
       )
     }
 
@@ -300,6 +319,15 @@ export class TownScene {
         i,
         special.track ?? undefined,
       )
+    })
+
+    // Памятники закрытых циклов: ряд на берегу к западу от моста.
+    monuments.forEach((monument, i) => {
+      const spot = monumentSpot(i)
+      put(monumentLook(monument.n), spot.x, spot.z, 0, (top, box) => {
+        marks.push({ id: monument.id, kind: 'monument', title: monument.title, at: new THREE.Vector3(spot.x, top + 0.8, spot.z), x: spot.x, z: spot.z })
+        pickables.push({ id: monument.id, box: box.clone().expandByScalar(0.5) })
+      })
     })
 
     if (quarter) put(bridgeLook, BRIDGE_X, riverCenter(BRIDGE_X), 0)
@@ -328,7 +356,7 @@ export class TownScene {
     jobs.push(People.preload(crowd))
 
     // Лес: по куску карты на каждую породу, чтобы невидимые куски не рисовались.
-    const trees = forest(view.tier, specials.length)
+    const trees = forest(view.tier, specials.length, monuments.length)
     const treeLooks = TREE_MODELS.map((key, kind) => buildLook((b) => b.model(key, { center: true }), ctx, kind))
     jobs.push(...treeLooks)
 
@@ -345,6 +373,7 @@ export class TownScene {
       open,
       pads: view.tier === 0 ? view.buildings.flatMap((b) => plotOf(b.id) ?? []) : open,
       specials: specials.length,
+      monuments: monuments.length,
       quarter,
       neglect: view.neglect,
     })

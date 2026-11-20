@@ -2917,3 +2917,427 @@ pre.prompt {
   font-size: 0.82rem;
   color: var(--muted);
 }
+
+/* ——— Памятник закрытого цикла: список его файлов ——— */
+
+.monument-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.monument-files li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px 12px;
+  align-items: center;
+}
+
+.monument-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.monument-files li > code,
+.monument-files li > .muted {
+  justify-self: start;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 720px) {
+  .monument-files li {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+}
+
+/* ——— Итог цикла: страница #/cycle ——— */
+
+/* ---------- Итог цикла: страница #/cycle ---------- */
+/* Свои классы — с приставкой sum-. Цвета только из токенов темы (src/styles.css): страница читается в светлой и тёмной теме.
+   Файл подключается из CycleSummary.tsx и в сборке идёт раньше styles.css, поэтому свойства общих классов
+   (.card, .chip, .meter) здесь правятся только селектором с большим весом: .sum … */
+
+.sum-back {
+  justify-self: start;
+  padding: 6px 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sum-back:hover {
+  text-decoration: underline;
+}
+
+.sum a.chip {
+  text-decoration: none;
+}
+
+.sum .sum-chip-on {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Одна колонка с minmax(0, 1fr): длинная строка на ширине телефона переносится, а не распирает карточку. */
+.sum-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sum-card > p {
+  max-width: 72ch;
+}
+
+/* ---------- Главные числа ---------- */
+.sum-figs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sum-fig {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.sum-fig-label,
+.sum-fig-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.sum-fig-value {
+  font-size: 1.35rem;
+  font-weight: 650;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Пары «подпись — число» ---------- */
+.sum-facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.sum-facts > div {
+  display: grid;
+  gap: 1px;
+  align-content: start;
+  min-width: 0;
+  border-left: 2px solid var(--line-strong);
+  padding-left: 10px;
+}
+
+.sum-facts dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.sum-facts dd {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Полоса из долей ---------- */
+/* Между долями зазор, у каждой доли в легенде подпись и число: смысл не держится на одном цвете. */
+.sum-bar {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+}
+
+.sum-bar > span {
+  min-width: 10px;
+  border-radius: 4px;
+}
+
+/* Доли «Дней» различаются рисунком, как точки на карте маршрута: ядро — сплошная, расширение — с ободком,
+   минимум — светлая в рамке, пропуск — штриховка, остаток — пустая дорожка. Близкие оттенки зелёного не нужны. */
+.sum-day-core {
+  background: var(--accent);
+}
+
+.sum-day-extension {
+  background: var(--accent);
+  box-shadow:
+    inset 0 0 0 2px var(--accent),
+    inset 0 0 0 4px var(--surface);
+}
+
+.sum-day-minimum {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.sum-day-skipped {
+  background: repeating-linear-gradient(135deg, var(--muted) 0 2px, var(--surface-2) 2px 6px);
+}
+
+.sum-day-left {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--line-strong);
+}
+
+.sum-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+}
+
+.sum-legend li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.sum-legend b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.sum-key {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+/* ---------- Строки: недели, треки, задачи, файлы ---------- */
+.sum-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sum-rows > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.sum-rows > li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.sum-rows > li:last-child {
+  padding-bottom: 0;
+}
+
+.sum-rows-tight > li {
+  padding: 7px 0;
+}
+
+.sum-row-main {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sum-row-side {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.sum-row-side b,
+b.sum-row-side {
+  color: var(--ink);
+}
+
+.sum-row-wide {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
+}
+
+.sum .meter {
+  display: block;
+  width: 100%;
+}
+
+.sum-path {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.sum-meter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Замер: было → стало ---------- */
+.sum-ba {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.sum-ba-side {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-width: 0;
+  border-left: 2px solid var(--line-strong);
+  padding-left: 10px;
+  overflow-wrap: anywhere;
+}
+
+.sum-ba-value {
+  font-size: 1.6rem;
+  font-weight: 650;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.sum-ba-value small {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* ---------- Итог текстом ---------- */
+.sum-text > summary {
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.sum-text[open] > summary {
+  margin-bottom: 8px;
+}
+
+@media (min-width: 720px) {
+  .sum-figs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .sum-fig-value {
+    font-size: 1.6rem;
+  }
+
+  .sum-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sum-legend {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 640px;
+  }
+
+  .sum-ba {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+/* ——— Поломки построек города ——— */
+
+.breakage,
+.breakage-note {
+  padding: 10px 12px;
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+  background: var(--amber-soft);
+  color: var(--amber-ink);
+}
+
+.breakage {
+  display: grid;
+  gap: 8px;
+}
+
+.breakage p,
+.breakage-note p {
+  margin: 0;
+}
+
+.breakage .reasons {
+  margin: 0;
+}
+
+.breakage-note {
+  display: grid;
+  gap: 8px;
+}
+
+.breakage-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Кнопка-название сломанной постройки: по нажатию открывается её карточка. */
+.breakage-chip {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-height: 36px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--amber);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.breakage-chip.is-on {
+  background: var(--amber);
+  color: var(--surface);
+}
+
+/* Пометка «сломано» рядом с названием. */
+.breakage-mark {
+  margin-left: 6px;
+  vertical-align: middle;
+  text-transform: none;
+  letter-spacing: 0;
+}

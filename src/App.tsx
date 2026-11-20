@@ -14,6 +14,7 @@ import type { ShopApi } from './tabs/Shop'
 import type { SkyApi } from './tabs/SkyCard'
 import { CoinIcon, GemIcon } from './world/extras'
 import { computeSky, fetchWeather, type Place, type SkyOverride, type Weather } from './world/sky'
+import { CycleSummary } from './tabs/CycleSummary'
 import { Growth } from './tabs/Growth'
 import { PathTab, type SignApi } from './tabs/PathTab'
 import { Problems } from './tabs/Problems'
@@ -35,14 +36,27 @@ const TABS = [
   { id: 'skills', label: 'Навыки' },
 ] as const
 
-type TabId = (typeof TABS)[number]['id'] | 'lab'
+type TabId = (typeof TABS)[number]['id'] | 'lab' | 'cycle'
 
 function readTab(): TabId {
   const hash = location.hash.replace(/^#\/?/, '')
   if (hash === 'lab') return 'lab'
+  // Итог цикла — тоже страница без вкладки: #/cycle или #/cycle/<id цикла>.
+  if (hash === 'cycle' || hash.startsWith('cycle/')) return 'cycle'
   // Прежний адрес лагеря ведёт в город.
   if (hash === 'camp') return 'town'
   return TABS.find((t) => t.id === hash)?.id ?? 'today'
+}
+
+/** Цикл из адреса #/cycle/<id>. null — id не назван: показывается активный цикл. */
+function readSummaryId(): string | null {
+  const id = /^#\/?cycle\/([^/?]+)/.exec(location.hash)?.[1]
+  if (!id) return null
+  try {
+    return decodeURIComponent(id)
+  } catch {
+    return id
+  }
 }
 
 function readJSON<T>(key: string, fallback: T): T {
@@ -75,6 +89,7 @@ function currentTheme(): 'light' | 'dark' {
 
 export function App() {
   const [tab, setTab] = useState<TabId>(readTab)
+  const [summaryId, setSummaryId] = useState(readSummaryId)
   const [theme, setTheme] = useState(currentTheme)
   const [preview, setPreview] = useState<ConditionLevel | null>(null)
 
@@ -351,6 +366,7 @@ export function App() {
   useEffect(() => {
     const onHash = () => {
       setTab(readTab())
+      setSummaryId(readSummaryId())
       window.scrollTo(0, 0)
     }
     // Системная тема может смениться, пока сайт открыт.
@@ -458,6 +474,8 @@ export function App() {
         {tab === 'problems' && <Problems cycle={cycle} />}
         {tab === 'growth' && <Growth world={world} cycle={cycle} />}
         {tab === 'skills' && <Skills world={world} />}
+        {/* Неизвестный id и адрес без id ведут на активный цикл. */}
+        {tab === 'cycle' && <CycleSummary world={world} cycle={world.cycles.find((c) => c.id === summaryId) ?? world.active} />}
         {tab === 'lab' && (
           <Suspense fallback={<p className="muted">Загружаю каталог…</p>}>
             <TownLab />

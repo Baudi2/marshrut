@@ -1,7 +1,7 @@
 // Каталог обликов: что показать на доске «Постройки по уровням».
 import { BUILDINGS } from '../game/town'
 import type { BoardCell } from './board'
-import { CENTER, DECOR, LOOKS, constructionLook, specialLook } from './looks'
+import { CENTER, DECOR, LOOKS, constructionLook, monumentLook, specialLook } from './looks'
 
 /** Цвета и фигуры треков — как в интерфейсе: design/DESIGN.md, раздел 3. */
 export const TRACK_ACCENT: Record<string, string> = { A: '#2f6db5', B: '#b65a2c', C1: '#2b7d5c', C2: '#9a7012', E: '#b0507a' }
@@ -50,5 +50,7 @@ export function catalogRows(): BoardCell[][] {
     { title: 'Трек C2', note: 'ромб', look: specialLook('cabin', 2), ctx: { accent: TRACK_ACCENT.C2, emblem: 'C2' } },
     { title: 'Трек E', note: 'две полосы', look: specialLook('tower', 3), ctx: { accent: TRACK_ACCENT.E, emblem: 'E' } },
   ])
+  // Памятники закрытых циклов: поясков столько, каков номер цикла.
+  rows.push([1, 2, 3, 5].map((n) => ({ title: `Памятник цикла ${n}`, note: 'закрытый цикл', look: monumentLook(n) })))
   return rows
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { STAGE_LABEL, type BuildingView, type CycleView, type World } from '../game/engine'
+import { HEAL_SESSIONS } from '../game/repair'
 import type { ConditionLevel } from '../game/rules'
 import {
   BUILDINGS,
@@ -19,6 +20,7 @@ import {
   moodOf,
   tierCost,
   tradeYield,
+  type Breakage,
   type BuildingType,
   type Cost,
   type TownAction,
@@ -26,9 +28,10 @@ import {
 import { TownCanvas, fmtLeft } from '../town3d/TownCanvas'
 import { CENTER, LOOKS, levelName } from '../town3d/looks'
 import { quarterOpen } from '../town3d/plan'
-import { previewView, townView } from '../town3d/view'
+import { folded, previewView, townView } from '../town3d/view'
 import { ConditionPreview, TrackBadge, plural } from '../ui/bits'
 import { CoinIcon, GemIcon } from '../world/extras'
+import { MonumentCard } from './MonumentCard'
 import { artifactState } from './PathTab'
 import type { SyncSummary } from '../game/sync'
 import { Shop, type ShopApi } from './Shop'
@@ -124,8 +127,35 @@ function gives(type: BuildingType, level: number): string {
   if (type.id === 'mill') return `еда огородов +${10 * level}%`
   if (type.id === 'tavern') return `уют +${COMFORT.tavern * level}; за ход приходит на одного жителя больше`
   if (type.id === 'market') return `обмен: за ${TRADE_COINS} монет — еды ${tradeYield(level, 'food')}, дерева ${tradeYield(level, 'wood')} или кирпича ${tradeYield(level, 'brick')}`
-  if (type.id === 'tower') return 'после долгого перерыва ломается не больше одного украшения'
+  if (type.id === 'tower') return 'после долгого перерыва ломается не больше одной вещи — постройки или украшения'
   return ''
+}
+
+const SESSIONS: [string, string, string] = ['занятие', 'занятия', 'занятий']
+
+/** Чего город лишился, пока постройка сломана. У жилья и складов поломка — только вид. */
+function lost(type: BuildingType, level: number): string {
+  const at = (values: number[] | undefined) => (values ? values[level - 1] : 0)
+  if (type.housing) return 'Жильё остаётся, жители не уходят: сломан только вид'
+  if (type.foodCap) return 'Запас еды остаётся: сломан только вид'
+  if (type.materialCap) return 'Запас дерева и кирпича остаётся: сломан только вид'
+  if (type.food) return `Не работает: еды не даёт, обычно +${at(type.food)} за ход`
+  if (type.wood) return `Не работает: дерева не даёт, обычно +${at(type.wood)} за ход`
+  if (type.brick) return `Не работает: кирпича не даёт, обычно +${at(type.brick)} за ход`
+  if (type.firewood) return 'Не работает: запас дров пропуски не прикрывает'
+  if (type.id === 'well') return `Не работает: уюта не даёт; пока сломаны все колодцы, жителей сверх ${NO_WELL_LIMIT} не прибавляется`
+  if (type.id === 'workshop') return 'Не работает: стройку не ускоряет, второго строителя нет'
+  if (type.id === 'mill') return 'Не работает: огороды остались без прибавки, пекарня стоит'
+  if (type.id === 'tavern') return 'Не работает: уюта не даёт, жители приходят без прибавки'
+  if (type.id === 'market') return 'Не работает: обмена нет'
+  if (type.id === 'tower') return 'Не работает: за следующим долгим перерывом не присмотрит'
+  return 'Не работает'
+}
+
+/** Когда сломанное починится само. */
+function heals(broken: Breakage): string {
+  if (broken.healsIn === null) return `Починится само за ${HEAL_SESSIONS} ${plural(HEAL_SESSIONS, SESSIONS)}, когда вернёшься к занятиям`
+  return `Починится само через ${broken.healsIn} ${plural(broken.healsIn, SESSIONS)}`
 }
 
 const fmtHours = (hours: number) => fmtLeft(hours * 3600_000)
@@ -231,7 +261,12 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
   ]
 
   const upgradeWhy = building ? blockers(town, { do: 'upgrade', id: building.id }, world.means) : []
+  // Памятник закрытого цикла: по нажатию — что это был за цикл и какие файлы он оставил.
+  const monument = !previewing && selected?.startsWith('cycle:') ? world.cycles.find((c) => `cycle:${c.id}` === selected && c.done) : undefined
+  const repairWhy = building?.broken ? blockers(town, { do: 'repair', id: building.id }, world.means) : []
   const tierWhy = next ? blockers(town, { do: 'tier' }, world.means) : []
+  // Сломанное после перерыва: видно под картой, чинится в карточке постройки.
+  const wrecked = previewing ? [] : town.buildings.filter((b) => b.broken)
 
   return (
     <div className="stack">
@@ -266,6 +301,27 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
             Вернуться к своему
           </button>
         </p>
+      )}
+
+      {wrecked.length > 0 && (
+        <div className="breakage-note" role="status">
+          <p>
+            <b>
+              Долгий перерыв сломал {wrecked.length} {plural(wrecked.length, ['постройку', 'постройки', 'построек'])}.
+            </b>{' '}
+            Сломанная постройка не работает. Платить не обязательно: всё чинится само на третьем занятии после возвращения, монеты
+            только ускоряют.
+          </p>
+          <ul className="breakage-list">
+            {wrecked.map((b) => (
+              <li key={b.id}>
+                <button className={`breakage-chip${selected === b.id ? ' is-on' : ''}`} aria-pressed={selected === b.id} onClick={() => setSelected(b.id)}>
+                  {buildingType(b.type)?.name ?? levelName(b.type, b.level)}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {!previewing && selected === 'center' && (
@@ -304,10 +360,36 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
 
       {building && (
         <div className="card" aria-live="polite">
-          <div className="eyebrow">{buildingType(building.type)?.name}</div>
+          <div className="eyebrow">
+            {buildingType(building.type)?.name}
+            {building.broken && <span className="pill pill-current breakage-mark">сломано</span>}
+          </div>
           <h3>{building.level > 0 ? levelName(building.type, building.level) : 'Строится'}</h3>
           <Levels level={building.level} pending={building.pending?.level} />
-          {building.level > 0 && <p>Даёт: {gives(buildingType(building.type)!, building.level)}.</p>}
+          {building.level > 0 && (
+            <p>
+              {building.broken ? 'Когда цела, даёт' : 'Даёт'}: {gives(buildingType(building.type)!, building.level)}.
+            </p>
+          )}
+          {building.broken && (
+            <div className="breakage">
+              <p>
+                <b>Сломано после перерыва.</b> {lost(buildingType(building.type)!, building.level)}. {heals(building.broken)}.
+              </p>
+              <div className="act-row">
+                <button
+                  className="btn btn-primary"
+                  disabled={repairWhy.length > 0}
+                  onClick={() => api.act({ do: 'repair', id: building.id })}
+                  aria-label={`Починить за ${building.broken.cost} ${plural(building.broken.cost, ['монету', 'монеты', 'монет'])}`}
+                >
+                  Починить · <CoinIcon /> {building.broken.cost}
+                </button>
+                <span className="small">Починка мгновенная, строители для неё не нужны.</span>
+              </div>
+              <Reasons list={repairWhy} />
+            </div>
+          )}
           {building.pending ? (
             <Building
               label={building.level > 0 ? `Улучшается до уровня ${building.pending.level}: ${levelName(building.type, building.pending.level).toLowerCase()}` : `Строится: ${levelName(building.type, 1).toLowerCase()}`}
@@ -385,6 +467,8 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
         </div>
       )}
 
+      {monument && <MonumentCard cycle={monument} folded={folded(monument, world.cycles)} />}
+
       {!previewing && !selected && <p className="muted">Нажми на постройку на карте, чтобы увидеть, что она даёт и сколько стоит следующий уровень.</p>}
 
       <div className="card">
@@ -392,6 +476,7 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
         <ul className="build-menu">
           {BUILDINGS.filter((type) => type.tier <= town.tier + 1).map((type) => {
             const have = town.buildings.filter((b) => b.type === type.id).length
+            const down = town.buildings.filter((b) => b.type === type.id && b.broken).length
             const limit = type.count[town.tier]
             const why = blockers(town, { do: 'build', type: type.id }, world.means)
             const locked = town.tier < type.tier
@@ -399,6 +484,7 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
               <li key={type.id} className={locked ? 'is-locked' : ''}>
                 <div>
                   <b>{type.name}</b> <span className="muted small">· {LOOKS[type.id]?.levels[0].name.toLowerCase()}</span>
+                  {down > 0 && <span className="pill pill-current breakage-mark">{down === have ? 'сломано' : `сломано ${down}`}</span>}
                   <div className="muted small">
                     {gives(type, 1)}
                     {!locked && ` · построено ${have} из ${limit}`}
@@ -448,10 +534,11 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
       )}
 
       <SkyCard api={skyApi} />
+      {/* Дровник, сломанный этим же перерывом, его всё равно прикрывает: показан запас, каким он был до перерыва. */}
       <ConditionPreview
         real={world.condition.level}
         missed={world.missedWorkdays}
-        firewood={world.town.firewood}
+        firewood={Math.max(world.town.firewood, world.covered)}
         covered={world.covered}
         breaks={world.breaks}
         value={preview}

@@ -29,7 +29,7 @@ import { TownCanvas, fmtLeft } from '../town3d/TownCanvas'
 import { CENTER, LOOKS, levelName } from '../town3d/looks'
 import { quarterOpen } from '../town3d/plan'
 import { folded, previewView, townView } from '../town3d/view'
-import { ConditionPreview, TrackBadge, plural } from '../ui/bits'
+import { ConditionCard, TrackBadge, plural } from '../ui/bits'
 import { CoinIcon, GemIcon } from '../world/extras'
 import { MonumentCard } from './MonumentCard'
 import { artifactState } from './PathTab'
@@ -50,8 +50,9 @@ interface Props {
   world: World
   cycle: CycleView
   level: ConditionLevel
-  preview: ConditionLevel | null
-  onPreview: (level: ConditionLevel | null) => void
+  /** Предпросмотр ступени из меню разработчика: null — настоящий город. */
+  stagePreview: number | null
+  onStagePreview: (stage: number | null) => void
   shop: ShopApi
   skyApi: SkyApi
   town: TownApi
@@ -221,12 +222,9 @@ function moodText(town: World['town']): string {
   return `Довольство: ${moodOf(town)}%. Уют ${c.total} (${parts.join(', ')}) на ${town.population} ${plural(town.population, RESIDENTS)}; его хватает на ${comfortRoom(town)}. ${effect} Уют дают колодцы, таверна, украшения из лавки и новая ступень.`
 }
 
-const TIER_PREVIEW = ['Стоянка', 'Лагерь', 'Хутор', 'Деревня', 'Городок', 'Город']
-
-export default function TownTab({ world, cycle, level, preview, onPreview, shop, skyApi, town: api, sync, now }: Props) {
+export default function TownTab({ world, cycle, level, stagePreview, onStagePreview, shop, skyApi, town: api, sync, now }: Props) {
   const town = world.town
   const [selected, setSelected] = useState<string | null>(null)
-  const [stagePreview, setStagePreview] = useState<number | null>(null)
   const [hint, setHint] = useState<string | null>(null)
   // Таймеры на странице обновляются раз в полминуты.
   const [clock, setClock] = useState(() => Date.now())
@@ -296,8 +294,8 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
 
       {previewing && (
         <p className="note">
-          Это предпросмотр ступени «{TIER_PREVIEW[stagePreview]}»: так город может выглядеть, когда дорастёт. Настоящий город не меняется.{' '}
-          <button className="btn btn-quiet" onClick={() => setStagePreview(null)}>
+          Это предпросмотр ступени «{TIERS[stagePreview].name}»: так город может выглядеть, когда дорастёт. Настоящий город не меняется.{' '}
+          <button className="btn btn-quiet" onClick={() => onStagePreview(null)}>
             Вернуться к своему
           </button>
         </p>
@@ -507,24 +505,6 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
         </p>
       </div>
 
-      <div className="card">
-        <h3>Каким город станет</h3>
-        <p className="muted">Посмотри любую ступень заранее. Это только картинка: постройки и ресурсы не меняются.</p>
-        <div className="seg" role="group" aria-label="Предпросмотр ступени города">
-          <button className={stagePreview === null ? 'is-on' : ''} onClick={() => setStagePreview(null)}>
-            Сейчас
-          </button>
-          {TIER_PREVIEW.map((name, i) => (
-            <button key={name} className={stagePreview === i ? 'is-on' : ''} onClick={() => setStagePreview(i)}>
-              {name}
-            </button>
-          ))}
-        </div>
-        <p className="small">
-          <a href="#/lab">Каталог построек</a> — все уровни каждой постройки рядом.
-        </p>
-      </div>
-
       {api.unsynced.length > 0 && (
         <SyncNote sync={sync}>
           <button className="btn btn-quiet" onClick={api.undo}>
@@ -535,14 +515,12 @@ export default function TownTab({ world, cycle, level, preview, onPreview, shop,
 
       <SkyCard api={skyApi} />
       {/* Дровник, сломанный этим же перерывом, его всё равно прикрывает: показан запас, каким он был до перерыва. */}
-      <ConditionPreview
+      <ConditionCard
         real={world.condition.level}
         missed={world.missedWorkdays}
         firewood={Math.max(world.town.firewood, world.covered)}
         covered={world.covered}
         breaks={world.breaks}
-        value={preview}
-        onChange={onPreview}
       />
       <Shop shop={shop} sync={sync} />
 

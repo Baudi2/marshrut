@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { offplan, rawCycles, repoCards, repoPurchases, repoRedeemed, repoRepairs, repoReviews, repoRewards, repoSigns, repoTownActions } from './data/load'
 import type { DeckReview, MemorialSign, OwnCard, Purchase, Redeemed, Reward } from './data/types'
 import { cardId, makeOwnCard, newCardProblem } from './game/deck'
@@ -8,13 +8,14 @@ import { syncSummary } from './game/sync'
 import { blockers, type TownAction } from './game/town'
 import type { TownApi } from './tabs/TownTab'
 import { buildWorld } from './game/engine'
-import { toISO, type ConditionLevel } from './game/rules'
+import { toISO } from './game/rules'
 import { SHOP, canAfford, shopItem } from './game/shop'
 import type { ShopApi } from './tabs/Shop'
 import type { SkyApi } from './tabs/SkyCard'
 import { CoinIcon, GemIcon } from './world/extras'
-import { computeSky, fetchWeather, type Place, type SkyOverride, type Weather } from './world/sky'
+import { computeSky, fetchWeather, type Place, type Weather } from './world/sky'
 import { CycleSummary } from './tabs/CycleSummary'
+import { DEV_OFF, DevMenu, devActive, devSummary, type DevState } from './tabs/DevMenu'
 import { Growth } from './tabs/Growth'
 import { PathTab, type SignApi } from './tabs/PathTab'
 import { Problems } from './tabs/Problems'
@@ -36,11 +37,13 @@ const TABS = [
   { id: 'skills', label: 'Навыки' },
 ] as const
 
-type TabId = (typeof TABS)[number]['id'] | 'lab' | 'cycle'
+type TabId = (typeof TABS)[number]['id'] | 'lab' | 'cycle' | 'dev'
 
 function readTab(): TabId {
   const hash = location.hash.replace(/^#\/?/, '')
   if (hash === 'lab') return 'lab'
+  // Меню разработчика: адрес нигде не показан, вход — пять быстрых нажатий на название сайта.
+  if (hash === 'dev') return 'dev'
   // Итог цикла — тоже страница без вкладки: #/cycle или #/cycle/<id цикла>.
   if (hash === 'cycle' || hash.startsWith('cycle/')) return 'cycle'
   // Прежний адрес лагеря ведёт в город.
@@ -91,7 +94,11 @@ export function App() {
   const [tab, setTab] = useState<TabId>(readTab)
   const [summaryId, setSummaryId] = useState(readSummaryId)
   const [theme, setTheme] = useState(currentTheme)
-  const [preview, setPreview] = useState<ConditionLevel | null>(null)
+  // Предпросмотры из меню разработчика: живут, пока открыта страница, и ничего не записывают.
+  const [dev, setDev] = useState<DevState>(DEV_OFF)
+  const preview = dev.condition
+  const skyOverride = dev.sky
+  const brandTaps = useRef<number[]>([])
 
   // Покупки и ремонты: сразу в браузер, позже Claude Code переносит их в data/purchases.json.
   const [localBuys, setLocalBuys] = useState<Purchase[]>(() => readJSON('purchases', []))
@@ -112,7 +119,6 @@ export function App() {
   const [place, setPlaceState] = useState<Place | null>(() => readJSON('place', null))
   const [weather, setWeather] = useState<Weather | null>(null)
   const [weatherError, setWeatherError] = useState<string | null>(null)
-  const [skyOverride, setSkyOverride] = useState<SkyOverride>({})
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -157,8 +163,6 @@ export function App() {
       setPlaceState(next)
       writeJSON('place', next)
     },
-    override: skyOverride,
-    setOverride: setSkyOverride,
   }
 
   const today = toISO(now)
@@ -380,6 +384,15 @@ export function App() {
     }
   }, [])
 
+  // Потайной вход в меню разработчика: пять нажатий на название за две с половиной секунды.
+  const tapBrand = () => {
+    const at = Date.now()
+    brandTaps.current = [...brandTaps.current.filter((t) => at - t < 2500), at]
+    if (brandTaps.current.length < 5) return
+    brandTaps.current = []
+    location.hash = '#/dev'
+  }
+
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
     document.documentElement.dataset.theme = next
@@ -395,7 +408,9 @@ export function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-name">Маршрут</span>
+          <span className="brand-name" onClick={tapBrand}>
+            Маршрут
+          </span>
           {world.cycles.length > 1 ? (
             <select value={cycle.id} onChange={(e) => setCycleId(e.target.value)} aria-label="Цикл">
               {world.cycles.map((c) => (
@@ -432,6 +447,22 @@ export function App() {
 
       {world.ranksEarned.length > 0 && <p className="ranks">Звания: {world.ranksEarned.join(' · ')}</p>}
 
+      {devActive(dev) && tab !== 'dev' && (
+        <p className="dev-bar" role="status">
+          <span>
+            <b>Предпросмотр:</b> {devSummary(dev)}. Это только картинка.
+          </span>
+          <span className="dev-bar-actions">
+            <button className="btn btn-quiet" onClick={() => setDev(DEV_OFF)}>
+              Выключить
+            </button>
+            <a className="btn btn-quiet" href="#/dev">
+              Меню
+            </a>
+          </span>
+        </p>
+      )}
+
       <nav className="tabs" aria-label="Разделы">
         {TABS.map((t) => (
           <a key={t.id} href={`#/${t.id}`} className={tab === t.id ? 'is-on' : ''} aria-current={tab === t.id ? 'page' : undefined}>
@@ -448,8 +479,6 @@ export function App() {
             world={world}
             cycle={cycle}
             level={level}
-            preview={preview}
-            onPreview={setPreview}
             gear={gear}
             skyApi={skyApi}
             signs={signApi}
@@ -461,8 +490,8 @@ export function App() {
               world={world}
               cycle={cycle}
               level={level}
-              preview={preview}
-              onPreview={setPreview}
+              stagePreview={dev.stage}
+              onStagePreview={(stage) => setDev({ ...dev, stage })}
               shop={shop}
               skyApi={skyApi}
               town={townApi}
@@ -476,6 +505,19 @@ export function App() {
         {tab === 'skills' && <Skills world={world} />}
         {/* Неизвестный id и адрес без id ведут на активный цикл. */}
         {tab === 'cycle' && <CycleSummary world={world} cycle={world.cycles.find((c) => c.id === summaryId) ?? world.active} />}
+        {tab === 'dev' && (
+          <DevMenu
+            dev={dev}
+            onChange={setDev}
+            real={{
+              condition: world.condition.level,
+              sky: computeSky(now, place, weather, {}),
+              stage: world.town.tier,
+              missed: world.missedWorkdays,
+            }}
+            updatedAt={String(cycle.raw.progress.meta.updatedAt).split('-').reverse().join('.')}
+          />
+        )}
         {tab === 'lab' && (
           <Suspense fallback={<p className="muted">Загружаю каталог…</p>}>
             <TownLab />

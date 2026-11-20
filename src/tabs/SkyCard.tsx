@@ -1,17 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import {
-  KINDS,
-  KIND_NAME,
-  PHASES,
-  PHASE_NAME,
-  SEASONS,
-  SEASON_NAME,
-  locate,
-  searchPlaces,
-  type Place,
-  type Sky,
-  type SkyOverride,
-} from '../world/sky'
+import { KIND_NAME, PHASE_NAME, SEASON_NAME, locate, searchPlaces, type Place, type Sky } from '../world/sky'
 
 export interface SkyApi {
   sky: Sky
@@ -19,13 +7,11 @@ export interface SkyApi {
   /** Сообщение, если погода не загрузилась. */
   error: string | null
   setPlace: (place: Place | null) => void
-  override: SkyOverride
-  setOverride: (override: SkyOverride) => void
 }
 
-/** Откуда брать погоду и как выглядит небо: место, текущее состояние, предпросмотр. */
+/** Откуда брать погоду и как выглядит небо: место и текущее состояние. */
 export function SkyCard({ api }: { api: SkyApi }) {
-  const { sky, place, override } = api
+  const { sky, place } = api
   const [query, setQuery] = useState('')
   const [found, setFound] = useState<Place[] | null>(null)
   const [busy, setBusy] = useState(false)
@@ -66,16 +52,7 @@ export function SkyCard({ api }: { api: SkyApi }) {
       ? `${place.name}: ${sky.temperature}°, ${KIND_NAME[sky.kind]}.`
       : api.error
         ? `${place.name}: ${api.error}`
-        : override.kind
-          ? `${place.name}: показан предпросмотр погоды.`
-          : `${place.name}: загружаю погоду.`
-
-  const pick = <K extends keyof SkyOverride>(key: K, value: string) => {
-    const next = { ...override }
-    if (value) next[key] = value as SkyOverride[K]
-    else delete next[key]
-    api.setOverride(next)
-  }
+        : `${place.name}: загружаю погоду.`
 
   return (
     <div className="card">
@@ -129,44 +106,8 @@ export function SkyCard({ api }: { api: SkyApi }) {
         {note && <p className="muted small">{note}</p>}
       </form>
 
-      <div className="selects">
-        <label>
-          Сезон
-          <select className="field" value={override.season ?? ''} onChange={(e) => pick('season', e.target.value)}>
-            <option value="">как сейчас</option>
-            {SEASONS.map((s) => (
-              <option key={s} value={s}>
-                {SEASON_NAME[s]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Время суток
-          <select className="field" value={override.phase ?? ''} onChange={(e) => pick('phase', e.target.value)}>
-            <option value="">как сейчас</option>
-            {PHASES.map((p) => (
-              <option key={p} value={p}>
-                {PHASE_NAME[p]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Погода
-          <select className="field" value={override.kind ?? ''} onChange={(e) => pick('kind', e.target.value)}>
-            <option value="">как сейчас</option>
-            {KINDS.map((k) => (
-              <option key={k} value={k}>
-                {KIND_NAME[k]}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
       <p className="muted small">
-        Списки выше — предпросмотр: посмотреть мир зимой, ночью или в дождь. Место хранится только в этом браузере. В сервис
+        Место хранится только в этом браузере. В сервис
         погоды уходят одни координаты; при геолокации они округляются до 0,1°, это около 11 км. Данные о погоде —{' '}
         <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">
           Open-Meteo

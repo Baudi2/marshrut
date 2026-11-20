@@ -160,17 +160,13 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
   )
 }
 
-const PREVIEW_LABELS = ['без пропусков', '2–3 дня', '4–7 дней', '8 и больше']
-
-/** Показывает, как пропуски меняют мир, и позволяет посмотреть каждую стадию. */
-export function ConditionPreview({
+/** Состояние мира: сколько пропущено и что это значит. Посмотреть другие стадии можно в меню разработчика. */
+export function ConditionCard({
   real,
   missed,
   firewood = 0,
   covered = 0,
   breaks,
-  value,
-  onChange,
 }: {
   real: ConditionLevel
   missed: number
@@ -179,10 +175,7 @@ export function ConditionPreview({
   covered?: number
   /** Плановые перерывы цикла: использовано рабочих дней, лимит и дата конца идущего перерыва. */
   breaks?: { used: number; limit: number; until: string | null }
-  value: ConditionLevel | null
-  onChange: (level: ConditionLevel | null) => void
 }) {
-  const shown = value ?? real
   return (
     <div className="card preview">
       <div className="preview-head">
@@ -202,21 +195,8 @@ export function ConditionPreview({
           </p>
         </div>
       </div>
-      <div className="seg" role="group" aria-label="Посмотреть, как выглядят пропуски рабочих дней">
-        {PREVIEW_LABELS.map((label, i) => (
-          <button
-            key={label}
-            className={shown === i ? 'is-on' : ''}
-            aria-pressed={shown === i}
-            onClick={() => onChange(i === real ? null : (i as ConditionLevel))}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
       <p className="preview-look">
-        <b>{CONDITIONS[shown].name}.</b> {CONDITIONS[shown].look}
-        {value !== null && ' Это предпросмотр, не текущее состояние.'}
+        <b>{CONDITIONS[real].name}.</b> {CONDITIONS[real].look}
       </p>
     </div>
   )

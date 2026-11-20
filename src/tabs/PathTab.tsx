@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { CycleView, DayView, World } from '../game/engine'
 import type { ConditionLevel } from '../game/rules'
-import { ConditionPreview, DAYS, RichText, TrackBadge, fmtDate, plural } from '../ui/bits'
+import { ConditionCard, DAYS, RichText, TrackBadge, fmtDate, plural } from '../ui/bits'
 import { timeReport } from '../game/report'
 import { SIGN_GEMS, SIGN_MAX } from '../game/rewards'
 import { cycleCaption } from '../game/summary'
@@ -37,15 +37,13 @@ interface Props {
   world: World
   cycle: CycleView
   level: ConditionLevel
-  preview: ConditionLevel | null
-  onPreview: (level: ConditionLevel | null) => void
   /** Надетая экипировка путника. */
   gear: string[]
   skyApi: SkyApi
   signs: SignApi
 }
 
-export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi, signs }: Props) {
+export function PathTab({ world, cycle, level, gear, skyApi, signs }: Props) {
   const [selected, setSelected] = useState<number>(cycle.current?.day.n ?? cycle.days[cycle.done ? cycle.days.length - 1 : 0].n)
   const day = cycle.days.find((d) => d.n === selected) ?? cycle.days[0]
   const week = cycle.weeks.find((w) => w.week.n === day.plan.week)
@@ -93,14 +91,12 @@ export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi,
 
       <SkyCard api={skyApi} />
 
-      <ConditionPreview
+      <ConditionCard
         real={world.condition.level}
         missed={world.missedWorkdays}
         firewood={Math.max(world.town.firewood, world.covered)}
         covered={world.covered}
         breaks={world.breaks}
-        value={preview}
-        onChange={onPreview}
       />
     </div>
   )

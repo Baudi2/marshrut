@@ -3345,3 +3345,53 @@ b.sum-row-side {
   text-transform: none;
   letter-spacing: 0;
 }
+
+/* ——— Меню разработчика и полоса предпросмотра ——— */
+
+/* Название сайта — потайной вход в меню: при частых нажатиях текст не выделяется. */
+.brand-name {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dev-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 0.9rem;
+}
+
+.dev-bar-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.dev-bar .btn {
+  min-height: 36px;
+  text-decoration: none;
+}
+
+.dev-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin-bottom: 10px;
+}
+
+.dev-head h3 {
+  margin: 0;
+}
+
+.dev-keys code {
+  overflow-wrap: anywhere;
+}

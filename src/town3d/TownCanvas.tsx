@@ -83,7 +83,8 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
     stage.current = created
     scenery.current = new Scenery(created)
     town.current = new TownScene(scenery.current)
-    ;(window as unknown as { town3d?: unknown }).town3d = created
+    // Для проверочного скрипта (scripts/dev/scene-probe.js): только на локальном сайте.
+    if (import.meta.env.DEV) (window as unknown as { town3d?: unknown }).town3d = created
     return () => {
       town.current?.dispose()
       created.dispose()

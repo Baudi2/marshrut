@@ -1,6 +1,7 @@
 import { dueCards } from '../game/deck'
 import type { CycleView, World } from '../game/engine'
 import { toISO } from '../game/rules'
+import { fullPeriod } from '../game/summary'
 import type { SyncSummary } from '../game/sync'
 import { SyncNote } from './SyncNote'
 import { DAYS, RichText, Timer, TrackBadge, plural } from '../ui/bits'
@@ -11,14 +12,83 @@ export function Today({ world, cycle, sync }: { world: World; cycle: CycleView; 
   const current = cycle.current
   const progress = cycle.raw.progress
 
+  // Все циклы пройдены, следующего маршрута ещё нет: привал. Сайт при этом не замирает.
   if (!current) {
+    const dates = progress.sessions.map((s) => s.date).sort()
+    const due = dueCards(world.deck, toISO(new Date())).length
+    const tests = cycle.weeks.filter((w) => w.test.state === 'open')
     return (
-      <div className="card">
-        <h2>Маршрут пройден</h2>
-        <p>
-          Цикл {cycle.n} «{cycle.name}» закрыт: {cycle.daysDone} {plural(cycle.daysDone, DAYS)} из {cycle.days.length}. Звание —
-          «{cycle.rankOnComplete}». Следующий маршрут собирается из ретро; пока его нет, занятия вне плана тоже идут в счёт.
-        </p>
+      <div className="stack">
+        <div className="card">
+          <div className="eyebrow">
+            Цикл {cycle.n} · {cycle.name}
+          </div>
+          <h2>Маршрут пройден</h2>
+          <p>
+            Закрыты все {cycle.days.length} {plural(cycle.days.length, DAYS)}
+            {dates.length > 0 && <>: {fullPeriod(dates[0], dates[dates.length - 1])}</>}. Звание — «{cycle.rankOnComplete}».
+          </p>
+          <ul className="plain">
+            <li>
+              <a href={`#/cycle/${cycle.id}`}>Итог цикла</a> <span className="muted">— что пройдено и что это дало, одним листом</span>
+            </li>
+            <li>
+              <a href="#/town">Памятник цикла</a>{' '}
+              <span className="muted">
+                {world.town.tier > 0 ? '— стоит в городе на берегу у моста' : '— встанет на берегу у моста, когда стоянка станет лагерем'}
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        {due > 0 && (
+          <a className="card deck-link" href="#/review">
+            <span>
+              <b>Колода:</b> к повтору сегодня {due} {plural(due, ['карточка', 'карточки', 'карточек'])}
+            </span>
+            <span aria-hidden="true">→</span>
+          </a>
+        )}
+
+        {world.condition.level > 0 && (
+          <div className="card banner">
+            <b>{world.condition.name}.</b> Без занятия {world.missedWorkdays}{' '}
+            {plural(world.missedWorkdays, ['рабочий день', 'рабочих дня', 'рабочих дней'])}. Маршрут пройден, но мир живёт занятиями:
+            чтобы вернуть порядок, хватит любого занятия вне плана.
+          </div>
+        )}
+
+        {tests.length > 0 && (
+          <div className="card note">
+            <b>
+              Не сдан тест {tests.length > 1 ? 'недель' : 'недели'} {tests.map((w) => w.week.n).join(', ')}.
+            </b>{' '}
+            За него дают до 3 камней. Задание для репетитора — на вкладке <a href="#/path">«Путь»</a>.
+          </div>
+        )}
+
+        <div className="card">
+          <h3>Что дальше</h3>
+          <p>
+            Следующий маршрут собирается из ретро. Пока его нет, идёт привал, и занятия вне плана тоже в счёт: видео, статья, задача,
+            встреча. Расскажи репетитору, что сделал и что вынес, — он запишет. Город живёт как обычно: день с занятием — один ход.
+          </p>
+        </div>
+
+        {progress.openItems.length > 0 && (
+          <details className="card fold">
+            <summary>
+              Хвосты <span className="muted">· {progress.openItems.length}</span>
+            </summary>
+            <ul className="plain">
+              {progress.openItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </details>
+        )}
+
+        <SyncNote sync={sync} />
       </div>
     )
   }

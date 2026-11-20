@@ -1,6 +1,7 @@
 // Карточка памятника: закрытый цикл одной строкой и файлы, которые он оставил.
 import { STAGE_LABEL, type CycleView } from '../game/engine'
-import { fmtDate, plural, type Forms } from '../game/text'
+import { fullPeriod } from '../game/summary'
+import { plural, type Forms } from '../game/text'
 import { TrackBadge } from '../ui/bits'
 
 const FILES: Forms = ['файл', 'файла', 'файлов']
@@ -21,11 +22,7 @@ export function MonumentCard({ cycle, folded }: { cycle: CycleView; folded: bool
       </div>
       <p>
         Цикл пройден
-        {dates.length > 0 && (
-          <>
-            : {fmtDate(dates[0])} — {fmtDate(dates[dates.length - 1])}
-          </>
-        )}
+        {dates.length > 0 && <>: {fullPeriod(dates[0], dates[dates.length - 1])}</>}
         . За него построено {built.length} {plural(built.length, FILES)} из {cycle.buildings.length}.
       </p>
       <p className="muted">
@@ -42,7 +39,7 @@ export function MonumentCard({ cycle, folded }: { cycle: CycleView; folded: bool
                 <span>{b.item.title}</span>
               </span>
               <code>{b.item.path}</code>
-              {b.stage === 3 && <span className="muted">{STAGE_LABEL[3]}</span>}
+              <span className="muted">{b.stage === 3 ? STAGE_LABEL[3] : ''}</span>
             </li>
           ))}
         </ul>

@@ -1,0 +1,2107 @@
+{
+  "meta": {
+    "updatedAt": "2027-01-05",
+    "source": "чат с Claude: занятия 27.10, 11.11, 12.11, 17.11, 18.11",
+    "note": "Факты записаны со слов пользователя. Поля со значением null — данных пока нет; confirmed=false — в чате не подтверждено."
+  },
+  "position": {
+    "currentDay": 30,
+    "currentStep": 1,
+    "daysDone": 30,
+    "daysTotal": 30,
+    "startedAt": "2026-10-27",
+    "pauses": [
+      {
+        "from": "2026-10-28",
+        "to": "2026-11-10",
+        "days": 14,
+        "note": "пауза после дня 1; вернулся и продолжил с дня 2"
+      },
+      {
+        "from": "2026-11-27",
+        "to": "2026-11-30",
+        "days": 4,
+        "note": "простыл"
+      }
+    ]
+  },
+  "days": [
+    {
+      "day": 1,
+      "status": "core",
+      "dates": [
+        "2026-10-27"
+      ],
+      "confirmed": false,
+      "summary": "Старт: репозиторий prep-basic с папками algo/, design/, build/, notes/; новый pet-проект Empty Activity; шаги про архитектуру и схему слоёв в чате не подтверждались.",
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "(репозиторий и папки)",
+          "state": "created"
+        },
+        {
+          "repo": "pet-project",
+          "path": "(новый проект Empty Activity)",
+          "state": "created"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "design/00-layers.md",
+          "state": "saved"
+        }
+      ]
+    },
+    {
+      "day": 2,
+      "status": "core",
+      "dates": [
+        "2026-11-11",
+        "2026-11-12"
+      ],
+      "confirmed": true,
+      "plannedMinutes": 45,
+      "wallClockMinutes": 100,
+      "summary": "Baseline. 11.11 — разбор формата занятий и шпаргалки; 12.11 — задача 1512 на таймере (14 мин, перебор), разбор решения через HashMap, переписывание с подглядыванием.",
+      "stepsDone": [
+        1,
+        2
+      ],
+      "stepsOpen": [
+        {
+          "n": 3,
+          "what": "сохранить algo/1512-number-of-good-pairs.kt, notes/baseline.md, algo/mistakes.md, коммит; самооценка 1–5 по пяти трекам"
+        }
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "algo/kotlin-cheatsheet.md",
+          "state": "saved"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "algo/1512-number-of-good-pairs.kt",
+          "state": "committed"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "notes/baseline.md",
+          "state": "committed"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "algo/mistakes.md",
+          "state": "committed"
+        }
+      ]
+    },
+    {
+      "day": 3,
+      "status": "core",
+      "dates": [
+        "2026-11-17",
+        "2026-11-18",
+        "2026-11-19"
+      ],
+      "confirmed": true,
+      "plannedMinutes": 60,
+      "summary": "Gradle 1: команды в терминале и заметка",
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "note": "dependencies читал по одной библиотеке",
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "build/gradle-anatomy.md",
+          "state": "committed"
+        }
+      ],
+      "wallClockMinutes": 70
+    },
+    {
+      "day": 4,
+      "status": "extension",
+      "dates": [
+        "2026-11-20"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "notes/ai-tutor.md",
+          "state": "committed"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "CLAUDE.md",
+          "state": "committed"
+        }
+      ],
+      "summary": "Промпты репетитора и первый workflow",
+      "note": "расширение: прочитал про кэш Gradle",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 5,
+      "status": "core",
+      "dates": [
+        "2026-11-23"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "algo/217-contains-duplicate.kt",
+          "state": "committed"
+        }
+      ],
+      "summary": "217 с разбором, пара 387 сама",
+      "wallClockMinutes": 90
+    },
+    {
+      "day": 6,
+      "status": "core",
+      "dates": [
+        "2026-11-24"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "design/01-data-layer.md",
+          "state": "committed"
+        }
+      ],
+      "summary": "Конспект data layer; 217 повторена"
+    },
+    {
+      "day": 7,
+      "status": "core",
+      "dates": [
+        "2026-11-25"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "artifacts": [
+        {
+          "repo": "pet-project",
+          "path": ".github/workflows/android.yml",
+          "state": "committed"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "build/ci-notes.md",
+          "state": "committed"
+        }
+      ],
+      "summary": "Первый workflow со сборкой: был красный, починил"
+    },
+    {
+      "day": 8,
+      "status": "core",
+      "dates": [
+        "2026-11-26"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2
+      ],
+      "artifacts": [
+        {
+          "repo": "pet-project",
+          "path": "app/src/test",
+          "state": "committed"
+        }
+      ],
+      "summary": "Только минимум: один тест"
+    },
+    {
+      "day": 9,
+      "status": "core",
+      "dates": [
+        "2026-12-01"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "algo/242-valid-anagram.kt",
+          "state": "committed"
+        }
+      ],
+      "summary": "День 9 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 10,
+      "status": "core",
+      "dates": [
+        "2026-12-02"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "design/02-ui-state.md",
+          "state": "committed"
+        }
+      ],
+      "summary": "День 10 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 11,
+      "status": "core",
+      "dates": [
+        "2026-12-03"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "algo/125-valid-palindrome.kt",
+          "state": "committed"
+        }
+      ],
+      "summary": "День 11 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 12,
+      "status": "core",
+      "dates": [
+        "2026-12-04"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "artifacts": [
+        {
+          "repo": "pet-project",
+          "path": "gradle/libs.versions.toml",
+          "state": "committed"
+        }
+      ],
+      "summary": "День 12 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 13,
+      "status": "core",
+      "dates": [
+        "2026-12-07"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2
+      ],
+      "summary": "День 13 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 14,
+      "status": "core",
+      "dates": [
+        "2026-12-08"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2
+      ],
+      "summary": "День 14 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 15,
+      "status": "core",
+      "dates": [
+        "2026-12-09"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "design/03-chat-review.md",
+          "state": "committed"
+        }
+      ],
+      "summary": "День 15 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 16,
+      "status": "core",
+      "dates": [
+        "2026-12-10"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "summary": "День 16 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 17,
+      "status": "core",
+      "dates": [
+        "2026-12-11"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "summary": "День 17 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 18,
+      "status": "core",
+      "dates": [
+        "2026-12-14"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2
+      ],
+      "summary": "День 18 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 19,
+      "status": "core",
+      "dates": [
+        "2026-12-18"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "summary": "День 19 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 20,
+      "status": "core",
+      "dates": [
+        "2026-12-21"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "design/04-list-offline.md",
+          "state": "committed"
+        },
+        {
+          "repo": "prep-basic",
+          "path": "design/mistakes.md",
+          "state": "committed"
+        }
+      ],
+      "summary": "День 20 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 21,
+      "status": "core",
+      "dates": [
+        "2026-12-22"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "summary": "День 21 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 22,
+      "status": "core",
+      "dates": [
+        "2026-12-23"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "summary": "День 22 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 23,
+      "status": "core",
+      "dates": [
+        "2026-12-24"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "notes/quiz-1.md",
+          "state": "committed"
+        }
+      ],
+      "summary": "День 23 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 24,
+      "status": "core",
+      "dates": [
+        "2026-12-25"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "summary": "День 24 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 25,
+      "status": "core",
+      "dates": [
+        "2026-12-28"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "design/05-feed.md",
+          "state": "committed"
+        }
+      ],
+      "summary": "День 25 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 26,
+      "status": "core",
+      "dates": [
+        "2026-12-29"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "summary": "День 26 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 27,
+      "status": "core",
+      "dates": [
+        "2026-12-30"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "summary": "День 27 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 28,
+      "status": "core",
+      "dates": [
+        "2026-12-31"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2
+      ],
+      "summary": "День 28 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 29,
+      "status": "core",
+      "dates": [
+        "2027-01-04"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2
+      ],
+      "summary": "День 29 закрыт",
+      "wallClockMinutes": 75
+    },
+    {
+      "day": 30,
+      "status": "core",
+      "dates": [
+        "2027-01-05"
+      ],
+      "confirmed": true,
+      "stepsDone": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "artifacts": [
+        {
+          "repo": "prep-basic",
+          "path": "notes/retro-1.md",
+          "state": "committed"
+        }
+      ],
+      "summary": "День 30 закрыт",
+      "wallClockMinutes": 75
+    }
+  ],
+  "sessions": [
+    {
+      "date": "2026-10-27",
+      "from": "15:28",
+      "to": "18:25",
+      "day": 1,
+      "topics": [
+        "выбор pet-проекта",
+        "лимит GitHub Actions",
+        "два репозитория",
+        "создание папок в cmd",
+        "схема слоёв"
+      ]
+    },
+    {
+      "date": "2026-11-11",
+      "from": "17:48",
+      "to": "18:10",
+      "day": 2,
+      "topics": [
+        "что делать в день 2",
+        "новый формат: Claude ведёт планер и даёт по одному шагу",
+        "что такое шпаргалка"
+      ]
+    },
+    {
+      "date": "2026-11-12",
+      "from": "18:50",
+      "to": "20:12",
+      "day": 2,
+      "topics": [
+        "counts[c - 'a']++",
+        "getOrPut",
+        "задача 1512 на таймере",
+        "счётчик в HashMap"
+      ]
+    },
+    {
+      "date": "2026-11-17",
+      "from": "16:41",
+      "to": "17:53",
+      "day": 3,
+      "topics": [
+        "task, фазы сборки, плагины",
+        "settings.gradle.kts, корневой build.gradle.kts, wrapper, gradle.properties"
+      ]
+    },
+    {
+      "date": "2026-11-18",
+      "from": "15:30",
+      "to": null,
+      "day": 3,
+      "topics": [
+        "app/build.gradle.kts",
+        "идея сайта с геймификацией"
+      ]
+    },
+    {
+      "date": "2026-11-19",
+      "from": "16:00",
+      "to": "17:10",
+      "day": 3,
+      "topics": [
+        "команды Gradle",
+        "assembleDebug",
+        "dependencies"
+      ]
+    },
+    {
+      "date": "2026-11-20",
+      "from": "16:05",
+      "to": "17:20",
+      "day": 4,
+      "topics": [
+        "промпты репетитора",
+        "hello-world workflow"
+      ]
+    },
+    {
+      "date": "2026-11-23",
+      "from": "16:00",
+      "to": "17:30",
+      "day": 5,
+      "topics": [
+        "хеш-множество",
+        "задача 217"
+      ]
+    },
+    {
+      "date": "2026-11-24",
+      "from": "16:00",
+      "to": "17:05",
+      "day": 6,
+      "topics": [
+        "data layer",
+        "повтор 217"
+      ]
+    },
+    {
+      "date": "2026-11-25",
+      "from": "16:00",
+      "to": "17:20",
+      "day": 7,
+      "topics": [
+        "GitHub Actions: сборка"
+      ]
+    },
+    {
+      "date": "2026-11-26",
+      "from": "18:00",
+      "to": "18:40",
+      "day": 8,
+      "topics": [
+        "первый unit-тест"
+      ]
+    },
+    {
+      "date": "2026-12-01",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 9,
+      "topics": [
+        "день 9: A · хеш 2"
+      ]
+    },
+    {
+      "date": "2026-12-02",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 10,
+      "topics": [
+        "день 10: B · архитектура 3"
+      ]
+    },
+    {
+      "date": "2026-12-03",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 11,
+      "topics": [
+        "день 11: A · два указателя"
+      ]
+    },
+    {
+      "date": "2026-12-04",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 12,
+      "topics": [
+        "день 12: C · Gradle 2"
+      ]
+    },
+    {
+      "date": "2026-12-07",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 13,
+      "topics": [
+        "день 13: Ревью + E · репетитор"
+      ]
+    },
+    {
+      "date": "2026-12-08",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 14,
+      "topics": [
+        "день 14: A · массивы"
+      ]
+    },
+    {
+      "date": "2026-12-09",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 15,
+      "topics": [
+        "день 15: B · разбор чужого"
+      ]
+    },
+    {
+      "date": "2026-12-10",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 16,
+      "topics": [
+        "день 16: A · стек"
+      ]
+    },
+    {
+      "date": "2026-12-11",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 17,
+      "topics": [
+        "день 17: C · CI 2"
+      ]
+    },
+    {
+      "date": "2026-12-14",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 18,
+      "topics": [
+        "день 18: Ревью + E · тест 2"
+      ]
+    },
+    {
+      "date": "2026-12-18",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 19,
+      "topics": [
+        "день 19: A · списки"
+      ]
+    },
+    {
+      "date": "2026-12-21",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 20,
+      "topics": [
+        "день 20: B · мини-дизайн 1"
+      ]
+    },
+    {
+      "date": "2026-12-22",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 21,
+      "topics": [
+        "день 21: A · бинарный поиск"
+      ]
+    },
+    {
+      "date": "2026-12-23",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 22,
+      "topics": [
+        "день 22: C · Gradle 3"
+      ]
+    },
+    {
+      "date": "2026-12-24",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 23,
+      "topics": [
+        "день 23: Ревью + E · квиз 1"
+      ]
+    },
+    {
+      "date": "2026-12-25",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 24,
+      "topics": [
+        "день 24: A · бинарный поиск 2"
+      ]
+    },
+    {
+      "date": "2026-12-28",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 25,
+      "topics": [
+        "день 25: B · мини-дизайн 2"
+      ]
+    },
+    {
+      "date": "2026-12-29",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 26,
+      "topics": [
+        "день 26: A · деревья"
+      ]
+    },
+    {
+      "date": "2026-12-30",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 27,
+      "topics": [
+        "день 27: C · CI 3"
+      ]
+    },
+    {
+      "date": "2026-12-31",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 28,
+      "topics": [
+        "день 28: Ревью + E · baseline"
+      ]
+    },
+    {
+      "date": "2027-01-04",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 29,
+      "topics": [
+        "день 29: A · повтор"
+      ]
+    },
+    {
+      "date": "2027-01-05",
+      "from": "16:00",
+      "to": "17:15",
+      "day": 30,
+      "topics": [
+        "день 30: Ретро (до 45 мин)"
+      ]
+    }
+  ],
+  "leetcode": [
+    {
+      "id": 1512,
+      "title": "Number of Good Pairs",
+      "status": "repeated-from-empty",
+      "attempts": [
+        {
+          "date": "2026-11-12",
+          "kind": "timed-20",
+          "minutes": 14,
+          "result": "solved",
+          "selfSolved": true,
+          "approach": "перебор двумя циклами, O(n²) время, O(1) память",
+          "notes": "подсмотрел синтаксис цикла for; перепутал .length и .size; сначала не понял условие (индексы и значения)"
+        },
+        {
+          "date": "2026-11-12",
+          "kind": "optimal-10",
+          "minutes": 10,
+          "result": "not-solved",
+          "selfSolved": false,
+          "approach": "один проход, счётчик в HashMap",
+          "notes": "идею понял наполовину: не догадался, что ответ копится в отдельной переменной"
+        },
+        {
+          "date": "2026-11-12",
+          "kind": "rewrite-after-walkthrough",
+          "minutes": 8,
+          "result": "solved",
+          "selfSolved": false,
+          "notes": "переписал с подглядыванием; по памяти воспроизвести не смог"
+        },
+        {
+          "date": "2026-11-20",
+          "kind": "from-empty-editor",
+          "minutes": 12,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2026-12-08",
+          "kind": "duel",
+          "minutes": 9,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "title": "Two Sum",
+      "url": "https://leetcode.com/problems/two-sum/",
+      "status": "solved-before-plan",
+      "attempts": [],
+      "notes": "решал раньше, вне плана; поэтому baseline заменён на 1512"
+    },
+    {
+      "id": 217,
+      "title": "Contains Duplicate",
+      "url": "https://leetcode.com/problems/contains-duplicate/",
+      "status": "solved-no-hints",
+      "attempts": [
+        {
+          "date": "2026-11-23",
+          "kind": "timed-20",
+          "minutes": 20,
+          "result": "not-solved",
+          "selfSolved": false,
+          "notes": "не вспомнил про HashSet"
+        },
+        {
+          "date": "2026-11-23",
+          "kind": "rewrite-after-walkthrough",
+          "minutes": 8,
+          "result": "solved",
+          "selfSolved": false,
+          "approach": "HashSet: add возвращает false на повторе"
+        },
+        {
+          "date": "2026-11-24",
+          "kind": "from-empty-editor",
+          "minutes": 9,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2026-11-24",
+          "kind": "timed-20",
+          "minutes": 11,
+          "result": "solved",
+          "selfSolved": true,
+          "approach": "HashSet"
+        },
+        {
+          "date": "2026-11-24",
+          "kind": "optimal-10",
+          "minutes": 10,
+          "result": "not-solved",
+          "selfSolved": false
+        },
+        {
+          "date": "2026-12-14",
+          "kind": "no-hints",
+          "minutes": 8,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2026-12-14",
+          "kind": "timed-20",
+          "minutes": 20,
+          "result": "not-solved",
+          "selfSolved": false
+        }
+      ],
+      "notes": "HashSet.add возвращает Boolean"
+    },
+    {
+      "id": 387,
+      "title": "First Unique Character in a String",
+      "url": "https://leetcode.com/problems/first-unique-character-in-a-string/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-11-23",
+          "kind": "timed-15",
+          "minutes": 12,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 242,
+      "title": "Valid Anagram",
+      "url": "https://leetcode.com/problems/valid-anagram/",
+      "status": "repeated-from-empty",
+      "attempts": [
+        {
+          "date": "2026-12-01",
+          "kind": "timed-20",
+          "minutes": 15,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2026-12-03",
+          "kind": "from-empty-editor",
+          "minutes": 8,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 383,
+      "title": "Ransom Note",
+      "url": "https://leetcode.com/problems/ransom-note/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-01",
+          "kind": "timed-15",
+          "minutes": 10,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "title": "Valid Palindrome",
+      "url": "https://leetcode.com/problems/valid-palindrome/",
+      "status": "solved-no-hints",
+      "attempts": [
+        {
+          "date": "2026-12-03",
+          "kind": "timed-20",
+          "minutes": 13,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2026-12-08",
+          "kind": "from-empty-editor",
+          "minutes": 9,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2027-01-04",
+          "kind": "no-hints",
+          "minutes": 9,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 344,
+      "title": "Reverse String",
+      "url": "https://leetcode.com/problems/reverse-string/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-03",
+          "kind": "timed-15",
+          "minutes": 6,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 283,
+      "title": "Move Zeroes",
+      "url": "https://leetcode.com/problems/move-zeroes/",
+      "status": "repeated-from-empty",
+      "attempts": [
+        {
+          "date": "2026-12-08",
+          "kind": "timed-20",
+          "minutes": 12,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2026-12-10",
+          "kind": "from-empty-editor",
+          "minutes": 7,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "title": "Remove Element",
+      "url": "https://leetcode.com/problems/remove-element/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-08",
+          "kind": "timed-15",
+          "minutes": 9,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "Valid Parentheses",
+      "url": "https://leetcode.com/problems/valid-parentheses/",
+      "status": "solved-no-hints",
+      "attempts": [
+        {
+          "date": "2026-12-10",
+          "kind": "timed-20",
+          "minutes": 20,
+          "result": "not-solved",
+          "selfSolved": false
+        },
+        {
+          "date": "2026-12-10",
+          "kind": "rewrite-after-walkthrough",
+          "minutes": 10,
+          "result": "solved",
+          "selfSolved": false
+        },
+        {
+          "date": "2026-12-18",
+          "kind": "from-empty-editor",
+          "minutes": 9,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2027-01-04",
+          "kind": "no-hints",
+          "minutes": 10,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 1047,
+      "title": "Remove All Adjacent Duplicates in String",
+      "url": "https://leetcode.com/problems/remove-all-adjacent-duplicates-in-string/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-10",
+          "kind": "timed-15",
+          "minutes": 14,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 206,
+      "title": "Reverse Linked List",
+      "url": "https://leetcode.com/problems/reverse-linked-list/",
+      "status": "solved-no-hints",
+      "attempts": [
+        {
+          "date": "2026-12-18",
+          "kind": "timed-20",
+          "minutes": 16,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2026-12-22",
+          "kind": "from-empty-editor",
+          "minutes": 10,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2027-01-04",
+          "kind": "no-hints",
+          "minutes": 11,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 876,
+      "title": "Middle of the Linked List",
+      "url": "https://leetcode.com/problems/middle-of-the-linked-list/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-18",
+          "kind": "timed-15",
+          "minutes": 8,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 704,
+      "title": "Binary Search",
+      "url": "https://leetcode.com/problems/binary-search/",
+      "status": "repeated-from-empty",
+      "attempts": [
+        {
+          "date": "2026-12-22",
+          "kind": "timed-20",
+          "minutes": 9,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2026-12-25",
+          "kind": "from-empty-editor",
+          "minutes": 6,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 278,
+      "title": "First Bad Version",
+      "url": "https://leetcode.com/problems/first-bad-version/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-22",
+          "kind": "timed-15",
+          "minutes": 8,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "title": "Search Insert Position",
+      "url": "https://leetcode.com/problems/search-insert-position/",
+      "status": "repeated-from-empty",
+      "attempts": [
+        {
+          "date": "2026-12-25",
+          "kind": "timed-20",
+          "minutes": 8,
+          "result": "solved",
+          "selfSolved": true
+        },
+        {
+          "date": "2026-12-29",
+          "kind": "from-empty-editor",
+          "minutes": 5,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "title": "Sqrt(x)",
+      "url": "https://leetcode.com/problems/sqrtx/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-25",
+          "kind": "timed-15",
+          "minutes": 11,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "title": "Maximum Depth of Binary Tree",
+      "url": "https://leetcode.com/problems/maximum-depth-of-binary-tree/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-29",
+          "kind": "timed-20",
+          "minutes": 10,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 226,
+      "title": "Invert Binary Tree",
+      "url": "https://leetcode.com/problems/invert-binary-tree/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-29",
+          "kind": "timed-20",
+          "minutes": 7,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "title": "Same Tree",
+      "url": "https://leetcode.com/problems/same-tree/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-29",
+          "kind": "timed-15",
+          "minutes": 9,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    },
+    {
+      "id": 349,
+      "title": "Intersection of Two Arrays",
+      "url": "https://leetcode.com/problems/intersection-of-two-arrays/",
+      "status": "solved-self",
+      "attempts": [
+        {
+          "date": "2026-12-31",
+          "kind": "timed-20",
+          "minutes": 11,
+          "result": "solved",
+          "selfSolved": true
+        }
+      ]
+    }
+  ],
+  "baseline": {
+    "start": {
+      "day": 2,
+      "date": "2026-11-12",
+      "problemId": 1512,
+      "minutes": 14,
+      "result": "решил перебором; оптимальное решение сам не написал",
+      "selfAssessment": {
+        "algorithms": 2,
+        "systemDesign": 1,
+        "gradle": 2,
+        "cicd": 1,
+        "aiTutorAndTests": 3
+      }
+    },
+    "final": {
+      "day": 28,
+      "date": "2026-12-31",
+      "problemId": 349,
+      "minutes": 11,
+      "result": "решил сам через HashSet",
+      "selfAssessment": {
+        "algorithms": 4,
+        "systemDesign": 3,
+        "gradle": 4,
+        "cicd": 3,
+        "aiTutorAndTests": 4
+      }
+    }
+  },
+  "mistakes": [
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "problemId": 1512,
+      "text": "забыл синтаксис for (i in 0 until nums.size)"
+    },
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "problemId": 1512,
+      "text": "путал .length (строка) и .size (массив, список)",
+      "beaten": true
+    },
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "problemId": 1512,
+      "text": "не знал приём «счётчик в HashMap + отдельная переменная для ответа»"
+    },
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "problemId": 1512,
+      "text": "в условии спутал индексы i, j и значения nums[i], nums[j]"
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "problemId": null,
+      "text": "спутал configuration cache с пропуском неизменившихся задач (UP-TO-DATE)"
+    },
+    {
+      "date": "2026-11-20",
+      "track": "C2",
+      "problemId": null,
+      "text": "перепутал on: push и on: pull_request"
+    },
+    {
+      "date": "2026-11-20",
+      "track": "A",
+      "problemId": 1512,
+      "text": "забыл завести отдельную переменную для ответа"
+    }
+  ],
+  "knowledgeChecks": [
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "question": "Что делает counts[c - 'a']++ ?",
+      "firstAnswer": "не понял: что такое c, что значит ++",
+      "verdict": "wrong",
+      "answer": "В цикле for (c in s): c — очередная буква; c - 'a' — её номер в алфавите (0..25); ++ прибавляет 1 в ячейку этой буквы. Итог — счётчик букв."
+    },
+    {
+      "date": "2026-11-12",
+      "track": "A",
+      "question": "Что делает map.getOrPut(key) { default } ?",
+      "firstAnswer": "не знал",
+      "verdict": "wrong",
+      "answer": "Возвращает значение по ключу, а если ключа нет — кладёт начальное значение и возвращает его. Нужен для группировки и счётчиков."
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "question": "Что такое task в Gradle?",
+      "firstAnswer": "блок кода на DSL, превращает входные данные в выходные; задачи зависят друг от друга",
+      "verdict": "partial",
+      "answer": "Единица работы сборки (скомпилировать, упаковать APK). У задачи есть входы и выходы; если входы не менялись, она пропускается (UP-TO-DATE). DSL задачи настраивает, а не является ими."
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "question": "Три фазы сборки Gradle?",
+      "firstAnswer": "инициализация — читается settings (дальше не понял); конфигурация — строится граф задач; выполнение — задачи по графу",
+      "verdict": "partial",
+      "answer": "Инициализация: settings.gradle.kts → список модулей и репозитории. Конфигурация: выполняются build.gradle.kts, регистрируются задачи, строится граф. Выполнение: запускаются только задачи, нужные для запрошенной."
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "question": "Зачем нужны плагины (com.android.application)?",
+      "firstAnswer": "приносят задачи, нужные для сборки APK",
+      "verdict": "correct",
+      "answer": "Плагин приносит задачи и свой блок настроек (android { }). application — для модуля-приложения, library — для библиотеки."
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "question": "Что делает org.gradle.jvmargs=-Xmx2048m ?",
+      "firstAnswer": "не знаю",
+      "verdict": "wrong",
+      "answer": "Настройки процесса Gradle: до 2 ГБ памяти. При OutOfMemoryError на сборке увеличивают это число."
+    },
+    {
+      "date": "2026-11-17",
+      "track": "C1",
+      "question": "Что делает org.gradle.configuration-cache=true ?",
+      "firstAnswer": "пропуск пересборки задач, которые не менялись",
+      "verdict": "wrong",
+      "answer": "Кэширует результат фазы конфигурации (граф задач): при следующей сборке build.gradle.kts не выполняются заново. Пропуск неизменившихся задач — отдельный механизм."
+    },
+    {
+      "date": "2026-11-18",
+      "track": "C1",
+      "question": "Чем отличаются compileSdk, minSdk и targetSdk?",
+      "firstAnswer": "назвал значения (37, 28, 37), различия не объяснил",
+      "verdict": "partial",
+      "answer": "compileSdk — с какой версией API компилируется код; minSdk — минимальная версия Android для установки; targetSdk — под поведение какой версии приложение заявлено и проверено."
+    },
+    {
+      "date": "2026-11-18",
+      "track": "C1",
+      "question": "implementation, testImplementation, androidTestImplementation?",
+      "firstAnswer": "implementation — зависимости модуля; testImplementation — юнит-тесты; androidTestImplementation — тесты в среде Android",
+      "verdict": "correct",
+      "answer": "testImplementation — локальные тесты в src/test на JVM; androidTestImplementation — тесты в src/androidTest на устройстве или эмуляторе."
+    },
+    {
+      "date": "2026-11-18",
+      "track": "C1",
+      "question": "Откуда берётся libs в libs.androidx.core.ktx?",
+      "firstAnswer": "версии библиотек переехали в один файл gradle/libs.versions.toml",
+      "verdict": "correct",
+      "answer": "Это каталог версий: Gradle генерирует типобезопасные ссылки libs.* из gradle/libs.versions.toml (секции versions, libraries, plugins)."
+    },
+    {
+      "date": "2026-11-20",
+      "track": "E",
+      "question": "Зачем репетитору файл CLAUDE.md?",
+      "firstAnswer": "чтобы он знал правила",
+      "verdict": "partial",
+      "answer": "Правила и контекст проекта читаются в начале каждой сессии"
+    }
+  ],
+  "petProject": {
+    "kind": "новый Android-проект Empty Activity (Compose), один модуль app",
+    "onGitHub": null,
+    "gradleVersion": "9.5.0",
+    "compileSdk": 37,
+    "minSdk": 28,
+    "targetSdk": 37,
+    "rootPlugins": [
+      "Android application",
+      "Compose"
+    ],
+    "gradleProperties": [
+      "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8",
+      "org.gradle.configuration-cache=true",
+      "kotlin.code.style=official"
+    ],
+    "ci": {
+      "helloWorldWorkflow": "green",
+      "buildWorkflow": "green"
+    },
+    "note": "Есть ещё личный KMP-проект (многомодульный, сделан через Claude Code) — отложен до цикла 2; там же закончился лимит минут GitHub Actions в приватных репозиториях."
+  },
+  "openItems": [
+    "День 2: самооценка 1–5 по пяти трекам (нужна для сравнения с днём 28).",
+    "День 3: шаги 2 и 3 (команды в терминале, заметка gradle-anatomy.md).",
+    "Подтвердить, что pet-проект лежит на GitHub (нужен публичный репозиторий для CI).",
+    "самооценка 1–5 по пяти трекам"
+  ],
+  "observations": [
+    "Занятия идут дольше плана: день 2 занял около 100 минут в двух заходах при плане 45; три шага дня 3 — больше 70 минут.",
+    "Непонятная формулировка шага стоит больше времени, чем сама задача. Работает формат: что открыть → что сделать → когда готово → что написать.",
+    "Перебором задачу решает сам; приёмы на HashMap пока новые. Запоминание проверяется повтором с пустого редактора в следующем занятии.",
+    "Теорию по Gradle пересказывает своими словами в целом верно, пробелы точечные.",
+    "На таймере торопится и пропускает условие; после паузы на чтение решает сам"
+  ],
+  "events": [
+    {
+      "date": "2026-11-20",
+      "type": "ci-fixed",
+      "note": "в workflow был не тот JDK"
+    },
+    {
+      "date": "2026-11-25",
+      "type": "ci-fixed",
+      "note": "не хватало шага setup-java"
+    }
+  ],
+  "weeks": [
+    {
+      "n": 1,
+      "closed": true,
+      "date": "2026-11-20"
+    },
+    {
+      "n": 2,
+      "closed": true,
+      "date": "2026-11-26"
+    },
+    {
+      "n": 3,
+      "closed": true,
+      "date": "2026-12-07"
+    },
+    {
+      "n": 4,
+      "closed": true,
+      "date": "2026-12-14"
+    },
+    {
+      "n": 5,
+      "closed": true,
+      "date": "2026-12-24"
+    },
+    {
+      "n": 6,
+      "closed": true,
+      "date": "2027-01-05"
+    }
+  ],
+  "weeklyTests": [
+    {
+      "week": 1,
+      "date": "2026-11-20",
+      "score": 15,
+      "max": 20,
+      "questions": [
+        {
+          "q": "Неделя 1, вопрос 1 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 2 (A)",
+          "track": "A",
+          "points": 1,
+          "note": "слабое место"
+        },
+        {
+          "q": "Неделя 1, вопрос 3 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 4 (B)",
+          "track": "B",
+          "points": 1,
+          "note": "слабое место"
+        },
+        {
+          "q": "Неделя 1, вопрос 5 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 6 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 7 (C1)",
+          "track": "C1",
+          "points": 1,
+          "note": "слабое место"
+        },
+        {
+          "q": "Неделя 1, вопрос 8 (C2)",
+          "track": "C2",
+          "points": 0,
+          "note": "слабое место"
+        },
+        {
+          "q": "Неделя 1, вопрос 9 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 10 (E)",
+          "track": "E",
+          "points": 2
+        }
+      ],
+      "note": "первая попытка"
+    },
+    {
+      "week": 1,
+      "date": "2026-11-23",
+      "score": 19,
+      "max": 20,
+      "questions": [
+        {
+          "q": "Неделя 1, вопрос 1 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 2 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 3 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 4 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 5 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 6 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 7 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 8 (C2)",
+          "track": "C2",
+          "points": 1,
+          "note": "слабое место"
+        },
+        {
+          "q": "Неделя 1, вопрос 9 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 1, вопрос 10 (E)",
+          "track": "E",
+          "points": 2
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "date": "2026-11-26",
+      "score": 18,
+      "max": 20,
+      "questions": [
+        {
+          "q": "Неделя 2, вопрос 1 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 2, вопрос 2 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 2, вопрос 3 (A)",
+          "track": "A",
+          "points": 1,
+          "note": "слабое место"
+        },
+        {
+          "q": "Неделя 2, вопрос 4 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 2, вопрос 5 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 2, вопрос 6 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 2, вопрос 7 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 2, вопрос 8 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 2, вопрос 9 (C2)",
+          "track": "C2",
+          "points": 1,
+          "note": "слабое место"
+        },
+        {
+          "q": "Неделя 2, вопрос 10 (E)",
+          "track": "E",
+          "points": 2
+        }
+      ]
+    },
+    {
+      "week": 3,
+      "date": "2026-12-07",
+      "score": 19,
+      "max": 20,
+      "questions": [
+        {
+          "q": "Неделя 3, вопрос 1 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 3, вопрос 2 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 3, вопрос 3 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 3, вопрос 4 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 3, вопрос 5 (B)",
+          "track": "B",
+          "points": 1,
+          "note": "слабое место"
+        },
+        {
+          "q": "Неделя 3, вопрос 6 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 3, вопрос 7 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 3, вопрос 8 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 3, вопрос 9 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 3, вопрос 10 (E)",
+          "track": "E",
+          "points": 2
+        }
+      ]
+    },
+    {
+      "week": 4,
+      "date": "2026-12-14",
+      "score": 20,
+      "max": 20,
+      "questions": [
+        {
+          "q": "Неделя 4, вопрос 1 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 4, вопрос 2 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 4, вопрос 3 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 4, вопрос 4 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 4, вопрос 5 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 4, вопрос 6 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 4, вопрос 7 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 4, вопрос 8 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 4, вопрос 9 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 4, вопрос 10 (E)",
+          "track": "E",
+          "points": 2
+        }
+      ]
+    },
+    {
+      "week": 5,
+      "date": "2026-12-24",
+      "score": 19,
+      "max": 20,
+      "questions": [
+        {
+          "q": "Неделя 5, вопрос 1 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 5, вопрос 2 (A)",
+          "track": "A",
+          "points": 1,
+          "note": "слабое место"
+        },
+        {
+          "q": "Неделя 5, вопрос 3 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 5, вопрос 4 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 5, вопрос 5 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 5, вопрос 6 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 5, вопрос 7 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 5, вопрос 8 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 5, вопрос 9 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 5, вопрос 10 (E)",
+          "track": "E",
+          "points": 2
+        }
+      ]
+    },
+    {
+      "week": 6,
+      "date": "2027-01-05",
+      "score": 19,
+      "max": 20,
+      "questions": [
+        {
+          "q": "Неделя 6, вопрос 1 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 6, вопрос 2 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 6, вопрос 3 (A)",
+          "track": "A",
+          "points": 2
+        },
+        {
+          "q": "Неделя 6, вопрос 4 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 6, вопрос 5 (B)",
+          "track": "B",
+          "points": 2
+        },
+        {
+          "q": "Неделя 6, вопрос 6 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 6, вопрос 7 (C1)",
+          "track": "C1",
+          "points": 2
+        },
+        {
+          "q": "Неделя 6, вопрос 8 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 6, вопрос 9 (C2)",
+          "track": "C2",
+          "points": 2
+        },
+        {
+          "q": "Неделя 6, вопрос 10 (E)",
+          "track": "E",
+          "points": 1,
+          "note": "слабое место"
+        }
+      ]
+    }
+  ],
+  "breaks": [
+    {
+      "from": "2026-12-15",
+      "to": "2026-12-17",
+      "reason": "командировка"
+    }
+  ]
+}

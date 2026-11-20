@@ -46,7 +46,7 @@ interface Props {
 }
 
 export function PathTab({ world, cycle, level, preview, onPreview, gear, skyApi, signs }: Props) {
-  const [selected, setSelected] = useState<number>(cycle.current?.day.n ?? cycle.days[0].n)
+  const [selected, setSelected] = useState<number>(cycle.current?.day.n ?? cycle.days[cycle.done ? cycle.days.length - 1 : 0].n)
   const day = cycle.days.find((d) => d.n === selected) ?? cycle.days[0]
   const week = cycle.weeks.find((w) => w.week.n === day.plan.week)
 

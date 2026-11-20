@@ -1,0 +1,35 @@
+{
+  "note": "Стороннее развитие: всё полезное вне плана. Формат записи: { \"date\": \"2026-11-20\", \"kind\": \"video\", \"title\": \"…\", \"source\": \"YouTube\", \"track\": \"B\", \"minutes\": 40, \"takeaways\": [\"…\", \"…\"] }. kind: video, article, meetup, mock-interview, session, artifact, problem-self, problem-walkthrough. Для video, article и meetup нужно не меньше двух выводов, для mock-interview — трёх; без них запись не засчитывается. Для встреч и собеседований можно указать \"with\". Правила и награды — src/game/side.ts.",
+  "entries": [
+    {
+      "date": "2026-11-21",
+      "kind": "video",
+      "title": "Доклад про Gradle",
+      "source": "YouTube",
+      "track": "C1",
+      "minutes": 40,
+      "takeaways": [
+        "кэш конфигурации экономит фазу configuration",
+        "buildSrc ломает кэш при любой правке"
+      ]
+    },
+    {
+      "date": "2026-11-22",
+      "kind": "mock-interview",
+      "title": "Тестовое собеседование",
+      "with": "коллега",
+      "takeaways": [
+        "говорить вслух ход мысли",
+        "сначала уточнять требования",
+        "оценивать сложность до кода"
+      ]
+    },
+    {
+      "date": "2026-11-22",
+      "kind": "problem-self",
+      "title": "LeetCode 1365 вне плана",
+      "track": "A",
+      "minutes": 15
+    }
+  ]
+}

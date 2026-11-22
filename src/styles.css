@@ -3816,3 +3816,103 @@ details.build-group > summary {
     display: inline;
   }
 }
+
+/* ---------- Лист выбранной постройки поверх карты города ---------- */
+.town3d-sheet {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 52px;
+  z-index: 3;
+  max-height: 62%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 6px 24px rgba(20, 24, 20, 0.28);
+  animation: sheet-in 0.16s ease-out;
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .town3d-sheet {
+    animation: none;
+  }
+}
+
+/* Карточка внутри листа — без своей рамки: рамка у листа. Плотнее обычной: места на карте мало. */
+.town3d-sheet > .card {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  gap: 8px;
+  background: transparent;
+  font-size: 0.95rem;
+}
+
+.town3d-sheet > .card > .eyebrow:first-child,
+.town3d-sheet > .card > .day-head:first-child {
+  padding-right: 40px;
+}
+
+.town3d-sheet-close {
+  position: sticky;
+  top: 0;
+  float: right;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  margin: -6px -8px 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (min-width: 720px) {
+  .town3d-sheet {
+    left: auto;
+    width: min(420px, calc(100% - 16px));
+  }
+}
+
+.town3d.is-full .town3d-sheet {
+  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  max-height: 55%;
+}
+
+/* ---------- «Как это считается»: правило карточки, свёрнутое по умолчанию ---------- */
+details.how {
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+
+details.how > summary {
+  cursor: pointer;
+  width: fit-content;
+  padding: 6px 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+details.how > * + * {
+  margin-top: 8px;
+}
+
+details.how p {
+  max-width: 68ch;
+}

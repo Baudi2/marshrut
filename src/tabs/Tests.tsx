@@ -84,7 +84,7 @@ function TestRow({ cycle, w }: { cycle: CycleView; w: WeekView }) {
           <pre className="prompt">{prompt}</pre>
           <div className="row">
             <CopyButton text={prompt} label="Скопировать задание" />
-            <span className="muted small">Вставь в чат с репетитором, а итоговую JSON-запись отдай Claude Code.</span>
+            <span className="muted small">Вставь в чат с репетитором — он же перенесёт итоговую JSON-запись в репозиторий.</span>
           </div>
         </details>
       )}

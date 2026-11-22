@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Sky } from '../world/sky'
 import { Scenery } from './fx'
 import { BOUNDS } from './plan'
@@ -21,12 +21,15 @@ interface Props {
   onSelect: (id: string | null) => void
   /** Текущее время: по нему считаются таймеры. */
   now: number
+  /** Карточка выбранного: открывается листом поверх нижней части карты, в том числе на весь экран. */
+  sheet?: ReactNode
 }
 
 /** Окно в город: карта двигается и приближается, постройки выбираются нажатием. */
-export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
+export function TownCanvas({ view, sky, selected, onSelect, now, sheet }: Props) {
   const host = useRef<HTMLDivElement>(null)
   const overlay = useRef<HTMLDivElement>(null)
+  const sheetBox = useRef<HTMLDivElement>(null)
   const stage = useRef<Stage | null>(null)
   const scenery = useRef<Scenery | null>(null)
   const town = useRef<TownScene | null>(null)
@@ -37,7 +40,8 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
   const [status, setStatus] = useState('Загружаю город…')
   // Кнопок на карте нет: движение выключается только настройкой системы «уменьшить движение».
   const [motion] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-  // Единственная кнопка на карте: развернуть её на весь экран и вернуть обратно.
+  // Единственная постоянная кнопка на карте: развернуть её на весь экран и вернуть обратно.
+  // Лист с карточкой появляется только по нажатию на постройку и закрывается крестиком или нажатием мимо.
   // Карта растягивается средствами страницы, а не браузера: так это работает и на айфоне.
   const [full, setFull] = useState(false)
   useEffect(() => {
@@ -128,6 +132,43 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
     town.current?.select(selected)
   }, [selected, marks])
 
+  // Лист закрывает нижнюю часть карты. Если выбранное оказалось под ним, карта плавно сдвигается вверх.
+  const hasSheet = !!sheet
+  useEffect(() => {
+    const scene = stage.current
+    const box = host.current
+    const panel = sheetBox.current
+    if (!scene || !box || !panel || !selected) return
+    const mark = marksRef.current.find((m) => m.id === selected)
+    if (!mark) return
+    const at = scene.project(mark.at, { x: 0, y: 0 })
+    const frame0 = box.getBoundingClientRect()
+    const sheetAt = panel.getBoundingClientRect()
+    // На широком экране лист стоит справа: то, что левее него, он не закрывает.
+    if (at.x < sheetAt.left - frame0.left - 40 || at.x > sheetAt.right - frame0.left + 40) return
+    const line = Math.max(64, sheetAt.top - frame0.top - 80)
+    const total = line - at.y
+    if (total >= 0) return
+    if (!motion) {
+      scene.panBy(0, total)
+      return
+    }
+    let done = 0
+    let frame = 0
+    const started = performance.now()
+    const step = (now: number) => {
+      const k = Math.min(1, (now - started) / 220)
+      const eased = 1 - (1 - k) ** 3
+      scene.panBy(0, total * eased - done)
+      done = total * eased
+      if (k < 1) frame = requestAnimationFrame(step)
+    }
+    frame = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frame)
+    // Только при выборе: смена размера карты («на весь экран» и обратно) камеру не трогает.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, hasSheet])
+
   useEffect(() => {
     if (stage.current) stage.current.motion = motion
     stage.current?.invalidate()
@@ -162,6 +203,14 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
         <span className="hint-mouse">Карту двигает мышь. Масштаб — Ctrl + колесо.</span>
       </p>
       {status && <p className="town3d-status">{status}</p>}
+      {sheet && (
+        <div className="town3d-sheet" key={selected ?? ''} ref={sheetBox} role="region" aria-label="Выбранное на карте" aria-live="polite">
+          <button className="town3d-sheet-close" onClick={() => onSelect(null)} aria-label="Закрыть карточку">
+            ×
+          </button>
+          {sheet}
+        </div>
+      )}
     </div>
   )
 }

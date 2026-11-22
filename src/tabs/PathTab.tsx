@@ -200,7 +200,7 @@ function DayCard({ day, cycle, checkpoint, signs }: { day: DayView; cycle: Cycle
 
       {p?.artifacts?.length ? (
         <>
-          <h4>Артефакты</h4>
+          <h4>Файлы дня</h4>
           <ul className="plain">
             {p.artifacts.map((a) => (
               <li key={a.repo + a.path}>

@@ -51,8 +51,9 @@ export function More({
       title: 'Задачи',
       note: `${cycle.problems.length} ${plural(cycle.problems.length, PROBLEMS)} цикла, решено ${solved}`,
     },
-    { href: '#/growth', title: 'Прирост', note: 'Сравнение с собой: замер, проверки понимания, ритм, время, трофеи' },
+    { href: '#/growth', title: 'Прирост', note: 'Сравнение с собой: замер, проверки понимания, ритм, время' },
     { href: '#/skills', title: 'Навыки', note: ranks.length ? `Звания: ${ranks.join(' · ')}` : 'Ранги по трекам и что нужно для следующего' },
+    { href: '#/trophies', title: 'Трофеи', note: `Получено ${world.trophies.filter((t) => t.earned).length} из ${world.trophies.length}` },
     { href: `#/cycle/${cycle.id}`, title: 'Итог цикла', note: cycleCaption(cycle) },
     {
       href: '#/chronicle',

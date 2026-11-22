@@ -15,10 +15,7 @@ export function WeekReport({ cycle }: { cycle: CycleView }) {
   return (
     <div className="card report-card">
       <h3>Отчёт недели</h3>
-      <p className="muted">
-        Пять строк о неделе для пятничного ревью. Текст собран из журнала как есть, без оценок: его можно отправить другу
-        или в свой канал.
-      </p>
+      <p className="muted">Пять строк о неделе для пятничного ревью.</p>
 
       <div className="report-pick">
         <span className="eyebrow" id="report-week-label">
@@ -53,11 +50,16 @@ export function WeekReport({ cycle }: { cycle: CycleView }) {
 
       <div className="row">
         <CopyButton text={report.text} label="Скопировать отчёт" />
-        <span className="muted small">
+      </div>
+
+      <details className="how">
+        <summary>Как собран отчёт</summary>
+        <p>Текст собран из журнала как есть, без оценок: его можно отправить другу или в свой канал.</p>
+        <p>
           Недели, которые ещё не начались, откроются с первым занятием. Хвосты и зелёный CI попадают только в отчёт
           последней начатой недели: у них нет даты.
-        </span>
-      </div>
+        </p>
+      </details>
     </div>
   )
 }

@@ -73,6 +73,10 @@ export function CycleSummary({ world, cycle }: { world: World; cycle: CycleView 
         </p>
       </div>
 
+      <div className="row">
+        <CopyButton text={lines.join('\n')} label="Скопировать итог" />
+      </div>
+
       {world.cycles.length > 1 && (
         <nav className="chips" aria-label="Итоги циклов">
           {world.cycles.map((c) =>
@@ -109,10 +113,7 @@ export function CycleSummary({ world, cycle }: { world: World; cycle: CycleView 
 
       <div className="card sum-card">
         <h3>Итог текстом</h3>
-        <div className="row">
-          <CopyButton text={lines.join('\n')} label="Скопировать итог" />
-          <span className="muted small">Те же числа простым текстом: для чата с репетитором или для ретро.</span>
-        </div>
+        <p className="muted small">Те же числа простым текстом: для чата с репетитором или для ретро.</p>
         <details className="sum-text">
           <summary>Показать текст</summary>
           <div className="report-text">
@@ -193,8 +194,6 @@ function DatesCard({ s }: { s: Summary }) {
         <Fact label="Первое занятие" value={fullDate(d.first)} />
         <Fact label="Последнее занятие" value={fullDate(d.last)} />
         <Fact label="Календарных дней" value={d.calendarDays} />
-        <Fact label="Дней с занятиями" value={d.activeDays} />
-        <Fact label="Занятий" value={d.sessions} />
         {d.restDays > 0 && <Fact label="На паузах" value={count(d.restDays, DAYS)} />}
       </dl>
       {d.rests.length > 0 && (
@@ -221,9 +220,6 @@ function DaysCard({ s }: { s: Summary }) {
   return (
     <div className="card sum-card">
       <h3>Дни</h3>
-      <p>
-        Закрыто {s.days.closed} из {s.days.total}.
-      </p>
       <div className="sum-bar" role="img" aria-label={`Дни цикла: ${parts.map((part) => `${part.label} — ${part.n}`).join(', ')}`}>
         {parts.map((part) => (
           <span key={part.key} className={`sum-day-${part.key}`} style={{ flexGrow: part.n }} title={`${capital(part.label)}: ${part.n}`} />
@@ -247,7 +243,7 @@ function DaysCard({ s }: { s: Summary }) {
   )
 }
 
-/** То же, что в карточке «Время: план и факт», одной строкой чисел: подробности остаются на «Приросте». */
+/** Разница плана и факта: сами числа стоят наверху страницы, подробности остаются на «Приросте». */
 function TimeBlock({ s }: { s: Summary }) {
   const t = s.time
   if (t.days === 0) return null
@@ -258,15 +254,18 @@ function TimeBlock({ s }: { s: Summary }) {
       {t.measured > 0 ? (
         <>
           <dl className="sum-facts">
-            <Fact label="По плану" value={fmtMinutes(t.planned)} />
-            <Fact label="На деле" value={fmtMinutes(t.fact)} />
             <Fact label="Разница" value={diff === 0 ? 'по плану' : `${diff > 0 ? '+' : '−'}${fmtMinutes(Math.abs(diff))}`} />
           </dl>
           <p className="muted small">
-            По {count(t.measured, CLOSED_DAYS)} с замером{t.unmeasured > 0 ? `; без замера — ${t.unmeasured}` : ''}. План — минуты ядра,
-            факт — время занятий по часам. На весь цикл планом заложено {fmtMinutes(t.plannedAll)} ядра. По дням и трекам — на
-            вкладке <a href="#/growth">«Прирост»</a>.
+            По {count(t.measured, CLOSED_DAYS)} с замером{t.unmeasured > 0 ? `; без замера — ${t.unmeasured}` : ''}. На весь цикл планом
+            заложено {fmtMinutes(t.plannedAll)} ядра.
           </p>
+          <details className="how">
+            <summary>Как это считается</summary>
+            <p>
+              План — минуты ядра, факт — время занятий по часам. По дням и трекам — на вкладке <a href="#/growth">«Прирост»</a>.
+            </p>
+          </details>
         </>
       ) : (
         <p className="muted">
@@ -373,7 +372,7 @@ function TracksCard({ s }: { s: Summary }) {
         </p>
       )}
       <p className="muted small">
-        Очки — только за этот цикл. Ранг трека даётся за все выполненные условия цикла, а не за очки.
+        Очки — только за этот цикл.
         {s.offTrackXp > 0 && ` Ещё ${s.offTrackXp} XP получено вне треков: недельные чекпоинты, возвращение после паузы, общие файлы и ретро.`}
       </p>
     </div>
@@ -420,10 +419,13 @@ function ProblemsCard({ s }: { s: Summary }) {
             {due(p.noHints) && <Fact label="Без подсказок" value={`${p.noHints.have} из ${p.noHints.of}`} />}
             {p.timed.tried > 0 && <Fact label="На таймере в лимит" value={`${p.timed.inLimit} из ${p.timed.tried}`} />}
           </dl>
-          <p className="muted small">
-            Состояния — по всем задачам цикла, вместе с парами и решёнными вне плана.
-            {p.notStarted > 0 && ' «Не начата» считается только по основным задачам и замерам: пары и запасная задача берутся по желанию.'}
-          </p>
+          <details className="how">
+            <summary>Как это считается</summary>
+            <p>Состояния — по всем задачам цикла, вместе с парами и решёнными вне плана.</p>
+            {p.notStarted > 0 && (
+              <p>«Не начата» считается только по основным задачам и замерам: пары и запасная задача берутся по желанию.</p>
+            )}
+          </details>
         </>
       )}
     </div>
@@ -594,7 +596,6 @@ function EarnedCard({ s }: { s: Summary }) {
     <div className="card sum-card">
       <h3>Заработано за цикл</h3>
       <dl className="sum-facts">
-        <Fact label="Очки" value={`${s.earned.xp} XP`} />
         <Fact
           label="Монеты"
           value={
@@ -631,11 +632,13 @@ function EarnedCard({ s }: { s: Summary }) {
         )}
       </ul>
       <p className="muted small">
-        Очки и монеты — за дни, файлы, задачи и CI этого цикла. Камни — только за его перевалы и недельные тесты. Трофеи к
-        циклу не привязаны и даются один раз за всё время, поэтому в итог цикла не входят: получено {trophies.earned} из{' '}
-        {trophies.total}
+        Трофеи в итог цикла не входят: получено {trophies.earned} из {trophies.total}
         {trophies.gems > 0 ? `, камней за них — ${trophies.gems}` : ''}. Общий уровень — {s.allTime.level}, всего {s.allTime.xp} XP.
       </p>
+      <details className="how">
+        <summary>Как это считается</summary>
+        <p>Трофеи к циклу не привязаны и даются один раз за всё время, поэтому в итог цикла не входят.</p>
+      </details>
     </div>
   )
 }

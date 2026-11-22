@@ -298,6 +298,161 @@ export default function TownTab({ world, cycle, level, section, stagePreview, on
   // Сломанное после перерыва: видно под картой, чинится в карточке постройки.
   const wrecked = previewing ? [] : town.buildings.filter((b) => b.broken)
 
+  // Карточка выбранного на карте: центр, постройка, постройка-файл или памятник. Открывается листом поверх карты.
+  const hasPicked = !previewing && (selected === 'center' || !!building || !!file || !!monument)
+  const picked = (
+    <>
+        {!previewing && selected === 'center' && (
+          <div className="card">
+            <div className="eyebrow">Центр поселения</div>
+            <h3>
+              {TIERS[town.tier].name}: {CENTER[town.tier].name.toLowerCase()}
+            </h3>
+            {town.tierPending ? (
+              <Building label={`Строится: ${TIERS[town.tierPending.n].center.toLowerCase()}`} readyAt={town.tierPending.readyAt} time={time} hours={TIERS[town.tierPending.n].hours} />
+            ) : next ? (
+              <>
+                <p>
+                  Следующая ступень — «{next.name}»: {next.center.toLowerCase()}. Она открывает новые постройки, участки и {maxLevel(next.n)}-й уровень
+                  улучшений.
+                </p>
+                <ul className="needs">
+                  <Need ok={town.population >= next.residents} text={`жителей: ${town.population} из ${next.residents}`} />
+                  <Need ok={world.means.specials >= next.specials} text={`построек-файлов: ${world.means.specials} из ${next.specials}`} />
+                  <Need ok={town.food >= next.food} text={`запас еды: ${Math.floor(town.food)} из ${next.food}`} />
+                </ul>
+                <div className="act-row">
+                  <Price cost={tierCost(next.n)} town={town} world={world} />
+                  <span className="muted small">стройка {fmtHours(next.hours)}</span>
+                  <button className="btn btn-primary" disabled={tierWhy.length > 0} onClick={() => api.act({ do: 'tier' })}>
+                    Перейти на ступень «{next.name}»
+                  </button>
+                </div>
+                <Reasons list={tierWhy} />
+              </>
+            ) : (
+              <p>Это последняя ступень. Дальше город растёт уровнями построек.</p>
+            )}
+          </div>
+        )}
+
+        {building && (
+          <div className="card">
+            <div className="eyebrow">
+              {buildingType(building.type)?.name}
+              {building.broken && <span className="pill pill-current breakage-mark">сломано</span>}
+            </div>
+            <h3>{building.level > 0 ? levelName(building.type, building.level) : 'Строится'}</h3>
+            {buildingType(building.type)?.rare ? (
+              <p className="muted small">Редкая постройка: стоит одна на город, уровней у неё нет.</p>
+            ) : (
+              <Levels level={building.level} pending={building.pending?.level} />
+            )}
+            {building.level > 0 && (
+              <p>
+                {building.broken ? 'Когда цела, даёт' : 'Даёт'}: {gives(buildingType(building.type)!, building.level)}.
+              </p>
+            )}
+            {building.broken && (
+              <div className="breakage">
+                <p>
+                  <b>Сломано после перерыва.</b> {lost(buildingType(building.type)!, building.level)}. {heals(building.broken)}.
+                </p>
+                <div className="act-row">
+                  <button
+                    className="btn btn-primary"
+                    disabled={repairWhy.length > 0}
+                    onClick={() => api.act({ do: 'repair', id: building.id })}
+                    aria-label={`Починить за ${building.broken.cost} ${plural(building.broken.cost, ['монету', 'монеты', 'монет'])}`}
+                  >
+                    Починить · <CoinIcon /> {building.broken.cost}
+                  </button>
+                  <span className="small">Починка мгновенная, строители для неё не нужны.</span>
+                </div>
+                <Reasons list={repairWhy} />
+              </div>
+            )}
+            {building.pending ? (
+              <Building
+                label={building.level > 0 ? `Улучшается до уровня ${building.pending.level}: ${levelName(building.type, building.pending.level).toLowerCase()}` : `Строится: ${levelName(building.type, 1).toLowerCase()}`}
+                readyAt={building.pending.readyAt}
+                time={time}
+                hours={LEVEL_HOURS[building.pending.level - 1]}
+              />
+            ) : buildingType(building.type)?.rare ? null : building.level < 5 ? (
+              <>
+                <p className="muted">
+                  Уровень {building.level + 1} — «{levelName(building.type, building.level + 1)}»: {gives(buildingType(building.type)!, building.level + 1)}.
+                </p>
+                <div className="act-row">
+                  <Price cost={buildCost(buildingType(building.type)!, building.level + 1)} town={town} world={world} />
+                  <span className="muted small">стройка {fmtHours(buildHours(town, building.level + 1))}</span>
+                  <button className="btn btn-primary" disabled={upgradeWhy.length > 0} onClick={() => api.act({ do: 'upgrade', id: building.id })}>
+                    Улучшить
+                  </button>
+                </div>
+                <Reasons list={upgradeWhy} />
+              </>
+            ) : (
+              <p className="muted">Это высший уровень.</p>
+            )}
+            {building.type === 'market' && building.level > 0 && (
+              <div className="trade">
+                <h4>Обмен на рынке</h4>
+                <p className="muted small">Партия стоит {TRADE_COINS} монет. Чем выше уровень рынка, тем больше товара в партии.</p>
+                <ul className="build-menu">
+                  {GOODS.map((goods) => {
+                    const why = blockers(town, { do: 'trade', type: goods.id }, world.means)
+                    return (
+                      <li key={goods.id}>
+                        <div>
+                          <b>
+                            {goods.name}: +{tradeYield(building.level, goods.id)}
+                          </b>
+                          {why.length > 0 && <div className="why small">{why.join('; ')}</div>}
+                        </div>
+                        <div className="act-row">
+                          <span className="cost-chip">
+                            <CoinIcon /> {TRADE_COINS}
+                          </span>
+                          <button className="btn" disabled={why.length > 0} onClick={() => api.act({ do: 'trade', type: goods.id })} aria-label={`Купить: ${goods.name}`}>
+                            Купить
+                          </button>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!previewing && file && (
+          <div className="card">
+            <div className="day-head">
+              <div>
+                <div className="eyebrow">Постройка-файл · {file.b.item.repo}</div>
+                <h3>{file.b.item.title}</h3>
+              </div>
+              <div className="chips">
+                <span className={`pill pill-stage-${file.b.stage}`}>{STAGE_LABEL[file.b.stage]}</span>
+                {file.b.item.track && <TrackBadge code={file.b.item.track} />}
+              </div>
+            </div>
+            <p>
+              <code>{file.b.item.path}</code>
+              {file.b.recorded && <span className="muted"> — в журнале: {artifactState(file.b.recorded)}</span>}
+            </p>
+            <p>{fileAdvice(file.b, file.c)}</p>
+            <p className="muted">Купить такую постройку нельзя: она растёт только от работы.</p>
+          </div>
+        )}
+
+        {monument && <MonumentCard cycle={monument} folded={folded(monument, world.cycles)} />}
+    </>
+  )
+
   const stages = [3, 2, 1, 0].map((stage) => ({ stage, list: cycle.buildings.filter((b) => b.stage === stage) })).filter((group) => group.list.length > 0)
 
   return (
@@ -383,7 +538,7 @@ export default function TownTab({ world, cycle, level, section, stagePreview, on
 
       {section === 'map' && (
         <>
-      <TownCanvas view={view} sky={skyApi.sky} selected={previewing ? null : selected} onSelect={setSelected} now={time} />
+      <TownCanvas view={view} sky={skyApi.sky} selected={previewing ? null : selected} onSelect={setSelected} now={time} sheet={hasPicked ? picked : null} />
 
       {past && <PastBar past={past} turns={turns} onPast={onPast} />}
 
@@ -408,7 +563,15 @@ export default function TownTab({ world, cycle, level, section, stagePreview, on
           <ul className="breakage-list">
             {wrecked.map((b) => (
               <li key={b.id}>
-                <button className={`breakage-chip${selected === b.id ? ' is-on' : ''}`} aria-pressed={selected === b.id} onClick={() => setSelected(b.id)}>
+                <button
+                  className={`breakage-chip${selected === b.id ? ' is-on' : ''}`}
+                  aria-pressed={selected === b.id}
+                  onClick={(e) => {
+                    setSelected(b.id)
+                    // Карточка открывается на карте, а карта выше этой заметки.
+                    e.currentTarget.closest('.stack')?.querySelector('.town3d')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+                  }}
+                >
                   {buildingType(b.type)?.name ?? levelName(b.type, b.level)}
                 </button>
               </li>
@@ -417,156 +580,8 @@ export default function TownTab({ world, cycle, level, section, stagePreview, on
         </div>
       )}
 
-      {!previewing && selected === 'center' && (
-        <div className="card" aria-live="polite">
-          <div className="eyebrow">Центр поселения</div>
-          <h3>
-            {TIERS[town.tier].name}: {CENTER[town.tier].name.toLowerCase()}
-          </h3>
-          {town.tierPending ? (
-            <Building label={`Строится: ${TIERS[town.tierPending.n].center.toLowerCase()}`} readyAt={town.tierPending.readyAt} time={time} hours={TIERS[town.tierPending.n].hours} />
-          ) : next ? (
-            <>
-              <p>
-                Следующая ступень — «{next.name}»: {next.center.toLowerCase()}. Она открывает новые постройки, участки и {maxLevel(next.n)}-й уровень
-                улучшений.
-              </p>
-              <ul className="needs">
-                <Need ok={town.population >= next.residents} text={`жителей: ${town.population} из ${next.residents}`} />
-                <Need ok={world.means.specials >= next.specials} text={`построек-файлов: ${world.means.specials} из ${next.specials}`} />
-                <Need ok={town.food >= next.food} text={`запас еды: ${Math.floor(town.food)} из ${next.food}`} />
-              </ul>
-              <div className="act-row">
-                <Price cost={tierCost(next.n)} town={town} world={world} />
-                <span className="muted small">стройка {fmtHours(next.hours)}</span>
-                <button className="btn btn-primary" disabled={tierWhy.length > 0} onClick={() => api.act({ do: 'tier' })}>
-                  Перейти на ступень «{next.name}»
-                </button>
-              </div>
-              <Reasons list={tierWhy} />
-            </>
-          ) : (
-            <p>Это последняя ступень. Дальше город растёт уровнями построек.</p>
-          )}
-        </div>
-      )}
 
-      {building && (
-        <div className="card" aria-live="polite">
-          <div className="eyebrow">
-            {buildingType(building.type)?.name}
-            {building.broken && <span className="pill pill-current breakage-mark">сломано</span>}
-          </div>
-          <h3>{building.level > 0 ? levelName(building.type, building.level) : 'Строится'}</h3>
-          {buildingType(building.type)?.rare ? (
-            <p className="muted small">Редкая постройка: стоит одна на город, уровней у неё нет.</p>
-          ) : (
-            <Levels level={building.level} pending={building.pending?.level} />
-          )}
-          {building.level > 0 && (
-            <p>
-              {building.broken ? 'Когда цела, даёт' : 'Даёт'}: {gives(buildingType(building.type)!, building.level)}.
-            </p>
-          )}
-          {building.broken && (
-            <div className="breakage">
-              <p>
-                <b>Сломано после перерыва.</b> {lost(buildingType(building.type)!, building.level)}. {heals(building.broken)}.
-              </p>
-              <div className="act-row">
-                <button
-                  className="btn btn-primary"
-                  disabled={repairWhy.length > 0}
-                  onClick={() => api.act({ do: 'repair', id: building.id })}
-                  aria-label={`Починить за ${building.broken.cost} ${plural(building.broken.cost, ['монету', 'монеты', 'монет'])}`}
-                >
-                  Починить · <CoinIcon /> {building.broken.cost}
-                </button>
-                <span className="small">Починка мгновенная, строители для неё не нужны.</span>
-              </div>
-              <Reasons list={repairWhy} />
-            </div>
-          )}
-          {building.pending ? (
-            <Building
-              label={building.level > 0 ? `Улучшается до уровня ${building.pending.level}: ${levelName(building.type, building.pending.level).toLowerCase()}` : `Строится: ${levelName(building.type, 1).toLowerCase()}`}
-              readyAt={building.pending.readyAt}
-              time={time}
-              hours={LEVEL_HOURS[building.pending.level - 1]}
-            />
-          ) : buildingType(building.type)?.rare ? null : building.level < 5 ? (
-            <>
-              <p className="muted">
-                Уровень {building.level + 1} — «{levelName(building.type, building.level + 1)}»: {gives(buildingType(building.type)!, building.level + 1)}.
-              </p>
-              <div className="act-row">
-                <Price cost={buildCost(buildingType(building.type)!, building.level + 1)} town={town} world={world} />
-                <span className="muted small">стройка {fmtHours(buildHours(town, building.level + 1))}</span>
-                <button className="btn btn-primary" disabled={upgradeWhy.length > 0} onClick={() => api.act({ do: 'upgrade', id: building.id })}>
-                  Улучшить
-                </button>
-              </div>
-              <Reasons list={upgradeWhy} />
-            </>
-          ) : (
-            <p className="muted">Это высший уровень.</p>
-          )}
-          {building.type === 'market' && building.level > 0 && (
-            <div className="trade">
-              <h4>Обмен на рынке</h4>
-              <p className="muted small">Партия стоит {TRADE_COINS} монет. Чем выше уровень рынка, тем больше товара в партии.</p>
-              <ul className="build-menu">
-                {GOODS.map((goods) => {
-                  const why = blockers(town, { do: 'trade', type: goods.id }, world.means)
-                  return (
-                    <li key={goods.id}>
-                      <div>
-                        <b>
-                          {goods.name}: +{tradeYield(building.level, goods.id)}
-                        </b>
-                        {why.length > 0 && <div className="why small">{why.join('; ')}</div>}
-                      </div>
-                      <div className="act-row">
-                        <span className="cost-chip">
-                          <CoinIcon /> {TRADE_COINS}
-                        </span>
-                        <button className="btn" disabled={why.length > 0} onClick={() => api.act({ do: 'trade', type: goods.id })} aria-label={`Купить: ${goods.name}`}>
-                          Купить
-                        </button>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!previewing && file && (
-        <div className="card" aria-live="polite">
-          <div className="day-head">
-            <div>
-              <div className="eyebrow">Постройка-файл · {file.b.item.repo}</div>
-              <h3>{file.b.item.title}</h3>
-            </div>
-            <div className="chips">
-              <span className={`pill pill-stage-${file.b.stage}`}>{STAGE_LABEL[file.b.stage]}</span>
-              {file.b.item.track && <TrackBadge code={file.b.item.track} />}
-            </div>
-          </div>
-          <p>
-            <code>{file.b.item.path}</code>
-            {file.b.recorded && <span className="muted"> — в журнале: {artifactState(file.b.recorded)}</span>}
-          </p>
-          <p>{fileAdvice(file.b, file.c)}</p>
-          <p className="muted">Купить такую постройку нельзя: она растёт только от работы.</p>
-        </div>
-      )}
-
-      {monument && <MonumentCard cycle={monument} folded={folded(monument, world.cycles)} />}
-
-      {!previewing && !selected && <p className="muted">Нажми на постройку на карте, чтобы увидеть, что она даёт и сколько стоит следующий уровень.</p>}
+      {!previewing && !hasPicked && <p className="muted">Нажми на постройку на карте, чтобы увидеть, что она даёт и сколько стоит следующий уровень.</p>}
 
       <BuildList town={town} world={world} locked={previewing} onBuild={(type) => api.act({ do: 'build', type })} />
 

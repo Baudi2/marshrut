@@ -12,7 +12,7 @@ export function SyncNote({ sync, plain, children }: { sync: SyncSummary; plain?:
   return (
     <div className={plain ? 'sync-note' : 'card sync-note'}>
       <p>
-        <b>Только в этом браузере:</b> {sync.parts.join(', ')}. Чтобы это было на всех устройствах, отдай запись Claude Code — он
+        <b>Только в этом браузере:</b> {sync.parts.join(', ')}. Чтобы это было на всех устройствах, отдай запись репетитору — он
         перенесёт всё в репозиторий одной командой.
       </p>
       <div className="act-row">

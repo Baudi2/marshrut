@@ -8,12 +8,13 @@ export function Skills({ world }: { world: World }) {
     <div className="stack">
       <div className="section-head">
         <h2>Навыки</h2>
-        <p className="muted">
-          Ранг навыка даётся за результат, а не за число занятий: решённые и повторённые задачи, сохранённые файлы, ответы
-          в недельных тестах. Один ранг — один цикл, в котором выполнены все условия трека. Опыт показан отдельно и на ранг
-          не влияет.
-        </p>
+        <p className="muted">Ранг навыка даётся за результат, а не за число занятий.</p>
         {world.ranksEarned.length > 0 && <p>Звания за пройденные циклы: {world.ranksEarned.join(' · ')}</p>}
+        <details className="how">
+          <summary>Как это считается</summary>
+          <p>Результат — это решённые и повторённые задачи, сохранённые файлы, ответы в недельных тестах.</p>
+          <p>Один ранг — один цикл, в котором выполнены все условия трека. Очки показаны отдельно и на ранг не влияют.</p>
+        </details>
       </div>
 
       {world.tracks.map((t) => (
@@ -28,7 +29,7 @@ export function Skills({ world }: { world: World }) {
                 Ранг {roman(t.rank.n)}
                 {t.rank.title ? ` · ${t.rank.title}` : ''}
               </div>
-              <div className="muted small">опыт: {t.xp} XP</div>
+              <div className="muted small">очки трека: {t.xp} XP</div>
             </div>
           </header>
 

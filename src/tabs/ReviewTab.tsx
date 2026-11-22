@@ -258,11 +258,19 @@ export function ReviewTab({ world, deck: api, sync }: { world: World; deck: Deck
         <div className="card" id="own-card">
           <h3>Своя карточка</h3>
           <p className="muted small">
-            Вопрос из своих заметок и ответ своими словами. Карточка придёт на повтор завтра и дальше идёт по тем же коробкам. Вопрос —
-            до {OWN_QUESTION_MAX} знаков, ответ — до {OWN_ANSWER_MAX}. В день — не больше {OWN_CARDS_PER_DAY} своих карточек, сегодня
-            добавлено {ownToday}. Карточку из ошибки удобнее завести в журнале ошибок ниже.
+            В день — не больше {OWN_CARDS_PER_DAY} своих карточек, сегодня добавлено {ownToday}.
           </p>
           <CardForm api={api} tracks={tracks} track={defaultTrack} onCancel={() => setAdding(false)} />
+          <details className="how">
+            <summary>О своих карточках</summary>
+            <p>
+              Вопрос из своих заметок и ответ своими словами. Карточка придёт на повтор завтра и дальше идёт по тем же коробкам.
+            </p>
+            <p>
+              Вопрос — до {OWN_QUESTION_MAX} знаков, ответ — до {OWN_ANSWER_MAX}. Карточку из ошибки удобнее завести в журнале ошибок
+              ниже.
+            </p>
+          </details>
         </div>
       ) : (
         <button className="btn own-open" id="own-card" onClick={() => setAdding(true)}>
@@ -343,10 +351,11 @@ export function ReviewTab({ world, deck: api, sync }: { world: World; deck: Deck
 
       <div className="card" id="mistakes">
         <h3>Ошибки</h3>
-        <p className="muted">
-          Что забыл или перепутал. Ошибка побеждена, когда при повторе задачи она не повторилась. В работе {mistakes.length - beaten},
-          побеждено {beaten}. Из ошибки в работе можно сделать карточку: вопрос придёт на повтор вместе с остальной колодой.
-        </p>
+        {mistakes.length > 0 && (
+          <p className="muted">
+            В работе {mistakes.length - beaten}, побеждено {beaten}.
+          </p>
+        )}
         {mistakes.length === 0 ? (
           <p className="muted">Пока пусто.</p>
         ) : (
@@ -398,6 +407,11 @@ export function ReviewTab({ world, deck: api, sync }: { world: World; deck: Deck
             })}
           </ul>
         )}
+        <details className="how">
+          <summary>Что считается ошибкой</summary>
+          <p>Что забыл или перепутал. Ошибка побеждена, когда при повторе задачи она не повторилась.</p>
+          <p>Из ошибки в работе можно сделать карточку: вопрос придёт на повтор вместе с остальной колодой.</p>
+        </details>
       </div>
     </div>
   )

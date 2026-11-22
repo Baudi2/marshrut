@@ -26,6 +26,7 @@ import { PathTab, type SignApi } from './tabs/PathTab'
 import { Problems } from './tabs/Problems'
 import { Skills } from './tabs/Skills'
 import { Today } from './tabs/Today'
+import { Trophies } from './tabs/Trophies'
 import { Meter } from './ui/bits'
 import { TabIcon } from './ui/icons'
 
@@ -48,10 +49,10 @@ const TABS = [
   { id: 'more', label: 'Ещё', wide: false },
 ] as const
 
-type TabId = (typeof TABS)[number]['id'] | 'lab' | 'cycle' | 'dev' | 'chronicle'
+type TabId = (typeof TABS)[number]['id'] | 'lab' | 'cycle' | 'dev' | 'chronicle' | 'trophies'
 
 /** Страницы без своего пункта в нижней панели телефона: на них подсвечен пункт «Ещё». */
-const UNDER_MORE: TabId[] = ['problems', 'growth', 'skills', 'cycle', 'chronicle']
+const UNDER_MORE: TabId[] = ['problems', 'growth', 'skills', 'cycle', 'chronicle', 'trophies']
 
 function readTab(): TabId {
   const hash = location.hash.replace(/^#\/?/, '')
@@ -60,6 +61,8 @@ function readTab(): TabId {
   if (hash === 'dev') return 'dev'
   // Летопись города: страница без вкладки, вход — с «Города» и из карточки итога на «Сегодня».
   if (hash === 'chronicle') return 'chronicle'
+  // Трофеи: вход с «Прироста» и из «Ещё».
+  if (hash === 'trophies') return 'trophies'
   // Итог цикла — тоже страница без вкладки: #/cycle или #/cycle/<id цикла>.
   if (hash === 'cycle' || hash.startsWith('cycle/')) return 'cycle'
   // Прежний адрес лагеря ведёт в город.
@@ -549,6 +552,7 @@ export function App() {
         {tab === 'problems' && <Problems cycle={cycle} />}
         {tab === 'growth' && <Growth world={world} cycle={cycle} />}
         {tab === 'skills' && <Skills world={world} />}
+        {tab === 'trophies' && <Trophies world={world} />}
         {tab === 'more' && <More world={world} cycle={cycle} theme={{ choice: theme, set: chooseTheme }} skyApi={skyApi} sync={sync} updatedAt={updatedAt} />}
         {/* Неизвестный id и адрес без id ведут на активный цикл. */}
         {tab === 'cycle' && <CycleSummary world={world} cycle={world.cycles.find((c) => c.id === summaryId) ?? world.active} />}

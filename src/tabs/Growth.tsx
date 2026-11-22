@@ -1,4 +1,3 @@
-import { GemIcon } from '../world/extras'
 import type { CycleView, TrackView, World } from '../game/engine'
 import { SIDE } from '../game/side'
 import { TrackBadge, Tile, fmtDate, plural } from '../ui/bits'
@@ -21,6 +20,8 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
   const sessions = world.cycles.reduce((sum, c) => sum + c.raw.progress.sessions.length, 0)
   const checked = world.tracks.filter((t) => t.checks.correct + t.checks.partial + t.checks.wrong > 0)
   const assessed = world.tracks.some((t) => t.selfStart !== null || t.selfFinal !== null)
+  const trophiesEarned = world.trophies.filter((t) => t.earned).length
+  const gemsEarned = world.gemLog.reduce((sum, g) => sum + g.gems, 0)
 
   return (
     <div className="stack">
@@ -66,7 +67,7 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
         <Tile label="Очки" value={`${world.totalXp} XP`} note={`уровень ${world.level.n}`} />
         <Tile label="Дней пройдено" value={`${cycle.daysDone} из ${cycle.days.length}`} />
         <Tile label="Занятий" value={sessions} note="включая заходы внутри одного дня" />
-        <Tile label="Домиков построено" value={`${built} из ${cycle.buildings.length}`} />
+        <Tile label="Построек-файлов" value={`${built} из ${cycle.buildings.length}`} />
         <Tile
           label="Монеты и камни"
           value={`${world.wallet.coins} · ${world.wallet.gems}`}
@@ -76,21 +77,24 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
 
       <div className="card">
         <h3>Самооценка по трекам, от 1 до 5</h3>
-        {!assessed && (
+        {assessed ? (
+          <>
+            <div className="dumbbells">
+              {world.tracks.map((t) => (
+                <Dumbbell key={t.track.code} t={t} />
+              ))}
+            </div>
+            <div className="legend">
+              <span><i className="dot dot-start" /> было</span>
+              <span><i className="dot dot-final" /> стало</span>
+            </div>
+          </>
+        ) : (
           <p className="muted">
             Оценок пока нет: самооценка дня {start.day} осталась в хвостах. Запиши её сейчас — без неё не с чем будет
             сравнить день {final.day}.
           </p>
         )}
-        <div className="dumbbells">
-          {world.tracks.map((t) => (
-            <Dumbbell key={t.track.code} t={t} />
-          ))}
-        </div>
-        <div className="legend">
-          <span><i className="dot dot-start" /> было</span>
-          <span><i className="dot dot-final" /> стало</span>
-        </div>
       </div>
 
       <div className="card">
@@ -156,8 +160,17 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
 
       <ForecastCard cycles={world.cycles} />
 
-      <div className="card">
-        <h3>За что получены очки</h3>
+      <a className="card deck-link" href="#/trophies">
+        <span>
+          <b>Трофеи.</b> Получено {trophiesEarned} из {world.trophies.length}
+        </span>
+        <span aria-hidden="true">→</span>
+      </a>
+
+      <details className="card fold">
+        <summary>
+          За что получены очки <span className="muted">· {world.totalXp} XP</span>
+        </summary>
         <table className="table">
           <tbody>
             {world.events.map((e, i) => (
@@ -174,15 +187,33 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
             </tr>
           </tbody>
         </table>
-      </div>
+      </details>
+
+      <details className="card fold">
+        <summary>
+          За что получены камни <span className="muted">· {gemsEarned}</span>
+        </summary>
+        {world.gemLog.length === 0 ? (
+          <p className="muted">Пока ни одного. Камни дают пройденные перевалы, недельные тесты и трофеи.</p>
+        ) : (
+          <table className="table">
+            <tbody>
+              {world.gemLog.map((g) => (
+                <tr key={g.label}>
+                  <td>{g.label}</td>
+                  <td className="muted">{g.date ? fmtDate(g.date) : ''}</td>
+                  <td className="num">+{g.gems}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </details>
 
       <div className="card">
         <h3>Стороннее развитие</h3>
         <p className="muted">
-          Видео, статьи, встречи с коллегами и тестовые собеседования вне плана. Считается результат, а не время: запись
-          засчитывается, только если записаны выводы, и не больше одной каждого вида в день. Засчитанная запись — такой же
-          день занятий, как день плана. Чтобы добавить запись, расскажи Claude Code, что посмотрел или с кем говорил и что
-          из этого вынес.
+          Видео, статьи, встречи и тестовые собеседования вне плана.{world.side.length === 0 ? ' Записей пока нет.' : ''}
         </p>
         {world.side.length > 0 && (
           <ul className="deck">
@@ -209,6 +240,13 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
             ))}
           </ul>
         )}
+        <details className="how">
+          <summary>Как это считается</summary>
+          <p>
+            Считается результат, а не время: запись засчитывается, только если записаны выводы, и не больше одной каждого вида в день.
+            Засчитанная запись — такой же день занятий, как день плана. Чтобы добавить запись, расскажи репетитору, что посмотрел или с
+            кем говорил и что из этого вынес.
+          </p>
         <table className="table">
           <thead>
             <tr>
@@ -230,70 +268,8 @@ export function Growth({ world, cycle }: { world: World; cycle: CycleView }) {
             ))}
           </tbody>
         </table>
+        </details>
       </div>
-
-      <div className="card" id="trophies">
-        <h3>Трофеи</h3>
-        <p className="muted">
-          Достижения за мастерство: их нельзя купить и нельзя получить за число занятий. Каждый даётся один раз и приносит камни.
-          Получено {world.trophies.filter((t) => t.earned).length} из {world.trophies.length}.
-        </p>
-        <ul className="trophy-list">
-          {world.trophies.map((t) => (
-            <li key={t.id} className={t.earned ? 'trophy is-earned' : 'trophy'}>
-              <div className="trophy-info">
-                <b>{t.name}</b>
-                <span className="muted small">{t.how}</span>
-              </div>
-              <div className="trophy-state">
-                <span className={t.earned ? 'pill pill-core' : 'pill'}>
-                  {t.earned ? `получен${t.date ? ' ' + fmtDate(t.date) : ''}` : (t.progress ?? 'ещё нет')}
-                </span>
-                <span className="price">
-                  <GemIcon /> {t.earned ? '+' : ''}
-                  {t.gems}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="card">
-        <h3>За что получены камни</h3>
-        {world.gemLog.length === 0 ? (
-          <p className="muted">Пока ни одного. Камни дают пройденные перевалы, недельные тесты и трофеи.</p>
-        ) : (
-          <table className="table">
-            <tbody>
-              {world.gemLog.map((g) => (
-                <tr key={g.label}>
-                  <td>{g.label}</td>
-                  <td className="muted">{g.date ? fmtDate(g.date) : ''}</td>
-                  <td className="num">+{g.gems}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <details className="card fold">
-        <summary>
-          Журнал ошибок <span className="muted">· {world.mistakes.length}</span>
-        </summary>
-        <ul className="plain">
-          {world.mistakes.map((m) => (
-            <li key={m.date + m.text}>
-              {m.text}{' '}
-              <span className="muted">
-                — {fmtDate(m.date)}, трек {m.track}
-                {m.problemId ? `, задача ${m.problemId}` : ''}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </details>
 
       {progress.observations.length > 0 && (
         <details className="card fold">

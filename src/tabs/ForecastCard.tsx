@@ -111,7 +111,7 @@ export function ForecastCard({ cycles }: { cycles: CycleView[] }) {
       <Scale title="Задачи на таймере" scale={report.timed} cycleNames={cycleNames} />
 
       {!empty && (
-        <details className="fold inner">
+        <details className="how">
           <summary>Как это считается</summary>
           <ul className="plain small">
             <li>Пара — прогноз и результат одной попытки. У пересдачи теста прогноз свой.</li>

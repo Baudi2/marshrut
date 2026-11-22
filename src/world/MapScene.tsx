@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { CycleView, DayView, NodeState } from '../game/engine'
 import type { ConditionLevel } from '../game/rules'
 import { useNarrow } from '../ui/bits'
@@ -145,6 +145,23 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
   const peak = narrow ? 120 : 170
   const tuftCount = [0, 6, 14, scene.tufts.length][level]
   const herePt = pts[scene.hereIdx]
+
+  // Тропа идёт снизу вверх, поэтому в начале цикла путник стоял за нижним краем экрана.
+  // При открытии страница один раз прокручивается так, чтобы он был в кадре.
+  const shown = useRef(false)
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const svg = ref.current?.querySelector('svg')
+      if (!svg || shown.current) return
+      shown.current = true
+      const box = svg.getBoundingClientRect()
+      const y = box.top + (herePt.y / H) * box.height
+      const line = window.innerHeight * 0.6
+      if (y > line) window.scrollBy(0, Math.round(y - line))
+    })
+    return () => cancelAnimationFrame(frame)
+    // Ждём, пока сцена перестроится под ширину; потом прокрутка больше не трогается.
+  }, [narrow, H, herePt.y])
   const fogTop = Math.max(0, herePt.y - 70)
   // Снег лежит по тому же правилу, что в городе.
   const snow = snowCover(sky)

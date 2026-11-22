@@ -52,6 +52,37 @@ function TurnCard({ turn }: { turn: LastTurn }) {
   )
 }
 
+/** Что ждёт внимания кроме шага: колода и открытый недельный тест. Строки-ссылки, без пояснений. */
+function Attention({ due, tests }: { due: number; tests: number[] }) {
+  if (due === 0 && tests.length === 0) return null
+  return (
+    <nav className="card link-list" aria-label="Что ещё ждёт">
+      {due > 0 && (
+        <a href="#/review">
+          <span>
+            <b>Колода</b>
+            <span className="muted small">
+              к повтору сегодня {due} {plural(due, ['карточка', 'карточки', 'карточек'])}
+            </span>
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
+      )}
+      {tests.length > 0 && (
+        <a href="#/path">
+          <span>
+            <b>
+              Тест {tests.length > 1 ? 'недель' : 'недели'} {tests.join(', ')} открыт
+            </b>
+            <span className="muted small">до 3 камней; задание для репетитора — на «Пути»</span>
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
+      )}
+    </nav>
+  )
+}
+
 export function Today({
   world,
   cycle,
@@ -96,15 +127,6 @@ export function Today({
           </ul>
         </div>
 
-        {due > 0 && (
-          <a className="card deck-link" href="#/review">
-            <span>
-              <b>Колода:</b> к повтору сегодня {due} {plural(due, ['карточка', 'карточки', 'карточек'])}
-            </span>
-            <span aria-hidden="true">→</span>
-          </a>
-        )}
-
         {world.condition.level > 0 && (
           <div className="card banner">
             <b>{world.condition.name}.</b> Без занятия {world.missedWorkdays}{' '}
@@ -113,14 +135,7 @@ export function Today({
           </div>
         )}
 
-        {tests.length > 0 && (
-          <div className="card note">
-            <b>
-              Не сдан тест {tests.length > 1 ? 'недель' : 'недели'} {tests.map((w) => w.week.n).join(', ')}.
-            </b>{' '}
-            За него дают до 3 камней. Задание для репетитора — на вкладке <a href="#/path">«Путь»</a>.
-          </div>
-        )}
+        <Attention due={due} tests={tests.map((w) => w.week.n)} />
 
         <div className="card">
           <h3>Что дальше</h3>
@@ -167,33 +182,6 @@ export function Today({
 
   return (
     <div className="stack">
-      {dueToday > 0 && (
-        <a className="card deck-link" href="#/review">
-          <span>
-            <b>Колода:</b> к повтору сегодня {dueToday} {plural(dueToday, ['карточка', 'карточки', 'карточек'])}
-          </span>
-          <span aria-hidden="true">→</span>
-        </a>
-      )}
-      {world.condition.level > 0 && (
-        <div className="card banner">
-          <b>{world.condition.name}.</b> Без занятия {world.missedWorkdays}{' '}
-          {plural(world.missedWorkdays, ['рабочий день', 'рабочих дня', 'рабочих дней'])}. Чтобы вернуть порядок на маршруте,
-          хватит минимума{plan.minimum ? ': ' : '.'}
-          {plan.minimum && <RichText text={plan.minimum} />}
-          {plan.minimum && '.'}
-        </div>
-      )}
-
-      {openTests.length > 0 && (
-        <div className="card note">
-          <b>
-            Открыт тест {openTests.length > 1 ? 'недель' : 'недели'} {openTests.map((w) => w.week.n).join(', ')}.
-          </b>{' '}
-          За него дают до 3 камней. Задание для репетитора — на вкладке <a href="#/path">«Путь»</a>.
-        </div>
-      )}
-
       <div className="today-head">
         <div>
           <div className="eyebrow">
@@ -226,6 +214,18 @@ export function Today({
           <p>Шаги дня закрыты. Осталось записать результат занятия.</p>
         </div>
       )}
+
+      {world.condition.level > 0 && (
+        <div className="card banner">
+          <b>{world.condition.name}.</b> Без занятия {world.missedWorkdays}{' '}
+          {plural(world.missedWorkdays, ['рабочий день', 'рабочих дня', 'рабочих дней'])}. Чтобы вернуть порядок на маршруте,
+          хватит минимума{plan.minimum ? ': ' : '.'}
+          {plan.minimum && <RichText text={plan.minimum} />}
+          {plan.minimum && '.'}
+        </div>
+      )}
+
+      <Attention due={dueToday} tests={openTests.map((w) => w.week.n)} />
 
       {tasks.length > 0 && (
         <div className="card">

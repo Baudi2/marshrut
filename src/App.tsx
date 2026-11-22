@@ -1,12 +1,12 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { offplan, rawCycles, repoCards, repoPurchases, repoRedeemed, repoRepairs, repoReviews, repoRewards, repoSigns, repoTownActions } from './data/load'
 import type { DeckReview, MemorialSign, OwnCard, Purchase, Redeemed, Reward } from './data/types'
-import { cardId, makeOwnCard, newCardProblem } from './game/deck'
+import { cardId, dueCards, makeOwnCard, newCardProblem } from './game/deck'
 import { ReviewTab, type DeckApi } from './tabs/ReviewTab'
 import { rewardProblem, signProblem, tidy } from './game/rewards'
 import { syncSummary } from './game/sync'
 import { blockers, type TownAction } from './game/town'
-import type { TownApi } from './tabs/TownTab'
+import type { TownApi, TownSection } from './tabs/TownTab'
 import { buildWorld } from './game/engine'
 import { lastTurn } from './game/chronicle'
 import { worldAt, type WorldInputs } from './game/history'
@@ -21,27 +21,37 @@ import { CycleSummary } from './tabs/CycleSummary'
 import { levelNameOf } from './town3d/names'
 import { DEV_OFF, DevMenu, devActive, devSummary, type DevState } from './tabs/DevMenu'
 import { Growth } from './tabs/Growth'
+import { More, type ThemeChoice } from './tabs/More'
 import { PathTab, type SignApi } from './tabs/PathTab'
 import { Problems } from './tabs/Problems'
 import { Skills } from './tabs/Skills'
 import { Today } from './tabs/Today'
 import { Meter } from './ui/bits'
+import { TabIcon } from './ui/icons'
 
 // Каталог построек тянет за собой three.js, поэтому грузится отдельно и только по запросу.
 const TownLab = lazy(() => import('./tabs/TownLab'))
 const TownTab = lazy(() => import('./tabs/TownTab'))
 
+/**
+ * Разделы. На телефоне в нижней панели пять пунктов: «Задачи», «Прирост» и «Навыки» (wide) открываются через «Ещё».
+ * На широком экране все стоят в одной строке.
+ */
 const TABS = [
-  { id: 'today', label: 'Сегодня' },
-  { id: 'path', label: 'Путь' },
-  { id: 'town', label: 'Город' },
-  { id: 'problems', label: 'Задачи' },
-  { id: 'review', label: 'Повтор' },
-  { id: 'growth', label: 'Прирост' },
-  { id: 'skills', label: 'Навыки' },
+  { id: 'today', label: 'Сегодня', wide: false },
+  { id: 'path', label: 'Путь', wide: false },
+  { id: 'town', label: 'Город', wide: false },
+  { id: 'review', label: 'Повтор', wide: false },
+  { id: 'problems', label: 'Задачи', wide: true },
+  { id: 'growth', label: 'Прирост', wide: true },
+  { id: 'skills', label: 'Навыки', wide: true },
+  { id: 'more', label: 'Ещё', wide: false },
 ] as const
 
 type TabId = (typeof TABS)[number]['id'] | 'lab' | 'cycle' | 'dev' | 'chronicle'
+
+/** Страницы без своего пункта в нижней панели телефона: на них подсвечен пункт «Ещё». */
+const UNDER_MORE: TabId[] = ['problems', 'growth', 'skills', 'cycle', 'chronicle']
 
 function readTab(): TabId {
   const hash = location.hash.replace(/^#\/?/, '')
@@ -54,7 +64,15 @@ function readTab(): TabId {
   if (hash === 'cycle' || hash.startsWith('cycle/')) return 'cycle'
   // Прежний адрес лагеря ведёт в город.
   if (hash === 'camp') return 'town'
+  // У города три подраздела: #/town, #/town/shop, #/town/files.
+  if (hash.startsWith('town/')) return 'town'
   return TABS.find((t) => t.id === hash)?.id ?? 'today'
+}
+
+/** Подраздел города из адреса. */
+function readTownSection(): TownSection {
+  const part = /^#\/?town\/([a-z]+)/.exec(location.hash)?.[1]
+  return part === 'shop' || part === 'files' ? part : 'map'
 }
 
 /** Цикл из адреса #/cycle/<id>. null — id не назван: показывается активный цикл. */
@@ -90,15 +108,16 @@ const sameAction = (a: TownAction, b: TownAction) => a.at === b.at && a.do === b
 /** Номера своих карточек, уже записанных в репозиторий. */
 const repoCardIds = new Set(repoCards.map(cardId))
 
-function currentTheme(): 'light' | 'dark' {
+/** Тема, выбранная на сайте. Пока не выбрана — как в системе. */
+function currentTheme(): ThemeChoice {
   const stamped = document.documentElement.dataset.theme
-  if (stamped === 'light' || stamped === 'dark') return stamped
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return stamped === 'light' || stamped === 'dark' ? stamped : 'system'
 }
 
 export function App() {
   const [tab, setTab] = useState<TabId>(readTab)
   const [summaryId, setSummaryId] = useState(readSummaryId)
+  const [townSection, setTownSection] = useState(readTownSection)
   const [theme, setTheme] = useState(currentTheme)
   // Предпросмотры из меню разработчика: живут, пока открыта страница, и ничего не записывают.
   const [dev, setDev] = useState<DevState>(DEV_OFF)
@@ -388,17 +407,11 @@ export function App() {
     const onHash = () => {
       setTab(readTab())
       setSummaryId(readSummaryId())
+      setTownSection(readTownSection())
       window.scrollTo(0, 0)
     }
-    // Системная тема может смениться, пока сайт открыт.
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const onScheme = () => setTheme(currentTheme())
     window.addEventListener('hashchange', onHash)
-    media.addEventListener('change', onScheme)
-    return () => {
-      window.removeEventListener('hashchange', onHash)
-      media.removeEventListener('change', onScheme)
-    }
+    return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
   // Потайной вход в меню разработчика: пять нажатий на название за две с половиной секунды.
@@ -410,16 +423,21 @@ export function App() {
     location.hash = '#/dev'
   }
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    document.documentElement.dataset.theme = next
+  // «Как в системе» снимает отметку с корня страницы: дальше тему выбирает prefers-color-scheme.
+  const chooseTheme = (next: ThemeChoice) => {
+    if (next === 'system') delete document.documentElement.dataset.theme
+    else document.documentElement.dataset.theme = next
     try {
-      localStorage.setItem('theme', next)
+      if (next === 'system') localStorage.removeItem('theme')
+      else localStorage.setItem('theme', next)
     } catch {
       // тема просто не запомнится
     }
     setTheme(next)
   }
+
+  const updatedAt = String(cycle.raw.progress.meta.updatedAt).split('-').reverse().join('.')
+  const dueToday = dueCards(world.deck, today).length
 
   return (
     <div className="app">
@@ -442,14 +460,7 @@ export function App() {
             </span>
           )}
         </div>
-        <div className="level" title={`До уровня ${world.level.n + 1} осталось ${world.level.next - world.totalXp} XP`}>
-          <span className="level-n">Ур. {world.level.n}</span>
-          <Meter value={world.level.into} max={world.level.span} label={`Уровень ${world.level.n}: ${world.totalXp} из ${world.level.next} XP`} />
-          <span className="level-xp">
-            {world.totalXp} / {world.level.next} XP
-          </span>
-        </div>
-        <a className="wallet" href="#/town" aria-label={`Монет: ${world.wallet.coins}, камней: ${world.wallet.gems}. Открыть город`}>
+        <a className="wallet" href="#/town/shop" aria-label={`Монет: ${world.wallet.coins}, камней: ${world.wallet.gems}. Открыть лавку`}>
           <span>
             <CoinIcon /> {world.wallet.coins}
           </span>
@@ -457,12 +468,14 @@ export function App() {
             <GemIcon /> {world.wallet.gems}
           </span>
         </a>
-        <button className="btn btn-quiet theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}>
-          {theme === 'dark' ? 'День' : 'Ночь'}
-        </button>
+        <div className="level" title={`До уровня ${world.level.n + 1} осталось ${world.level.next - world.totalXp} XP`}>
+          <span className="level-n">Ур. {world.level.n}</span>
+          <Meter value={world.level.into} max={world.level.span} label={`Уровень ${world.level.n}: ${world.totalXp} из ${world.level.next} XP`} />
+          <span className="level-xp">
+            {world.totalXp} / {world.level.next} XP
+          </span>
+        </div>
       </header>
-
-      {world.ranksEarned.length > 0 && <p className="ranks">Звания: {world.ranksEarned.join(' · ')}</p>}
 
       {devActive(dev) && tab !== 'dev' && (
         <p className="dev-bar" role="status">
@@ -481,11 +494,22 @@ export function App() {
       )}
 
       <nav className="tabs" aria-label="Разделы">
-        {TABS.map((t) => (
-          <a key={t.id} href={`#/${t.id}`} className={tab === t.id ? 'is-on' : ''} aria-current={tab === t.id ? 'page' : undefined}>
-            {t.label}
-          </a>
-        ))}
+        {TABS.map((t) => {
+          // «Ещё» на телефоне подсвечен и на страницах, у которых своего пункта в панели нет.
+          const under = t.id === 'more' && UNDER_MORE.includes(tab)
+          const cls = [tab === t.id ? 'is-on' : '', under ? 'is-on-narrow' : '', t.wide ? 'tab-wide' : ''].filter(Boolean).join(' ')
+          return (
+            <a key={t.id} href={`#/${t.id}`} className={cls || undefined} aria-current={tab === t.id ? 'page' : undefined}>
+              <TabIcon id={t.id} />
+              <span>{t.label}</span>
+              {t.id === 'review' && dueToday > 0 && (
+                <span className="tab-count" aria-label={`к повтору сегодня: ${dueToday}`}>
+                  {dueToday}
+                </span>
+              )}
+            </a>
+          )
+        })}
       </nav>
 
       <main>
@@ -508,6 +532,7 @@ export function App() {
               world={world}
               cycle={cycle}
               level={level}
+              section={townSection}
               stagePreview={dev.stage}
               onStagePreview={(stage) => setDev({ ...dev, stage })}
               past={past}
@@ -524,6 +549,7 @@ export function App() {
         {tab === 'problems' && <Problems cycle={cycle} />}
         {tab === 'growth' && <Growth world={world} cycle={cycle} />}
         {tab === 'skills' && <Skills world={world} />}
+        {tab === 'more' && <More world={world} cycle={cycle} theme={{ choice: theme, set: chooseTheme }} skyApi={skyApi} sync={sync} updatedAt={updatedAt} />}
         {/* Неизвестный id и адрес без id ведут на активный цикл. */}
         {tab === 'cycle' && <CycleSummary world={world} cycle={world.cycles.find((c) => c.id === summaryId) ?? world.active} />}
         {tab === 'dev' && (
@@ -536,7 +562,7 @@ export function App() {
               stage: world.town.tier,
               missed: world.missedWorkdays,
             }}
-            updatedAt={String(cycle.raw.progress.meta.updatedAt).split('-').reverse().join('.')}
+            updatedAt={updatedAt}
           />
         )}
         {tab === 'lab' && (
@@ -545,11 +571,6 @@ export function App() {
           </Suspense>
         )}
       </main>
-
-      <footer className="foot">
-        Данные обновлены {String(cycle.raw.progress.meta.updatedAt).split('-').reverse().join('.')}. Очки, уровни и состояние
-        мира считаются на сайте из журнала занятий.
-      </footer>
     </div>
   )
 }

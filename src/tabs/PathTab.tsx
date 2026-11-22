@@ -1,15 +1,16 @@
 import { useState, type FormEvent } from 'react'
 import type { CycleView, DayView, World } from '../game/engine'
 import type { ConditionLevel } from '../game/rules'
-import { ConditionCard, DAYS, RichText, TrackBadge, fmtDate, plural } from '../ui/bits'
+import { DAYS, RichText, TrackBadge, fmtDate, plural } from '../ui/bits'
 import { timeReport } from '../game/report'
 import { SIGN_GEMS, SIGN_MAX } from '../game/rewards'
 import { cycleCaption } from '../game/summary'
 import { GemIcon } from '../world/extras'
 import { MapScene, NODE_LABEL } from '../world/MapScene'
 import { trackColor } from '../world/sprites'
-import { SkyCard, type SkyApi } from './SkyCard'
+import type { SkyApi } from './SkyCard'
 import { WeeklyTests } from './Tests'
+import { WorldCard } from './WorldCard'
 import { WeekReport } from './WeekReport'
 
 const ARTIFACT_STATE: Record<string, string> = {
@@ -61,21 +62,24 @@ export function PathTab({ world, cycle, level, gear, skyApi, signs }: Props) {
 
       <MapScene cycle={cycle} level={level} selected={selected} onSelect={setSelected} gear={gear} sky={skyApi.sky} />
 
-      <div className="legend" aria-label="Обозначения">
-        <span><i className="dot dot-core" /> сделан ядром</span>
-        <span><i className="dot dot-minimum" /> на минимуме</span>
-        <span><i className="dot dot-current" /> текущий</span>
-        <span><i className="dot dot-ahead" /> впереди</span>
-        <span><i className="dot dot-skipped" /> пропущен</span>
-        <span><i className="flag-mark" /> перевал</span>
-        {world.tracks.map((t) => (
-          <span key={t.track.code}>
-            <i className="dot" style={{ background: trackColor(t.track.code) }} /> {t.track.code} · {t.track.name}
-          </span>
-        ))}
-      </div>
-
       <DayCard key={day.n} day={day} cycle={cycle} checkpoint={week?.week.checkpoint} signs={signs} />
+
+      <details className="card fold">
+        <summary>Обозначения на карте</summary>
+        <div className="legend">
+          <span><i className="dot dot-core" /> сделан ядром</span>
+          <span><i className="dot dot-minimum" /> на минимуме</span>
+          <span><i className="dot dot-current" /> текущий</span>
+          <span><i className="dot dot-ahead" /> впереди</span>
+          <span><i className="dot dot-skipped" /> пропущен</span>
+          <span><i className="flag-mark" /> перевал</span>
+          {world.tracks.map((t) => (
+            <span key={t.track.code}>
+              <i className="dot" style={{ background: trackColor(t.track.code) }} /> {t.track.code} · {t.track.name}
+            </span>
+          ))}
+        </div>
+      </details>
 
       <WeeklyTests cycle={cycle} />
 
@@ -89,15 +93,7 @@ export function PathTab({ world, cycle, level, gear, skyApi, signs }: Props) {
         <span aria-hidden="true">→</span>
       </a>
 
-      <SkyCard api={skyApi} />
-
-      <ConditionCard
-        real={world.condition.level}
-        missed={world.missedWorkdays}
-        firewood={Math.max(world.town.firewood, world.covered)}
-        covered={world.covered}
-        breaks={world.breaks}
-      />
+      <WorldCard world={world} skyApi={skyApi} />
     </div>
   )
 }

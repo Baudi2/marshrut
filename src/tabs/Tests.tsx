@@ -4,23 +4,41 @@ import { testPrompt } from '../game/weekly'
 import { CopyButton, DAYS, fmtDate, plural } from '../ui/bits'
 import { Gems } from '../world/extras'
 
-const STATE = { locked: 'закрыт', open: 'можно сдавать', done: 'сдан' } as const
+const STATE = { locked: 'ещё рано', open: 'можно сдавать', done: 'сдан' } as const
 
 export function WeeklyTests({ cycle }: { cycle: CycleView }) {
   const steps = [...GEM_STEPS].reverse().map((s) => `от ${Math.round(s.share * 100)}% — ${s.gems}`)
+  // Строкой показаны недели, где есть что делать или смотреть: сданные, открытые и та, что идёт сейчас.
+  // Остальные впереди и выглядят одинаково — они сведены в одну строку.
+  const nowWeek = cycle.current?.day.plan.week
+  const far = cycle.weeks.filter((w) => w.test.state === 'locked' && w.week.n !== nowWeek)
+  const shown = cycle.weeks.filter((w) => !far.includes(w))
+  const farNumbers = far.map((w) => w.week.n)
+  const run = farNumbers.length > 1 && farNumbers[farNumbers.length - 1] - farNumbers[0] === farNumbers.length - 1
   return (
     <div className="card">
       <h3>Недельные тесты</h3>
       <p className="muted">
         Тест открывается, когда пройдены все дни недели. Его ведёт репетитор: 10 вопросов, каждый ответ — от 0 до 2 баллов.
-        Камни за результат: {steps.join(', ')}. Пересдавать можно, считается лучшая попытка. Ещё по камню даёт каждый
-        пройденный перевал.
       </p>
       <ul className="tests">
-        {cycle.weeks.map((w) => (
+        {shown.map((w) => (
           <TestRow key={w.week.n} cycle={cycle} w={w} />
         ))}
+        {far.length > 0 && (
+          <li className="muted small">
+            {far.length === 1 ? `Неделя ${farNumbers[0]}` : run ? `Недели ${farNumbers[0]}–${farNumbers[farNumbers.length - 1]}` : `Недели ${farNumbers.join(', ')}`}: ещё рано — тест
+            откроется, когда закрыты все дни недели.
+          </li>
+        )}
       </ul>
+      <details className="fold inner">
+        <summary>Камни и пересдача</summary>
+        <p className="muted small">
+          Камни за результат: {steps.join(', ')}. Пересдавать можно, считается лучшая попытка. Ещё по камню даёт каждый пройденный
+          перевал.
+        </p>
+      </details>
     </div>
   )
 }

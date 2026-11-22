@@ -13,6 +13,7 @@ export function Skills({ world }: { world: World }) {
           в недельных тестах. Один ранг — один цикл, в котором выполнены все условия трека. Опыт показан отдельно и на ранг
           не влияет.
         </p>
+        {world.ranksEarned.length > 0 && <p>Звания за пройденные циклы: {world.ranksEarned.join(' · ')}</p>}
       </div>
 
       {world.tracks.map((t) => (

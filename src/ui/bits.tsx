@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactNode, type RefObject } from 'react'
-import { CONDITIONS, type ConditionLevel } from '../game/rules'
 import { DAYS, fmtDate, plural } from '../game/text'
 import { trackColor } from '../world/sprites'
 
@@ -157,47 +156,5 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
     <button className="btn" onClick={copy}>
       {copied ? 'Скопировано' : label}
     </button>
-  )
-}
-
-/** Состояние мира: сколько пропущено и что это значит. Посмотреть другие стадии можно в меню разработчика. */
-export function ConditionCard({
-  real,
-  missed,
-  firewood = 0,
-  covered = 0,
-  breaks,
-}: {
-  real: ConditionLevel
-  missed: number
-  /** Сколько рабочих дней пропуска прикрывает запас дров и сколько уже прикрыто. */
-  firewood?: number
-  covered?: number
-  /** Плановые перерывы цикла: использовано рабочих дней, лимит и дата конца идущего перерыва. */
-  breaks?: { used: number; limit: number; until: string | null }
-}) {
-  return (
-    <div className="card preview">
-      <div className="preview-head">
-        <div>
-          <h3>Состояние маршрута: {CONDITIONS[real].name.toLowerCase()}</h3>
-          <p className="muted">
-            {missed === 0
-              ? 'Пропущенных рабочих дней нет.'
-              : `Без занятия ${missed} ${plural(missed, ['рабочий день', 'рабочих дня', 'рабочих дней'])}.`}{' '}
-            Один пропуск ничего не меняет, со второго подряд мир начинает зарастать. Очки при этом не отнимаются, а первое
-            занятие возвращает порядок. Настоящая погода считается отдельно.
-            {firewood > 0 &&
-              ` Запас дров в дровнике прикрывает до ${firewood} ${plural(firewood, ['рабочего дня', 'рабочих дней', 'рабочих дней'])} пропуска` +
-                (covered > 0 ? `; сейчас прикрыто ${covered}.` : '.')}
-            {breaks?.until && ` Объявлен плановый перерыв до ${fmtDate(breaks.until)}: эти дни пропуском не считаются.`}
-            {breaks && breaks.used > 0 && ` Плановых перерывов в цикле: ${breaks.used} из ${breaks.limit} рабочих дней.`}
-          </p>
-        </div>
-      </div>
-      <p className="preview-look">
-        <b>{CONDITIONS[real].name}.</b> {CONDITIONS[real].look}
-      </p>
-    </div>
   )
 }

@@ -157,7 +157,10 @@ export function TownCanvas({ view, sky, selected, onSelect, now }: Props) {
           </span>
         ))}
       </div>
-      <p className="town3d-hint">Карту двигает палец или мышь. Масштаб — щипок или Ctrl + колесо.</p>
+      <p className="town3d-hint">
+        <span className="hint-touch">Двигай пальцем, приближай щипком.</span>
+        <span className="hint-mouse">Карту двигает мышь. Масштаб — Ctrl + колесо.</span>
+      </p>
       {status && <p className="town3d-status">{status}</p>}
     </div>
   )

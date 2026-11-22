@@ -32,7 +32,7 @@ import { TownCanvas, fmtLeft } from '../town3d/TownCanvas'
 import { CENTER, LOOKS, levelName } from '../town3d/looks'
 import { quarterOpen } from '../town3d/plan'
 import { folded, previewView, townView } from '../town3d/view'
-import { ConditionCard, TrackBadge, plural } from '../ui/bits'
+import { TrackBadge, plural } from '../ui/bits'
 import { CoinIcon, GemIcon } from '../world/extras'
 import { fullDate } from '../game/summary'
 import { MonumentCard } from './MonumentCard'
@@ -40,7 +40,17 @@ import { artifactState } from './PathTab'
 import type { SyncSummary } from '../game/sync'
 import { Shop, type ShopApi } from './Shop'
 import { SyncNote } from './SyncNote'
-import { SkyCard, type SkyApi } from './SkyCard'
+import type { SkyApi } from './SkyCard'
+import { WorldCard } from './WorldCard'
+
+/** Подразделы вкладки: карта со стройкой, лавка и постройки-файлы. Адреса — #/town, #/town/shop, #/town/files. */
+export type TownSection = 'map' | 'shop' | 'files'
+
+const SECTIONS: { id: TownSection; label: string; href: string }[] = [
+  { id: 'map', label: 'Город', href: '#/town' },
+  { id: 'shop', label: 'Лавка', href: '#/town/shop' },
+  { id: 'files', label: 'Файлы', href: '#/town/files' },
+]
 
 export interface TownApi {
   act: (action: Pick<TownAction, 'do' | 'type' | 'id'>) => void
@@ -54,6 +64,7 @@ interface Props {
   world: World
   cycle: CycleView
   level: ConditionLevel
+  section: TownSection
   /** Предпросмотр ступени из меню разработчика: null — настоящий город. */
   stagePreview: number | null
   onStagePreview: (stage: number | null) => void
@@ -242,7 +253,7 @@ function moodText(town: World['town']): string {
   return `Довольство: ${moodOf(town)}%. Уют ${c.total} (${parts.join(', ')}) на ${town.population} ${plural(town.population, RESIDENTS)}; его хватает на ${comfortRoom(town)}. ${effect} Уют дают колодцы, таверна, украшения из лавки и новая ступень.`
 }
 
-export default function TownTab({ world, cycle, level, stagePreview, onStagePreview, past, onPast, turns, shop, skyApi, town: api, sync, now }: Props) {
+export default function TownTab({ world, cycle, level, section, stagePreview, onStagePreview, past, onPast, turns, shop, skyApi, town: api, sync, now }: Props) {
   const town = world.town
   const [selected, setSelected] = useState<string | null>(null)
   const [hint, setHint] = useState<string | null>(null)
@@ -287,15 +298,24 @@ export default function TownTab({ world, cycle, level, stagePreview, onStagePrev
   // Сломанное после перерыва: видно под картой, чинится в карточке постройки.
   const wrecked = previewing ? [] : town.buildings.filter((b) => b.broken)
 
+  const stages = [3, 2, 1, 0].map((stage) => ({ stage, list: cycle.buildings.filter((b) => b.stage === stage) })).filter((group) => group.list.length > 0)
+
   return (
     <div className="stack">
       <div className="section-head">
         <h2>Город</h2>
         <p className="muted">
-          Ступень «{TIERS[town.tier].name}». Город живёт в темпе учёбы: день с занятием — один ход, без занятий ничего не приходит и
-          не отнимается. Ходов сделано: {town.turns}.
+          Ступень «{TIERS[town.tier].name}» · ходов сделано: {town.turns}. День с занятием — один ход.
         </p>
       </div>
+
+      <nav className="subnav" aria-label="Подразделы города">
+        {SECTIONS.map((item) => (
+          <a key={item.id} href={item.href} className={section === item.id ? 'is-on' : undefined} aria-current={section === item.id ? 'page' : undefined}>
+            {item.label}
+          </a>
+        ))}
+      </nav>
 
       <div className="hud" role="group" aria-label="Ресурсы">
         {hud.map((item) => (
@@ -311,6 +331,58 @@ export default function TownTab({ world, cycle, level, stagePreview, onStagePrev
         </p>
       )}
 
+      {section === 'shop' && <Shop shop={shop} sync={sync} />}
+
+      {section === 'files' && (
+        <div className="card">
+          <h3>Постройки-файлы</h3>
+          <p className="muted">
+            Каждая постройка — файл из твоих репозиториев: построено {cycle.buildings.filter((b) => b.stage >= 2).length}, строится{' '}
+            {cycle.buildings.filter((b) => b.stage === 1).length}, участков {cycle.buildings.filter((b) => b.stage === 0).length}.{' '}
+            {quarterOpen(town.tier) ? 'Стоят в слободе за мостом.' : 'На карте их пока не видно: мост и слобода появятся, когда стоянка станет лагерем.'}
+          </p>
+          {stages.map(({ stage, list }) => (
+            // Участки под будущие файлы свёрнуты: их много, а смотреть в них пока нечего.
+            <details key={stage} className="build-group" open={stage > 0 || stages.length === 1}>
+              <summary>
+                {STAGE_LABEL[stage]} <span className="muted">· {list.length}</span>
+              </summary>
+              <ul className="build-list">
+                {list.map((b) => {
+                  const id = `file:${cycle.id}:${b.item.id}`
+                  const on = selected === id
+                  return (
+                    <li key={b.item.id}>
+                      <button className={on ? 'is-on' : ''} aria-expanded={on} onClick={() => setSelected(on ? null : id)}>
+                        <span>{b.item.title}</span>
+                        <span className="muted small">день {b.item.day}</span>
+                      </button>
+                      {on && (
+                        <div className="build-file">
+                          <div className="chips">
+                            <span className={`pill pill-stage-${b.stage}`}>{STAGE_LABEL[b.stage]}</span>
+                            {b.item.track && <TrackBadge code={b.item.track} />}
+                            <span className="chip">{b.item.repo}</span>
+                          </div>
+                          <p>
+                            <code>{b.item.path}</code>
+                            {b.recorded && <span className="muted"> — в журнале: {artifactState(b.recorded)}</span>}
+                          </p>
+                          <p>{fileAdvice(b, cycle)}</p>
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </details>
+          ))}
+          <p className="muted small">Купить такую постройку нельзя: она растёт только от работы.</p>
+        </div>
+      )}
+
+      {section === 'map' && (
+        <>
       <TownCanvas view={view} sky={skyApi.sky} selected={previewing ? null : selected} onSelect={setSelected} now={time} />
 
       {past && <PastBar past={past} turns={turns} onPast={onPast} />}
@@ -496,7 +568,17 @@ export default function TownTab({ world, cycle, level, stagePreview, onStagePrev
 
       {!previewing && !selected && <p className="muted">Нажми на постройку на карте, чтобы увидеть, что она даёт и сколько стоит следующий уровень.</p>}
 
+      <BuildList town={town} world={world} locked={previewing} onBuild={(type) => api.act({ do: 'build', type })} />
+
       {!previewing && <Blueprints town={town} world={world} onBuild={(type) => api.act({ do: 'build', type })} />}
+
+      {api.unsynced.length > 0 && (
+        <SyncNote sync={sync}>
+          <button className="btn btn-quiet" onClick={api.undo}>
+            Отменить последнее действие
+          </button>
+        </SyncNote>
+      )}
 
       {!previewing && (
         <a className="card deck-link" href="#/chronicle">
@@ -507,97 +589,78 @@ export default function TownTab({ world, cycle, level, stagePreview, onStagePrev
         </a>
       )}
 
-      <div className="card">
-        <h3>Что можно построить</h3>
-        <ul className="build-menu">
-          {BUILDINGS.filter((type) => type.tier <= town.tier + 1).map((type) => {
-            const have = town.buildings.filter((b) => b.type === type.id).length
-            const down = town.buildings.filter((b) => b.type === type.id && b.broken).length
-            const limit = type.count[town.tier]
-            const why = blockers(town, { do: 'build', type: type.id }, world.means)
-            const locked = town.tier < type.tier
-            return (
-              <li key={type.id} className={locked ? 'is-locked' : ''}>
-                <div>
-                  <b>{type.name}</b> <span className="muted small">· {LOOKS[type.id]?.levels[0].name.toLowerCase()}</span>
-                  {down > 0 && <span className="pill pill-current breakage-mark">{down === have ? 'сломано' : `сломано ${down}`}</span>}
-                  <div className="muted small">
-                    {gives(type, 1)}
-                    {!locked && ` · построено ${have} из ${limit}`}
-                  </div>
-                  {why.length > 0 && <div className="why small">{locked ? why[0] : why.join('; ')}</div>}
-                </div>
-                <div className="act-row">
-                  <Price cost={buildCost(type, 1)} town={town} world={world} />
-                  <button className="btn" disabled={why.length > 0 || previewing} onClick={() => api.act({ do: 'build', type: type.id })} aria-label={`Построить: ${type.name}`}>
-                    Построить
-                  </button>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-        <p className="muted small">
-          Первый уровень строится {fmtHours(LEVEL_HOURS[0])}, дальше — до суток. Ускорить стройку нельзя: таймер просто идёт. Место для
-          постройки выбирает город: у каждой свой участок на плане.
-        </p>
-      </div>
-
-      {api.unsynced.length > 0 && (
-        <SyncNote sync={sync}>
-          <button className="btn btn-quiet" onClick={api.undo}>
-            Отменить последнее действие
-          </button>
-        </SyncNote>
+      <WorldCard world={world} skyApi={skyApi} />
+        </>
       )}
+    </div>
+  )
+}
 
-      <SkyCard api={skyApi} />
-      {/* Дровник, сломанный этим же перерывом, его всё равно прикрывает: показан запас, каким он был до перерыва. */}
-      <ConditionCard
-        real={world.condition.level}
-        missed={world.missedWorkdays}
-        firewood={Math.max(world.town.firewood, world.covered)}
-        covered={world.covered}
-        breaks={world.breaks}
-      />
-      <Shop shop={shop} sync={sync} />
-
-      <div className="card">
-        <h3>Постройки-файлы</h3>
-        <p className="muted">
-          {quarterOpen(town.tier)
-            ? 'Слобода за мостом.'
-            : 'На стоянке их ещё не видно: мост и слобода появятся на карте, когда стоянка станет лагерем.'}{' '}
-          Каждая постройка — файл из твоих репозиториев: построено {cycle.buildings.filter((b) => b.stage >= 2).length}, строится{' '}
-          {cycle.buildings.filter((b) => b.stage === 1).length}, участков {cycle.buildings.filter((b) => b.stage === 0).length}. Сейчас в городе{' '}
-          {town.population} {plural(town.population, RESIDENTS)}.
-        </p>
-        {[3, 2, 1, 0].map((stage) => {
-          const list = cycle.buildings.filter((b) => b.stage === stage)
-          if (!list.length) return null
+/**
+ * Что можно построить. В списке — постройки открытых ступеней; то, что откроет следующая ступень,
+ * свёрнуто в одну строку: там нечего нажимать, а место оно занимало наравне с доступным.
+ */
+function BuildList({ town, world, locked, onBuild }: { town: World['town']; world: World; locked: boolean; onBuild: (type: string) => void }) {
+  const count = (type: BuildingType) => town.buildings.filter((b) => b.type === type.id).length
+  const open = BUILDINGS.filter((type) => type.tier <= town.tier)
+  // Лимит ступени выбран: строить такую постройку сейчас нельзя, строка с ценой и кнопкой ей не нужна.
+  const full = open.filter((type) => count(type) >= type.count[town.tier])
+  const free = open.filter((type) => !full.includes(type))
+  const later = BUILDINGS.filter((type) => type.tier === town.tier + 1)
+  const nextTier = TIERS[town.tier + 1]
+  return (
+    <div className="card">
+      <h3>Что можно построить</h3>
+      {free.length === 0 && <p className="muted">На этой ступени построено всё, что можно. Дальше — улучшения построек и следующая ступень.</p>}
+      <ul className="build-menu">
+        {free.map((type) => {
+          const have = count(type)
+          const down = town.buildings.filter((b) => b.type === type.id && b.broken).length
+          const limit = type.count[town.tier]
+          const why = blockers(town, { do: 'build', type: type.id }, world.means)
           return (
-            <div key={stage} className="build-group">
-              <h4>
-                {STAGE_LABEL[stage]} <span className="muted">· {list.length}</span>
-              </h4>
-              <ul className="build-list">
-                {list.map((b) => {
-                  const id = `file:${cycle.id}:${b.item.id}`
-                  return (
-                    <li key={b.item.id}>
-                      <button className={selected === id ? 'is-on' : ''} onClick={() => setSelected(id)}>
-                        <span>{b.item.title}</span>
-                        <code>{b.item.path}</code>
-                        <span className="muted">день {b.item.day}</span>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
+            <li key={type.id}>
+              <div>
+                <b>{type.name}</b> <span className="muted small">· {LOOKS[type.id]?.levels[0].name.toLowerCase()}</span>
+                {down > 0 && <span className="pill pill-current breakage-mark">{down === have ? 'сломано' : `сломано ${down}`}</span>}
+                <div className="muted small">
+                  {gives(type, 1)} · построено {have} из {limit}
+                </div>
+                {why.length > 0 && <div className="why small">{why.join('; ')}</div>}
+              </div>
+              <div className="act-row">
+                <Price cost={buildCost(type, 1)} town={town} world={world} />
+                <button className="btn" disabled={why.length > 0 || locked} onClick={() => onBuild(type.id)} aria-label={`Построить: ${type.name}`}>
+                  Построить
+                </button>
+              </div>
+            </li>
           )
         })}
-      </div>
+      </ul>
+      {full.length > 0 && (
+        <p className="muted small">
+          Построено всё, что можно на этой ступени: {full.map((type) => `${type.name.toLowerCase()} — ${count(type)}`).join(', ')}.
+        </p>
+      )}
+      {later.length > 0 && nextTier && (
+        <details className="fold inner build-later">
+          <summary>
+            Откроется на ступени «{nextTier.name}» <span className="muted">· {later.length}</span>
+          </summary>
+          <ul className="plain">
+            {later.map((type) => (
+              <li key={type.id}>
+                <b>{type.name}</b> <span className="muted">— {gives(type, 1)}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      <p className="muted small">
+        Первый уровень строится {fmtHours(LEVEL_HOURS[0])}, дальше — до суток. Ускорить стройку нельзя: таймер просто идёт. Место для
+        постройки выбирает город: у каждой свой участок на плане.
+      </p>
     </div>
   )
 }
@@ -622,6 +685,25 @@ function Blueprints({ town, world, onBuild }: { town: World['town']; world: Worl
         const built = town.buildings.find((b) => pair.some((type) => type.id === b.type))
         const open = have >= offer
         const need = BLUEPRINT_TESTS[offer - 1]
+        // Чертежа ещё нет: что в нём, одной строкой, без цен и кнопок.
+        if (!open && !built) {
+          return (
+            <div className="blueprint" key={offer}>
+              <div className="blueprint-head">
+                <h4>Чертёж {offer}</h4>
+                <span className="pill">{need === 1 ? 'за первый тест' : `за ${need}-й тест`}</span>
+              </div>
+              <p className="small">
+                {pair.map((type, i) => (
+                  <span key={type.id}>
+                    {i > 0 && <span className="muted"> или </span>}
+                    <b>{type.name}</b> <span className="muted">— {gives(type, 1).split(';')[0]}</span>
+                  </span>
+                ))}
+              </p>
+            </div>
+          )
+        }
         return (
           <div className="blueprint" key={offer}>
             <div className="blueprint-head">

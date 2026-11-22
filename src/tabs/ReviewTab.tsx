@@ -177,6 +177,8 @@ export function ReviewTab({ world, deck: api, sync }: { world: World; deck: Deck
   const todayTrack = world.active.current?.day.plan.trackCode
   const defaultTrack = hasTrack(todayTrack) ? todayTrack! : (tracks[0]?.code ?? '')
   const ownToday = deck.filter((c) => c.source !== 'check' && c.date === api.today).length
+  // Форма своей карточки нужна изредка: она раскрывается по кнопке.
+  const [adding, setAdding] = useState(false)
   const [cardFor, setCardFor] = useState<string | null>(null)
   const [removing, setRemoving] = useState<string | null>(null)
   const madeFrom = (m: Mistake) => deck.filter((c) => c.source === 'mistake' && tidy(c.mistake) === tidy(m.text)).length
@@ -188,9 +190,7 @@ export function ReviewTab({ world, deck: api, sync }: { world: World; deck: Deck
       <div className="section-head">
         <h2>Повтор</h2>
         <p className="muted">
-          Колода собирается из проверок понимания на занятиях и из твоих карточек — по заметкам и ошибкам: {deck.length}{' '}
-          {plural(deck.length, CARDS)}, выучено {learned}. Карточка возвращается через растущие промежутки — так знание переходит из
-          «помню сегодня» в «помню через месяц».
+          В колоде {deck.length} {plural(deck.length, CARDS)}, выучено {learned}. Карточка возвращается через растущие промежутки.
         </p>
       </div>
 
@@ -254,22 +254,27 @@ export function ReviewTab({ world, deck: api, sync }: { world: World; deck: Deck
 
       {(fresh.reviews.length > 0 || fresh.cards.length > 0) && <SyncNote sync={sync} />}
 
-      <div className="card" id="own-card">
-        <h3>Своя карточка</h3>
-        <p className="muted small">
-          Вопрос из своих заметок и ответ своими словами. Карточка придёт на повтор завтра и дальше идёт по тем же коробкам. Вопрос —
-          до {OWN_QUESTION_MAX} знаков, ответ — до {OWN_ANSWER_MAX}. В день — не больше {OWN_CARDS_PER_DAY} своих карточек, сегодня
-          добавлено {ownToday}. Карточку из ошибки удобнее завести в журнале ошибок ниже.
-        </p>
-        <CardForm api={api} tracks={tracks} track={defaultTrack} />
-      </div>
+      {adding ? (
+        <div className="card" id="own-card">
+          <h3>Своя карточка</h3>
+          <p className="muted small">
+            Вопрос из своих заметок и ответ своими словами. Карточка придёт на повтор завтра и дальше идёт по тем же коробкам. Вопрос —
+            до {OWN_QUESTION_MAX} знаков, ответ — до {OWN_ANSWER_MAX}. В день — не больше {OWN_CARDS_PER_DAY} своих карточек, сегодня
+            добавлено {ownToday}. Карточку из ошибки удобнее завести в журнале ошибок ниже.
+          </p>
+          <CardForm api={api} tracks={tracks} track={defaultTrack} onCancel={() => setAdding(false)} />
+        </div>
+      ) : (
+        <button className="btn own-open" id="own-card" onClick={() => setAdding(true)}>
+          Добавить свою карточку
+        </button>
+      )}
 
       {deck.length > 0 && (
         <div className="card">
           <h3>Коробки</h3>
           <p className="muted small">
-            Верный ответ переносит карточку в следующую коробку, неверный возвращает в первую. В последней коробке карточка считается
-            выученной.
+            Через сколько карточка вернётся. Верный ответ переносит её в следующую коробку, неверный возвращает в первую.
           </p>
           <div className="box-row">
             {BOX_DAYS.map((days, box) => {
@@ -277,7 +282,7 @@ export function ReviewTab({ world, deck: api, sync }: { world: World; deck: Deck
               return (
                 <div key={box} className={count ? 'box is-full' : 'box'}>
                   <b>{count}</b>
-                  <span className="muted small">{box === LAST_BOX ? 'выучено' : inDays(days)}</span>
+                  <span className="muted small">{box === LAST_BOX ? 'выучено' : box === 0 ? 'завтра' : `${days} дн.`}</span>
                 </div>
               )
             })}

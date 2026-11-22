@@ -9,7 +9,7 @@ export interface SkyApi {
   setPlace: (place: Place | null) => void
 }
 
-/** Откуда брать погоду и как выглядит небо: место и текущее состояние. */
+/** Откуда брать погоду и как выглядит небо: место и текущее состояние. Стоит в настройках, на странице «Ещё». */
 export function SkyCard({ api }: { api: SkyApi }) {
   const { sky, place } = api
   const [query, setQuery] = useState('')
@@ -56,7 +56,7 @@ export function SkyCard({ api }: { api: SkyApi }) {
 
   return (
     <div className="card">
-      <h3>Небо над маршрутом</h3>
+      <h3>Место для погоды</h3>
       <p>{status}</p>
       <div className="chips">
         <span className="chip">{SEASON_NAME[sky.season]}</span>

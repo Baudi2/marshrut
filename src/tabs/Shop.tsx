@@ -43,32 +43,20 @@ const GROUPS = [
 
 const SESSIONS: [string, string, string] = ['занятие', 'занятия', 'занятий']
 
-export function Shop({ shop, groups, sync }: { shop: ShopApi; groups?: ('gear' | 'camp')[]; sync: SyncSummary }) {
+/**
+ * Лавка — подраздел вкладки «Город»: ремонт, экипировка, украшения и свои награды отдельными карточками.
+ * Кошелёк показан в панели ресурсов над подразделами.
+ */
+export function Shop({ shop, sync }: { shop: ShopApi; sync: SyncSummary }) {
   const { wallet, damage, unsynced } = shop
   const repairTotal = damage.reduce((sum, d) => sum + d.cost, 0)
   const pending = Object.values(unsynced).reduce((sum, list) => sum + list.length, 0)
 
   return (
-    <div className="card" id="shop">
-      <div className="shop-head">
-        <h3>Лавка</h3>
-        <span className="wallet">
-          <span title="Монеты">
-            <CoinIcon /> {wallet.coins}
-          </span>
-          <span title="Камни">
-            <GemIcon /> {wallet.gems}
-          </span>
-        </span>
-      </div>
-      <p className="muted">
-        Монеты даются за ежедневный прогресс: закрытый день, задачу, сохранённый файл. Камни — за недельные тесты, перевалы и трофеи.
-        Домики-файлы, дни и очки не продаются: они растут только от работы.
-      </p>
-
+    <>
       {damage.length > 0 && (
-        <div className="repair">
-          <h4>Ремонт</h4>
+        <div className="card repair">
+          <h3>Ремонт</h3>
           <p>
             Долгий перерыв сломал {damage.length} {plural(damage.length, ['украшение', 'украшения', 'украшений'])}. Платить
             не обязательно: всё чинится само за {HEAL_SESSIONS} занятия после возвращения. Монеты только ускоряют.
@@ -100,9 +88,9 @@ export function Shop({ shop, groups, sync }: { shop: ShopApi; groups?: ('gear' |
         </div>
       )}
 
-      {GROUPS.filter((group) => !groups || groups.includes(group.id)).map((group) => (
-        <section key={group.id} className="shop-group">
-          <h4>{group.title}</h4>
+      {GROUPS.map((group) => (
+        <section key={group.id} className="card shop-group">
+          <h3>{group.title}</h3>
           <p className="muted small">{group.note}</p>
           <ul className="shop-list">
             {SHOP.filter((item) => item.group === group.id).map((item) => (
@@ -114,8 +102,13 @@ export function Shop({ shop, groups, sync }: { shop: ShopApi; groups?: ('gear' |
 
       <Rewards shop={shop} />
 
-      {pending > 0 && <SyncNote sync={sync} plain />}
-    </div>
+      {pending > 0 && <SyncNote sync={sync} />}
+
+      <p className="muted small">
+        Монеты даются за закрытый день, задачу и сохранённый файл; камни — за недельные тесты, перевалы и трофеи. Постройки-файлы, дни и
+        очки не продаются: они растут только от работы.
+      </p>
+    </>
   )
 }
 
@@ -134,8 +127,8 @@ function Rewards({ shop }: { shop: ShopApi }) {
   }
   const log = [...shop.redeemed].reverse().slice(0, 5)
   return (
-    <section className="shop-group" id="rewards">
-      <h4>Свои награды</h4>
+    <section className="card shop-group" id="rewards">
+      <h3>Свои награды</h3>
       <p className="muted small">
         Награды из настоящей жизни, которые ты назначаешь себе сам: вечер с игрой, новая книга, поездка. Платишь камнями, а их дают
         только перевалы, недельные тесты и трофеи, — так награда всегда стоит за знаниями. На игру выкуп не влияет.
@@ -159,7 +152,7 @@ function Rewards({ shop }: { shop: ShopApi }) {
                   <span className="price">
                     <GemIcon /> {reward.gems}
                   </span>
-                  <button className="btn btn-primary" disabled={short > 0} onClick={() => shop.redeem(reward.id)} aria-label={`Выкупить: ${reward.name}`}>
+                  <button className={short > 0 ? 'btn' : 'btn btn-primary'} disabled={short > 0} onClick={() => shop.redeem(reward.id)} aria-label={`Выкупить: ${reward.name}`}>
                     Выкупить
                   </button>
                   {short > 0 && <span className="muted small">не хватает {short}</span>}
@@ -224,6 +217,21 @@ function ItemRow({ item, shop }: { item: ShopItem; shop: ShopApi }) {
   const locked = (item.tier ?? 0) > shop.tier
   const can = canAfford(item, shop.wallet) && !locked
   const missing = item.coins ? item.coins - shop.wallet.coins : (item.gems ?? 0) - shop.wallet.gems
+  // Недоступное — короткой строкой без кнопки: нажимать в ней нечего.
+  if (!owned && !can) {
+    return (
+      <li className="shop-item is-far">
+        <ItemArt id={item.id} />
+        <div className="shop-info">
+          <b>{item.name}</b>
+          <span className="muted small">{locked ? `со ступени «${TIERS[item.tier ?? 0].name}»` : `не хватает ${missing}`}</span>
+        </div>
+        <span className="price">
+          {item.coins ? <CoinIcon /> : <GemIcon />} {item.coins ?? item.gems}
+        </span>
+      </li>
+    )
+  }
   return (
     <li className={`shop-item${owned ? ' is-owned' : ''}`}>
       <ItemArt id={item.id} />
@@ -241,12 +249,10 @@ function ItemRow({ item, shop }: { item: ShopItem; shop: ShopApi }) {
           </span>
         )}
         {!owned && (
-          <button className="btn btn-primary" disabled={!can} onClick={() => shop.buy(item.id)} aria-label={`Купить: ${item.name}`}>
+          <button className="btn btn-primary" onClick={() => shop.buy(item.id)} aria-label={`Купить: ${item.name}`}>
             Купить
           </button>
         )}
-        {!owned && locked && <span className="muted small">со ступени «{TIERS[item.tier ?? 0].name}»</span>}
-        {!owned && !locked && !can && <span className="muted small">не хватает {missing}</span>}
         {owned && item.group === 'gear' && (
           <button className="btn" aria-pressed={worn} onClick={() => shop.toggle(item.id)}>
             {worn ? 'Снять' : 'Надеть'}

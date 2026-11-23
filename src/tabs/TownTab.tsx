@@ -239,7 +239,7 @@ function fileAdvice(b: BuildingView, cycle: CycleView | undefined): string {
   }
 }
 
-/** Довольство одной подсказкой: из чего сложился уют и как он влияет на приход жителей. */
+/** Довольство: из чего сложился уют и как он влияет на приход жителей. Само число стоит рядом, в панели ресурсов. */
 function moodText(town: World['town']): string {
   const c = town.comfort
   const parts = [`ступень ${c.center}`, c.wells ? `колодцы ${c.wells}` : '', c.tavern ? `таверна ${c.tavern}` : '', c.decor ? `украшения ${c.decor}` : ''].filter(Boolean)
@@ -250,13 +250,13 @@ function moodText(town: World['town']): string {
       : pace === 'normal'
         ? 'Жители приходят как обычно; при довольстве 100% с запасом приходили бы быстрее.'
         : 'Уюта не больше половины от числа жителей: новые не приходят.'
-  return `Довольство: ${moodOf(town)}%. Уют ${c.total} (${parts.join(', ')}) на ${town.population} ${plural(town.population, RESIDENTS)}; его хватает на ${comfortRoom(town)}. ${effect} Уют дают колодцы, таверна, украшения из лавки и новая ступень.`
+  return `Уют ${c.total} (${parts.join(', ')}) на ${town.population} ${plural(town.population, RESIDENTS)}; его хватает на ${comfortRoom(town)}. ${effect} Уют дают колодцы, таверна, украшения из лавки и новая ступень.`
 }
 
 export default function TownTab({ world, cycle, level, section, stagePreview, onStagePreview, past, onPast, turns, shop, skyApi, town: api, sync, now }: Props) {
   const town = world.town
   const [selected, setSelected] = useState<string | null>(null)
-  const [hint, setHint] = useState<string | null>(null)
+  const [hudOpen, setHudOpen] = useState(false)
   // Таймеры на странице обновляются раз в полминуты.
   const [clock, setClock] = useState(() => Date.now())
   useEffect(() => {
@@ -279,15 +279,31 @@ export default function TownTab({ world, cycle, level, section, stagePreview, on
   const building = !previewing ? town.buildings.find((b) => b.id === selected) : undefined
   const file = selected?.startsWith('file:') ? world.cycles.flatMap((c) => c.buildings.map((b) => ({ b, c }))).find(({ b, c }) => `file:${c.id}:${b.item.id}` === selected) : undefined
 
-  const hud: { key: string; icon: ReactNode; value: string; text: string }[] = [
-    { key: 'coins', icon: <CoinIcon />, value: String(world.means.coins), text: `Монеты: ${world.means.coins}. Дают закрытый день, задача, сохранённый файл.` },
-    { key: 'gems', icon: <GemIcon />, value: String(world.means.gems), text: `Камни: ${world.means.gems}. Дают недельные тесты, перевалы и трофеи.` },
-    { key: 'food', icon: <FoodIcon />, value: `${Math.floor(town.food)}`, text: `Запас еды: ${Math.floor(town.food)} из ${town.foodCap}. За ход: +${town.perTurn.food}, жители съедают ${town.perTurn.eaten}.` },
-    { key: 'wood', icon: <WoodIcon />, value: `${Math.floor(town.wood)}`, text: `Дерево: ${Math.floor(town.wood)} из ${town.materialCap}. За ход: +${town.perTurn.wood}.` },
-    { key: 'brick', icon: <BrickIcon />, value: `${Math.floor(town.brick)}`, text: `Кирпич: ${Math.floor(town.brick)} из ${town.materialCap}. За ход: +${town.perTurn.brick}.` },
-    { key: 'people', icon: <PeopleIcon />, value: `${town.population}/${town.housing}`, text: `Жители: ${town.population}, мест ${town.housing}. Новый житель приходит за ход, если есть место, еды хватает с запасом и уюта достаточно.` },
-    { key: 'mood', icon: <MoodIcon />, value: `${moodOf(town)}%`, text: moodText(town) },
-    { key: 'builders', icon: <HammerIcon />, value: `${town.builders.total - town.builders.busy}/${town.builders.total}`, text: `Свободных строителей: ${town.builders.total - town.builders.busy} из ${town.builders.total}.` },
+  const freeBuilders = town.builders.total - town.builders.busy
+  // Панель ресурсов: в строке — значок и число, в раскрытом списке — название, сколько есть и что будет за ход.
+  const hud: { key: string; icon: ReactNode; name: string; value: string; full: string; note?: string }[] = [
+    { key: 'coins', icon: <CoinIcon />, name: 'Монеты', value: String(world.means.coins), full: String(world.means.coins), note: 'Идут на стройку, улучшения, починку и в лавку.' },
+    { key: 'gems', icon: <GemIcon />, name: 'Камни', value: String(world.means.gems), full: String(world.means.gems), note: 'Нужны для новой ступени, редких вещей лавки и своих наград.' },
+    {
+      key: 'food',
+      icon: <FoodIcon />,
+      name: 'Еда',
+      value: `${Math.floor(town.food)}`,
+      full: `${Math.floor(town.food)} из ${town.foodCap}`,
+      note: `За ход: +${town.perTurn.food}, жители съедают ${town.perTurn.eaten}.`,
+    },
+    { key: 'wood', icon: <WoodIcon />, name: 'Дерево', value: `${Math.floor(town.wood)}`, full: `${Math.floor(town.wood)} из ${town.materialCap}`, note: `За ход: +${town.perTurn.wood}.` },
+    { key: 'brick', icon: <BrickIcon />, name: 'Кирпич', value: `${Math.floor(town.brick)}`, full: `${Math.floor(town.brick)} из ${town.materialCap}`, note: `За ход: +${town.perTurn.brick}.` },
+    {
+      key: 'people',
+      icon: <PeopleIcon />,
+      name: 'Жители',
+      value: `${town.population}/${town.housing}`,
+      full: `${town.population} из ${town.housing} мест`,
+      note: 'Новый житель приходит за ход, если есть место, еды хватает с запасом и уюта достаточно.',
+    },
+    { key: 'mood', icon: <MoodIcon />, name: 'Довольство', value: `${moodOf(town)}%`, full: `${moodOf(town)}%`, note: moodText(town) },
+    { key: 'builders', icon: <HammerIcon />, name: 'Строители', value: `${freeBuilders}/${town.builders.total}`, full: `свободно ${freeBuilders} из ${town.builders.total}` },
   ]
 
   const upgradeWhy = building ? blockers(town, { do: 'upgrade', id: building.id }, world.means) : []
@@ -472,18 +488,33 @@ export default function TownTab({ world, cycle, level, section, stagePreview, on
         ))}
       </nav>
 
-      <div className="hud" role="group" aria-label="Ресурсы">
+      <button
+        className="hud"
+        aria-expanded={hudOpen}
+        aria-controls="hud-list"
+        aria-label={`Ресурсы: ${hud.map((item) => `${item.name.toLowerCase()} ${item.full}`).join('; ')}. ${hudOpen ? 'Свернуть подписи' : 'Показать подписи'}`}
+        onClick={() => setHudOpen(!hudOpen)}
+      >
         {hud.map((item) => (
-          <button key={item.key} className={hint === item.text ? 'is-on' : ''} onClick={() => setHint(hint === item.text ? null : item.text)} aria-label={item.text} title={item.text}>
+          <span key={item.key} className="hud-cell" aria-hidden="true">
             {item.icon}
             <span>{item.value}</span>
-          </button>
+          </span>
         ))}
-      </div>
-      {hint && (
-        <p className="hud-hint" aria-live="polite">
-          {hint}
-        </p>
+      </button>
+      {hudOpen && (
+        <dl className="hud-list" id="hud-list">
+          {hud.map((item) => (
+            <div key={item.key}>
+              <dt>
+                {item.icon}
+                <span>{item.name}</span>
+              </dt>
+              <dd>{item.full}</dd>
+              {item.note && <dd className="hud-note muted small">{item.note}</dd>}
+            </div>
+          ))}
+        </dl>
       )}
 
       {section === 'shop' && <Shop shop={shop} sync={sync} />}

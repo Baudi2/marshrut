@@ -230,7 +230,7 @@ export function Today({
       {tasks.length > 0 && (
         <div className="card">
           <h3>Задачи дня</h3>
-          <ul className="plain">
+          <ul className="plain task-list">
             {tasks.map((t) => (
               <li key={`${t.kind}-${t.id}`}>
                 <a href={title(t.id)?.url} target="_blank" rel="noreferrer">

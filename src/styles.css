@@ -119,6 +119,15 @@
 
   --mono: ui-monospace, 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Шкала текста: 12 / 13 / 14 / 16 / 18 / 24. Отступы — 2, 4, 8, 12, 16, 24; скругления — 4, 8, 10, 12, 14.
+     Обе шкалы сторожит тест scripts/styles.test.mjs. */
+  --text-xs: 0.75rem;
+  --text-s: 0.8125rem;
+  --text-m: 0.875rem;
+  --text-base: 1rem;
+  --text-l: 1.125rem;
+  --text-xl: 1.5rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -193,6 +202,7 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
+h1,
 h2,
 h3,
 h4,
@@ -201,20 +211,20 @@ p {
 }
 
 h2 {
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   line-height: 1.2;
-  font-weight: 650;
+  font-weight: 700;
   text-wrap: balance;
 }
 
 h3 {
-  font-size: 1.05rem;
-  font-weight: 650;
+  font-size: var(--text-l);
+  font-weight: 700;
 }
 
 h4 {
-  font-size: 0.82rem;
-  font-weight: 650;
+  font-size: var(--text-s);
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-2);
@@ -229,7 +239,7 @@ code {
   font-family: var(--mono);
   font-size: 0.88em;
   background: var(--surface-2);
-  border-radius: 5px;
+  border-radius: 4px;
   padding: 0.1em 0.35em;
   overflow-wrap: anywhere;
 }
@@ -244,7 +254,7 @@ code {
 }
 
 .small {
-  font-size: 0.85rem;
+  font-size: var(--text-m);
 }
 
 .sr-only {
@@ -257,7 +267,7 @@ code {
 }
 
 .eyebrow {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -276,7 +286,7 @@ code {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px 12px;
-  padding-bottom: 14px;
+  padding-bottom: 12px;
 }
 
 .brand {
@@ -287,13 +297,18 @@ code {
 }
 
 .brand-name {
-  font-size: 1.15rem;
+  font-size: var(--text-l);
+  line-height: 1.5;
   font-weight: 700;
   letter-spacing: 0.01em;
+  /* По названию нажимают пять раз подряд — вход в меню разработчика: текст не выделяется. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .brand-cycle {
-  font-size: 0.85rem;
+  font-size: var(--text-m);
   color: var(--muted);
   min-width: 0;
   overflow: hidden;
@@ -303,12 +318,12 @@ code {
 
 .brand select {
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-m);
   color: var(--ink-2);
   background: var(--surface);
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  padding: 2px 6px;
+  padding: 2px 8px;
   min-width: 0;
   max-width: 100%;
 }
@@ -319,7 +334,7 @@ code {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
+  font-size: var(--text-s);
 }
 
 .level-n {
@@ -373,9 +388,9 @@ code {
   justify-items: center;
   gap: 2px;
   min-height: 56px;
-  padding: 7px 2px 6px;
+  padding: 8px 2px 4px;
   text-align: center;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--muted);
   text-decoration: none;
@@ -403,11 +418,11 @@ code {
   top: 4px;
   left: calc(50% + 8px);
   min-width: 18px;
-  padding: 0 5px;
+  padding: 0 4px;
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-ink);
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   line-height: 18px;
   font-variant-numeric: tabular-nums;
@@ -426,7 +441,7 @@ code {
   .level {
     grid-column: 2;
     grid-row: 1;
-    font-size: 0.88rem;
+    font-size: var(--text-m);
   }
 
   .level .meter {
@@ -444,8 +459,8 @@ code {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    margin: 0 -8px 20px;
-    padding: 6px 8px;
+    margin: 0 -8px 16px;
+    padding: 8px;
     background: var(--bg);
     border-top: 0;
     border-bottom: 1px solid var(--line);
@@ -455,10 +470,10 @@ code {
   .tabs a.tab-wide {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     min-height: 0;
-    padding: 8px 14px;
-    font-size: 0.92rem;
+    padding: 8px 12px;
+    font-size: var(--text-m);
     border: 0;
     border-radius: 10px;
   }
@@ -515,7 +530,7 @@ code {
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -524,10 +539,10 @@ code {
 .track-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
+  gap: 8px;
+  font-size: var(--text-s);
   line-height: 1.3;
-  padding: 3px 9px;
+  padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--surface);
@@ -551,7 +566,7 @@ code {
 .track-badge i {
   width: 10px;
   height: 10px;
-  border-radius: 3px;
+  border-radius: 4px;
   flex: none;
 }
 
@@ -582,9 +597,9 @@ code {
 
 .btn {
   font: inherit;
-  font-size: 0.92rem;
+  font-size: var(--text-m);
   font-weight: 600;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 16px;
   border-radius: 10px;
   border: 1px solid var(--line-strong);
@@ -609,12 +624,12 @@ ul.plain {
   margin: 0;
   padding-left: 1.1em;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 details.fold > summary {
   cursor: pointer;
-  font-weight: 650;
+  font-weight: 700;
   list-style-position: outside;
   margin-left: 1.1em;
 }
@@ -637,7 +652,7 @@ details.fold[open] > summary {
 }
 
 .facts dt {
-  font-size: 0.8rem;
+  font-size: var(--text-s);
   font-weight: 600;
   color: var(--muted);
   margin-top: 8px;
@@ -650,15 +665,15 @@ details.fold[open] > summary {
 .legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 16px;
-  font-size: 0.82rem;
+  gap: 8px 16px;
+  font-size: var(--text-s);
   color: var(--ink-2);
 }
 
 .legend span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .dot {
@@ -720,41 +735,41 @@ details.fold[open] > summary {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 16px;
 }
 
 .tile-label {
-  font-size: 0.8rem;
+  font-size: var(--text-s);
   color: var(--muted);
 }
 
 .tile-value {
-  font-size: 1.6rem;
-  font-weight: 650;
+  font-size: var(--text-xl);
+  font-weight: 700;
   line-height: 1.25;
 }
 
 .tile-note {
-  font-size: 0.8rem;
+  font-size: var(--text-s);
   color: var(--muted);
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.92rem;
+  font-size: var(--text-m);
 }
 
 .table th,
 .table td {
   text-align: left;
-  padding: 7px 8px 7px 0;
+  padding: 8px 8px 8px 0;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
 
 .table th {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--muted);
 }
@@ -784,7 +799,7 @@ details.fold[open] > summary {
 .skill-head {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 16px;
+  gap: 12px 16px;
   align-items: flex-end;
   justify-content: space-between;
 }
@@ -792,22 +807,22 @@ details.fold[open] > summary {
 .step-card {
   border-color: var(--accent);
   border-width: 2px;
-  gap: 18px;
+  gap: 16px;
 }
 
 .step-text {
-  font-size: 1.18rem;
+  font-size: var(--text-l);
   line-height: 1.5;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .timer {
   display: grid;
-  gap: 2px 14px;
+  gap: 2px 16px;
   grid-template-columns: auto 1fr;
   align-items: center;
   border-top: 1px solid var(--line);
-  padding-top: 14px;
+  padding-top: 16px;
 }
 
 .timer-face {
@@ -824,7 +839,7 @@ details.fold[open] > summary {
 }
 
 .timer-note {
-  font-size: 0.82rem;
+  font-size: var(--text-s);
   color: var(--muted);
 }
 
@@ -863,7 +878,7 @@ details.fold[open] > summary {
 .res-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 14px;
+  gap: 12px 16px;
   font-weight: 600;
 }
 
@@ -872,13 +887,13 @@ details.fold[open] > summary {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .steps li {
   display: grid;
   grid-template-columns: 1.4em 1fr;
-  gap: 6px;
+  gap: 8px;
 }
 
 .step-mark {
@@ -899,12 +914,12 @@ details.fold[open] > summary {
 }
 
 .foot-note {
-  font-size: 0.88rem;
+  font-size: var(--text-m);
 }
 
 /* ---------- Мир ---------- */
 .scene {
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--line);
   background: var(--surface);
@@ -962,14 +977,6 @@ details.fold[open] > summary {
   opacity: 0.3;
 }
 
-.footpath {
-  fill: none;
-  stroke: var(--trail);
-  stroke-width: 4;
-  stroke-linecap: round;
-  opacity: 0.75;
-}
-
 .bonus path {
   fill: none;
   stroke: var(--trail-walked);
@@ -986,8 +993,7 @@ details.fold[open] > summary {
 
 .map-week,
 .map-note,
-.map-summit,
-.building-label {
+.map-summit {
   fill: var(--map-ink);
   stroke: var(--map-halo);
   stroke-width: 3px;
@@ -996,14 +1002,14 @@ details.fold[open] > summary {
 }
 
 .map-week {
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .map-note {
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -1012,8 +1018,7 @@ details.fold[open] > summary {
   font-weight: 700;
 }
 
-.node,
-.building {
+.node {
   cursor: pointer;
   outline: none;
 }
@@ -1026,7 +1031,7 @@ details.fold[open] > summary {
 
 .node-num {
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 700;
   fill: var(--muted);
 }
 
@@ -1086,25 +1091,15 @@ details.fold[open] > summary {
   stroke-width: 1.5;
 }
 
-.node-ring,
-.building-ring {
+.node-ring {
   fill: none;
   stroke: var(--map-ink);
   stroke-width: 2;
 }
 
-.building-ring {
-  fill: none;
-  stroke-dasharray: 5 4;
-}
-
 .node:focus-visible .node-disc {
   stroke: var(--focus);
   stroke-width: 3.5;
-}
-
-.building:focus-visible .building-label {
-  text-decoration: underline;
 }
 
 .node-pulse {
@@ -1118,16 +1113,6 @@ details.fold[open] > summary {
 
 .nodes-lost .node-ahead {
   opacity: 0.5;
-}
-
-.building-label {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  stroke-width: 2.5px;
-}
-
-.stage-0 .building-label {
-  opacity: 0.75;
 }
 
 .flame {
@@ -1184,16 +1169,17 @@ details.fold[open] > summary {
 }
 
 .key-note {
+  border: 1px solid var(--amber);
   background: var(--amber-soft);
   color: var(--amber-ink);
-  border-radius: 10px;
-  padding: 8px 12px;
+  border-radius: 12px;
+  padding: 12px;
 }
 
 .seg {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+  gap: 8px;
 }
 
 @media (min-width: 560px) {
@@ -1204,10 +1190,10 @@ details.fold[open] > summary {
 
 .seg button {
   font: inherit;
-  font-size: 0.88rem;
+  font-size: var(--text-m);
   font-weight: 600;
-  min-height: 40px;
-  padding: 6px 10px;
+  min-height: 44px;
+  padding: 4px 8px;
   border-radius: 10px;
   border: 1px solid var(--line-strong);
   background: var(--surface);
@@ -1240,10 +1226,10 @@ details.fold[open] > summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  gap: 2px 14px;
+  gap: 2px 16px;
   min-height: 44px;
   text-align: left;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
@@ -1261,7 +1247,7 @@ details.fold[open] > summary {
 .problem-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .problem {
@@ -1282,13 +1268,13 @@ details.fold[open] > summary {
 .problem header {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 8px 12px;
   align-items: baseline;
   justify-content: space-between;
 }
 
 .problem header a {
-  font-weight: 650;
+  font-weight: 700;
   color: var(--ink);
 }
 
@@ -1303,7 +1289,7 @@ details.fold[open] > summary {
   display: flex;
   flex-wrap: wrap;
   gap: 2px 12px;
-  font-size: 0.82rem;
+  font-size: var(--text-s);
   color: var(--ink-2);
 }
 
@@ -1318,14 +1304,14 @@ details.fold[open] > summary {
 
 .attempts summary {
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: var(--text-m);
   font-weight: 600;
   color: var(--ink-2);
 }
 
 .attempts ul {
   margin-top: 8px;
-  font-size: 0.88rem;
+  font-size: var(--text-m);
 }
 
 .side-title {
@@ -1339,19 +1325,19 @@ details.fold[open] > summary {
 }
 
 .before-after .arrow {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   color: var(--muted);
   line-height: 1;
 }
 
 .hero-figure {
   font-size: 2.6rem;
-  font-weight: 650;
+  font-weight: 700;
   line-height: 1.15;
 }
 
 .hero-figure small {
-  font-size: 0.9rem;
+  font-size: var(--text-m);
   font-weight: 400;
   color: var(--muted);
 }
@@ -1364,7 +1350,7 @@ details.fold[open] > summary {
   .before-after {
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: 28px;
+    gap: 24px;
   }
 
   .hero-figure {
@@ -1382,7 +1368,7 @@ details.fold[open] > summary {
 .stack-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 6px 12px;
+  gap: 8px 12px;
   align-items: center;
 }
 
@@ -1400,7 +1386,7 @@ details.fold[open] > summary {
 
 .dumbbell-num,
 .stack-nums {
-  font-size: 0.88rem;
+  font-size: var(--text-m);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1432,7 +1418,7 @@ details.fold[open] > summary {
 }
 
 .dumbbell .tick-label {
-  font-size: 7.5px;
+  font-size: 8px;
   fill: var(--muted);
 }
 
@@ -1481,7 +1467,7 @@ details.fold[open] > summary {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .deck li {
@@ -1494,13 +1480,13 @@ details.fold[open] > summary {
 .deck-q {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 10px;
+  gap: 4px 12px;
   align-items: baseline;
 }
 
 .verdict {
-  font-size: 0.8rem;
-  font-weight: 650;
+  font-size: var(--text-s);
+  font-weight: 700;
   color: var(--ink-2);
   white-space: nowrap;
 }
@@ -1519,8 +1505,8 @@ details.fold[open] > summary {
 }
 
 .rhythm-num {
-  font-size: 0.85rem;
-  font-weight: 650;
+  font-size: var(--text-m);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1533,7 +1519,7 @@ details.fold[open] > summary {
 .rhythm-date {
   align-self: stretch;
   text-align: center;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   color: var(--muted);
   border-top: 1px solid var(--axis);
   padding-top: 4px;
@@ -1547,7 +1533,7 @@ details.fold[open] > summary {
 
 .rank {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   min-width: 180px;
 }
 
@@ -1555,14 +1541,10 @@ details.fold[open] > summary {
   font-weight: 700;
 }
 
-.rank .meter {
-  width: 100%;
-}
-
 .branch {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
   align-items: center;
 }
 
@@ -1579,7 +1561,7 @@ details.fold[open] > summary {
 }
 
 .branch span {
-  margin-left: 6px;
+  margin-left: 8px;
 }
 
 .explain {
@@ -1609,8 +1591,8 @@ details.fold[open] > summary {
   padding: 4px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  font-size: 0.9rem;
-  font-weight: 650;
+  font-size: var(--text-m);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
   text-decoration: none;
@@ -1620,13 +1602,13 @@ details.fold[open] > summary {
 .wallet span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .gems {
   display: inline-flex;
   gap: 2px;
-  font-size: 1.05rem;
+  font-size: var(--text-base);
 }
 
 .map-gems {
@@ -1634,21 +1616,11 @@ details.fold[open] > summary {
   letter-spacing: 0.02em;
 }
 
-.note {
-  display: block;
-  border-color: var(--gem-edge);
-}
-
-.shop-head,
 .row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 12px;
   align-items: center;
-}
-
-.shop-head {
-  justify-content: space-between;
 }
 
 .shop-group {
@@ -1663,7 +1635,7 @@ details.fold[open] > summary {
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .shop-item {
@@ -1673,7 +1645,7 @@ details.fold[open] > summary {
   align-items: center;
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 12px;
   background: var(--bg);
 }
 
@@ -1684,7 +1656,7 @@ details.fold[open] > summary {
 /* Недоступный предмет: короткая строка без кнопки. */
 .shop-item.is-far {
   grid-template-columns: 40px 1fr auto;
-  padding: 6px 12px;
+  padding: 8px 12px;
   background: transparent;
   border-style: dashed;
 }
@@ -1717,8 +1689,8 @@ details.fold[open] > summary {
 .price {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-weight: 650;
+  gap: 4px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1736,7 +1708,7 @@ details.fold[open] > summary {
   border-radius: 12px;
   padding: 12px;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   justify-items: start;
 }
 
@@ -1762,19 +1734,14 @@ details.fold[open] > summary {
 .repair li {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 12px;
+  gap: 8px 12px;
   align-items: center;
   justify-content: space-between;
 }
 
 .sync-note {
   border: 1px dashed var(--line-strong);
-  font-size: 0.9rem;
-}
-
-.worn {
-  filter: grayscale(0.9) brightness(0.86);
-  opacity: 0.82;
+  font-size: var(--text-m);
 }
 
 .tests {
@@ -1787,7 +1754,7 @@ details.fold[open] > summary {
 
 .tests > li {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   border-top: 1px solid var(--line);
   padding-top: 12px;
 }
@@ -1795,7 +1762,7 @@ details.fold[open] > summary {
 .test-head {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 12px;
+  gap: 8px 12px;
   align-items: center;
 }
 
@@ -1990,7 +1957,7 @@ pre.prompt {
 
 .sky-form {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .sky-form .row {
@@ -1999,8 +1966,8 @@ pre.prompt {
 
 .field {
   font: inherit;
-  min-height: 40px;
-  padding: 6px 10px;
+  min-height: 44px;
+  padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid var(--line-strong);
   background: var(--surface);
@@ -2020,8 +1987,8 @@ pre.prompt {
 
 .selects label {
   display: grid;
-  gap: 3px;
-  font-size: 0.8rem;
+  gap: 4px;
+  font-size: var(--text-s);
   color: var(--muted);
 }
 
@@ -2036,8 +2003,9 @@ pre.prompt {
 .place-list button {
   font: inherit;
   width: 100%;
+  min-height: 44px;
   text-align: left;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--bg);
@@ -2072,13 +2040,13 @@ pre.prompt {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .exam-list li {
   display: grid;
   grid-template-columns: 1.3em 1fr auto;
-  gap: 6px;
+  gap: 8px;
   align-items: baseline;
 }
 
@@ -2092,14 +2060,10 @@ pre.prompt {
 }
 
 .exam-num {
-  font-size: 0.88rem;
+  font-size: var(--text-m);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-
-.rank .meter {
-  display: none;
 }
 
 /* ——— Город в 3D ——— */
@@ -2145,19 +2109,19 @@ pre.prompt {
   top: 0;
   display: grid;
   justify-items: center;
-  gap: 1px;
+  gap: 2px;
   padding: 2px 8px;
   border-radius: 999px;
   background: rgba(251, 250, 246, 0.92);
   color: #1f2420;
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1.25;
   white-space: nowrap;
   will-change: transform;
 }
 
 .town3d-tag small {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: #4d544d;
 }
 
@@ -2166,11 +2130,11 @@ pre.prompt {
   left: 12px;
   bottom: 10px;
   margin: 0;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
   background: rgba(251, 250, 246, 0.92);
   color: #1f2420;
-  font-size: 13px;
+  font-size: var(--text-s);
 }
 
 .lab-controls {
@@ -2183,7 +2147,7 @@ pre.prompt {
 .lab-controls label {
   display: grid;
   gap: 2px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--muted);
 }
 
@@ -2204,7 +2168,7 @@ pre.prompt {
   border-radius: 999px;
   background: rgba(251, 250, 246, 0.8);
   color: #2c322d;
-  font-size: 11px;
+  font-size: var(--text-xs);
   pointer-events: none;
   max-width: calc(100% - 150px);
   border-radius: 10px;
@@ -2246,47 +2210,79 @@ pre.prompt {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 2px;
+  width: 100%;
   padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-m);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.hud[aria-expanded='true'] {
+  border-color: var(--line-strong);
+}
+
+.hud-cell {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.hud svg,
+.hud-list svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Список под панелью: что это за число и что с ним будет за ход. */
+.hud-list {
+  margin: 0;
+  padding: 4px 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
 }
 
-.hud button {
+.hud-list > div {
   display: grid;
-  justify-items: center;
-  gap: 1px;
-  min-width: 0;
-  padding: 5px 0 4px;
-  border: 0;
-  border-radius: 9px;
-  background: none;
-  color: var(--ink);
-  font: inherit;
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
 }
 
-.hud button.is-on,
-.hud button:hover {
-  background: var(--surface-2);
+.hud-list > div:first-child {
+  border-top: 0;
 }
 
-.hud svg {
-  width: 20px;
-  height: 20px;
+.hud-list dt {
+  display: contents;
+  font-weight: 600;
 }
 
-.hud-hint {
+.hud-list dd {
   margin: 0;
-  font-size: 14px;
-  color: var(--ink-2);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.hud-list .hud-note {
+  grid-column: 2 / -1;
+  font-weight: 400;
+  text-align: left;
 }
 
 .note {
   margin: 0;
-  padding: 10px 12px;
+  padding: 12px;
   border-radius: 12px;
   background: var(--warm-soft);
   color: var(--ink);
@@ -2302,14 +2298,14 @@ pre.prompt {
 .cost {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .cost-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: 8px;
   background: var(--surface-2);
   font-variant-numeric: tabular-nums;
@@ -2327,7 +2323,7 @@ pre.prompt {
 }
 
 .cost-chip small {
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .reasons,
@@ -2360,7 +2356,7 @@ pre.prompt {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin: 6px 0 10px;
+  margin: 8px 0 12px;
 }
 
 .levels span {
@@ -2379,13 +2375,13 @@ pre.prompt {
 }
 
 .levels small {
-  margin-left: 6px;
+  margin-left: 8px;
   color: var(--muted);
 }
 
 .building-bar {
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 12px;
+  border-radius: 12px;
   background: var(--warm-soft);
   display: grid;
   gap: 8px;
@@ -2424,7 +2420,7 @@ pre.prompt {
   justify-content: space-between;
   align-items: center;
   gap: 8px 16px;
-  padding: 10px 0;
+  padding: 12px 0;
   border-top: 1px solid var(--line);
 }
 
@@ -2448,10 +2444,10 @@ pre.prompt {
   bottom: 8px;
   right: 8px;
   z-index: 2;
-  height: 36px;
+  height: 44px;
   padding: 0 12px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-s);
   border: 1px solid rgba(60, 60, 50, 0.25);
   border-radius: 10px;
   background: rgba(251, 250, 246, 0.92);
@@ -2507,12 +2503,12 @@ pre.prompt {
 .sign-form {
   border: 1px dashed var(--line-strong);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 12px;
 }
 
 .form-error {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--text-m);
   color: var(--amber-ink);
 }
 
@@ -2537,7 +2533,7 @@ pre.prompt {
   padding: 0;
   display: grid;
   gap: 4px;
-  font-size: 0.9rem;
+  font-size: var(--text-m);
   color: var(--ink-2);
 }
 
@@ -2566,7 +2562,7 @@ pre.prompt {
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .trophy {
@@ -2576,7 +2572,7 @@ pre.prompt {
   align-items: center;
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 12px;
   background: var(--bg);
 }
 
@@ -2602,15 +2598,6 @@ pre.prompt {
 }
 
 /* Семь вкладок на узком экране */
-@media (max-width: 420px) {
-  .tabs a {
-    padding-left: 0;
-    padding-right: 0;
-    font-size: 0.68rem;
-    letter-spacing: -0.01em;
-  }
-}
-
 /* Колода и журнал ошибок */
 .deck-link {
   display: flex;
@@ -2641,8 +2628,8 @@ pre.prompt {
 }
 
 .deck-question {
-  font-size: 1.15rem;
-  font-weight: 650;
+  font-size: var(--text-l);
+  font-weight: 700;
   line-height: 1.35;
 }
 
@@ -2655,7 +2642,7 @@ pre.prompt {
 .box-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
 }
 
 .box {
@@ -2675,7 +2662,7 @@ pre.prompt {
 }
 
 .box b {
-  font-size: 1.2rem;
+  font-size: var(--text-l);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2690,7 +2677,7 @@ pre.prompt {
 .deck-list li,
 .mistake-list li {
   border-top: 1px solid var(--line);
-  padding: 10px 0;
+  padding: 12px 0;
 }
 
 .deck-list li:first-child,
@@ -2700,7 +2687,7 @@ pre.prompt {
 
 .deck-list summary {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
   list-style: none;
 }
@@ -2710,7 +2697,7 @@ pre.prompt {
 }
 
 .deck-list details[open] summary {
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .deck-list details p {
@@ -2719,7 +2706,7 @@ pre.prompt {
 
 .mistake-list li {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .mistake-text {
@@ -2737,7 +2724,7 @@ pre.prompt {
 .own-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
+  gap: 12px;
   align-items: end;
   min-width: 0;
 }
@@ -2745,9 +2732,9 @@ pre.prompt {
 .own-form label {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
-  font-size: 0.8rem;
+  font-size: var(--text-s);
   color: var(--muted);
 }
 
@@ -2756,7 +2743,7 @@ pre.prompt {
   width: 100%;
   min-width: 0;
   /* 16px: телефон не приближает страницу, когда поле получает фокус */
-  font-size: 1rem;
+  font-size: var(--text-base);
 }
 
 .own-form textarea.field {
@@ -2785,8 +2772,8 @@ pre.prompt {
 .own-form .own-origin {
   margin: 0;
   border-left: 3px solid var(--amber);
-  padding: 2px 0 2px 10px;
-  font-size: 0.9rem;
+  padding: 2px 0 2px 12px;
+  font-size: var(--text-m);
   color: var(--ink-2);
   overflow-wrap: anywhere;
 }
@@ -2800,7 +2787,7 @@ pre.prompt {
   margin-top: 4px;
   border: 1px dashed var(--line-strong);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 12px;
 }
 
 .mistake-list .mistake-act {
@@ -2826,7 +2813,7 @@ pre.prompt {
 .report-pick {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
+  gap: 8px;
 }
 
 .seg.report-weeks {
@@ -2846,7 +2833,7 @@ pre.prompt {
   background: var(--surface-2);
   border-radius: 10px;
   padding: 12px;
-  font-size: 0.95rem;
+  font-size: var(--text-base);
   overflow-wrap: anywhere;
 }
 
@@ -2863,25 +2850,25 @@ pre.prompt {
   align-content: start;
   min-width: 0;
   border-left: 2px solid var(--line-strong);
-  padding-left: 10px;
+  padding-left: 12px;
 }
 
 .time-fig-label,
 .time-fig-note {
-  font-size: 0.8rem;
+  font-size: var(--text-s);
   color: var(--muted);
   overflow-wrap: anywhere;
 }
 
 .time-fig-value {
-  font-size: 1.5rem;
-  font-weight: 650;
+  font-size: var(--text-xl);
+  font-weight: 700;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
 .time-fig-value small {
-  font-size: 0.85rem;
+  font-size: var(--text-m);
   font-weight: 400;
   color: var(--muted);
 }
@@ -2892,13 +2879,13 @@ pre.prompt {
   padding: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
 }
 
 .time-track {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
+  gap: 8px;
 }
 
 .time-track-head {
@@ -2913,7 +2900,7 @@ pre.prompt {
 }
 
 .time-nums {
-  font-size: 0.88rem;
+  font-size: var(--text-m);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -2975,7 +2962,7 @@ pre.prompt {
 
 .time-day-sub {
   display: block;
-  font-size: 0.82rem;
+  font-size: var(--text-s);
   color: var(--muted);
 }
 
@@ -3029,8 +3016,8 @@ pre.prompt {
 
 .sum-back {
   justify-self: start;
-  padding: 6px 0;
-  font-size: 0.92rem;
+  padding: 12px 0;
+  font-size: var(--text-m);
   font-weight: 600;
   text-decoration: none;
 }
@@ -3073,19 +3060,19 @@ pre.prompt {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 12px 16px;
 }
 
 .sum-fig-label,
 .sum-fig-note {
-  font-size: 0.8rem;
+  font-size: var(--text-s);
   color: var(--muted);
   overflow-wrap: anywhere;
 }
 
 .sum-fig-value {
-  font-size: 1.35rem;
-  font-weight: 650;
+  font-size: var(--text-xl);
+  font-weight: 700;
   line-height: 1.25;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -3101,23 +3088,23 @@ pre.prompt {
 
 .sum-facts > div {
   display: grid;
-  gap: 1px;
+  gap: 2px;
   align-content: start;
   min-width: 0;
   border-left: 2px solid var(--line-strong);
-  padding-left: 10px;
+  padding-left: 12px;
 }
 
 .sum-facts dt {
-  font-size: 0.8rem;
+  font-size: var(--text-s);
   color: var(--muted);
   overflow-wrap: anywhere;
 }
 
 .sum-facts dd {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 650;
+  font-size: var(--text-base);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
@@ -3168,8 +3155,8 @@ pre.prompt {
   padding: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 16px;
-  font-size: 0.88rem;
+  gap: 8px 16px;
+  font-size: var(--text-m);
   color: var(--ink-2);
 }
 
@@ -3188,7 +3175,7 @@ pre.prompt {
 .sum-key {
   width: 12px;
   height: 12px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 /* ---------- Строки: недели, треки, задачи, файлы ---------- */
@@ -3203,9 +3190,9 @@ pre.prompt {
 .sum-rows > li {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px 12px;
+  gap: 8px 12px;
   align-items: center;
-  padding: 10px 0;
+  padding: 12px 0;
   border-top: 1px solid var(--line);
 }
 
@@ -3219,7 +3206,7 @@ pre.prompt {
 }
 
 .sum-rows-tight > li {
-  padding: 7px 0;
+  padding: 8px 0;
 }
 
 .sum-row-main {
@@ -3234,7 +3221,7 @@ pre.prompt {
   display: grid;
   gap: 4px;
   justify-items: end;
-  font-size: 0.88rem;
+  font-size: var(--text-m);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -3248,7 +3235,7 @@ b.sum-row-side {
 .sum-row-wide {
   grid-column: 1 / -1;
   display: grid;
-  gap: 6px;
+  gap: 8px;
   justify-items: start;
   min-width: 0;
 }
@@ -3260,7 +3247,7 @@ b.sum-row-side {
 
 .sum-path {
   font-family: var(--mono);
-  font-size: 0.8rem;
+  font-size: var(--text-s);
   color: var(--muted);
   overflow-wrap: anywhere;
 }
@@ -3270,7 +3257,7 @@ b.sum-row-side {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  font-size: 0.88rem;
+  font-size: var(--text-m);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -3279,7 +3266,7 @@ b.sum-row-side {
 .sum-ba {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
 }
 
 .sum-ba-side {
@@ -3288,19 +3275,19 @@ b.sum-row-side {
   align-content: start;
   min-width: 0;
   border-left: 2px solid var(--line-strong);
-  padding-left: 10px;
+  padding-left: 12px;
   overflow-wrap: anywhere;
 }
 
 .sum-ba-value {
-  font-size: 1.6rem;
-  font-weight: 650;
+  font-size: var(--text-xl);
+  font-weight: 700;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
 
 .sum-ba-value small {
-  font-size: 0.85rem;
+  font-size: var(--text-m);
   font-weight: 400;
   color: var(--muted);
 }
@@ -3308,7 +3295,7 @@ b.sum-row-side {
 /* ---------- Итог текстом ---------- */
 .sum-text > summary {
   cursor: pointer;
-  font-size: 0.88rem;
+  font-size: var(--text-m);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -3323,7 +3310,7 @@ b.sum-row-side {
   }
 
   .sum-fig-value {
-    font-size: 1.6rem;
+    font-size: var(--text-xl);
   }
 
   .sum-facts {
@@ -3345,9 +3332,9 @@ b.sum-row-side {
 
 .breakage,
 .breakage-note {
-  padding: 10px 12px;
+  padding: 12px;
   border: 1px solid var(--amber);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--amber-soft);
   color: var(--amber-ink);
 }
@@ -3377,15 +3364,15 @@ b.sum-row-side {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 /* Кнопка-название сломанной постройки: по нажатию открывается её карточка. */
 .breakage-chip {
   font: inherit;
-  font-size: 0.9rem;
+  font-size: var(--text-m);
   font-weight: 600;
-  min-height: 36px;
+  min-height: 44px;
   padding: 4px 12px;
   border-radius: 999px;
   border: 1px solid var(--amber);
@@ -3401,7 +3388,7 @@ b.sum-row-side {
 
 /* Пометка «сломано» рядом с названием. */
 .breakage-mark {
-  margin-left: 6px;
+  margin-left: 8px;
   vertical-align: middle;
   text-transform: none;
   letter-spacing: 0;
@@ -3410,12 +3397,6 @@ b.sum-row-side {
 /* ——— Меню разработчика и полоса предпросмотра ——— */
 
 /* Название сайта — потайной вход в меню: при частых нажатиях текст не выделяется. */
-.brand-name {
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
 .dev-bar {
   display: flex;
   flex-wrap: wrap;
@@ -3425,18 +3406,17 @@ b.sum-row-side {
   margin: 0 0 12px;
   padding: 8px 12px;
   border: 1px dashed var(--line-strong);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--surface-2);
-  font-size: 0.9rem;
+  font-size: var(--text-m);
 }
 
 .dev-bar-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .dev-bar .btn {
-  min-height: 36px;
   text-decoration: none;
 }
 
@@ -3446,7 +3426,7 @@ b.sum-row-side {
   align-items: baseline;
   justify-content: space-between;
   gap: 2px 12px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .dev-head h3 {
@@ -3498,7 +3478,7 @@ b.sum-row-side {
 
 .past-range {
   width: 100%;
-  min-height: 32px;
+  min-height: 44px;
   accent-color: var(--accent);
 }
 
@@ -3522,7 +3502,7 @@ b.sum-row-side {
   padding: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
+  gap: 12px;
 }
 
 /* Слева — что это, справа — «ждал → вышло»; подпись с датой и разницей идёт во всю ширину. */
@@ -3532,7 +3512,7 @@ b.sum-row-side {
   gap: 2px 12px;
   align-items: baseline;
   border-top: 1px solid var(--line);
-  padding-top: 10px;
+  padding-top: 12px;
 }
 
 .forecast-what {
@@ -3541,7 +3521,7 @@ b.sum-row-side {
 }
 
 .forecast-nums {
-  font-size: 0.88rem;
+  font-size: var(--text-m);
   color: var(--ink-2);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -3554,7 +3534,7 @@ b.sum-row-side {
 /* Разница — словами и тем же серым, что дата: это наблюдение, цветом она не выделяется. */
 .forecast-sub {
   grid-column: 1 / -1;
-  font-size: 0.82rem;
+  font-size: var(--text-s);
   color: var(--muted);
   overflow-wrap: anywhere;
 }
@@ -3568,8 +3548,8 @@ b.sum-row-side {
 
 .chron-back {
   justify-self: start;
-  padding: 6px 0;
-  font-size: 0.92rem;
+  padding: 12px 0;
+  font-size: var(--text-m);
   font-weight: 600;
   text-decoration: none;
 }
@@ -3601,7 +3581,7 @@ b.sum-row-side {
   align-items: center;
   gap: 12px;
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--text-m);
   color: var(--muted);
   text-align: center;
 }
@@ -3646,7 +3626,7 @@ b.sum-row-side {
 
 .chron-block {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -3661,7 +3641,7 @@ b.sum-row-side {
 
 .chron-takeaways {
   color: var(--ink-2);
-  font-size: 0.92rem;
+  font-size: var(--text-m);
 }
 
 .chron-foot {
@@ -3671,7 +3651,7 @@ b.sum-row-side {
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid var(--line);
-  padding-top: 10px;
+  padding-top: 12px;
 }
 
 .chron .chron-show {
@@ -3712,10 +3692,10 @@ b.sum-row-side {
 .subnav a {
   display: grid;
   place-items: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 4px 8px;
-  border-radius: 9px;
-  font-size: 0.92rem;
+  border-radius: 10px;
+  font-size: var(--text-m);
   font-weight: 600;
   color: var(--ink-2);
   text-decoration: none;
@@ -3745,7 +3725,7 @@ b.sum-row-side {
   justify-content: space-between;
   gap: 12px;
   min-height: 56px;
-  padding: 10px 0;
+  padding: 12px 0;
   color: inherit;
   text-decoration: none;
   border-top: 1px solid var(--line);
@@ -3781,8 +3761,8 @@ b.sum-row-side {
 /* Постройки-файлы: группа сворачивается, выбранный файл раскрывается под своей строкой. */
 details.build-group > summary {
   cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 650;
+  font-size: var(--text-s);
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-2);
@@ -3793,9 +3773,9 @@ details.build-group > summary {
   display: grid;
   gap: 8px;
   margin: 2px 0 8px;
-  padding: 10px 12px;
+  padding: 12px;
   border-left: 3px solid var(--line-strong);
-  font-size: 0.95rem;
+  font-size: var(--text-base);
 }
 
 .build-later ul {
@@ -3822,12 +3802,12 @@ details.build-group > summary {
   position: absolute;
   left: 8px;
   right: 8px;
-  bottom: 52px;
+  bottom: 60px;
   z-index: 3;
   max-height: 62%;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
   background: var(--surface);
@@ -3856,12 +3836,12 @@ details.build-group > summary {
   padding: 0;
   gap: 8px;
   background: transparent;
-  font-size: 0.95rem;
+  font-size: var(--text-m);
 }
 
 .town3d-sheet > .card > .eyebrow:first-child,
 .town3d-sheet > .card > .day-head:first-child {
-  padding-right: 40px;
+  padding-right: 48px;
 }
 
 .town3d-sheet-close {
@@ -3871,13 +3851,13 @@ details.build-group > summary {
   z-index: 1;
   width: 36px;
   height: 36px;
-  margin: -6px -8px 0 8px;
+  margin: -4px -8px 0 8px;
   border: 1px solid var(--line-strong);
   border-radius: 50%;
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: 1.3rem;
+  font-size: var(--text-xl);
   line-height: 1;
   cursor: pointer;
 }
@@ -3890,21 +3870,21 @@ details.build-group > summary {
 }
 
 .town3d.is-full .town3d-sheet {
-  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   max-height: 55%;
 }
 
 /* ---------- «Как это считается»: правило карточки, свёрнутое по умолчанию ---------- */
 details.how {
-  font-size: 0.9rem;
+  font-size: var(--text-m);
   color: var(--ink-2);
 }
 
 details.how > summary {
   cursor: pointer;
   width: fit-content;
-  padding: 6px 0;
-  font-size: 0.85rem;
+  padding: 12px 0;
+  font-size: var(--text-m);
   font-weight: 600;
   color: var(--muted);
 }
@@ -3915,4 +3895,89 @@ details.how > * + * {
 
 details.how p {
   max-width: 68ch;
+}
+
+/* ---------- Области нажатия не меньше 44 px ---------- */
+
+/* Вид элемента прежний, шире только место, куда попадает палец: невидимая накладка. */
+summary,
+.wallet,
+.link-btn,
+.chron-turn-link,
+.problem header a,
+.res-links a,
+.task-list a,
+.town3d-sheet-close {
+  position: relative;
+}
+
+summary::after,
+.wallet::after,
+.link-btn::after,
+.chron-turn-link::after,
+.problem header a::after,
+.res-links a::after,
+.task-list a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 22px);
+  bottom: calc(50% - 22px);
+}
+
+.town3d-sheet-close {
+  position: sticky;
+}
+
+.town3d-sheet-close::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+
+/* Задачи дня: строка на всю высоту пальца. */
+ul.task-list {
+  list-style: none;
+  padding: 0;
+  gap: 0;
+}
+
+ul.task-list li {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+ul.task-list li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+ul.task-list li:last-child {
+  padding-bottom: 0;
+}
+
+/* Подписи на карте маршрута на телефоне: рисунок там уже экрана. */
+.scene svg.is-narrow .map-week,
+.scene svg.is-narrow .map-note,
+.scene svg.is-narrow .map-summit,
+.scene svg.is-narrow .node-num {
+  font-size: 15px;
+}
+
+/* Обмен на рынке в карточке постройки. */
+.trade {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+/* Коробки колоды: пять в ряд на телефоне, подпись мельче обычной малой. */
+.box-row {
+  gap: 4px;
+}
+
+.box .small {
+  font-size: var(--text-xs);
 }

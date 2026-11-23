@@ -446,9 +446,9 @@ export function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-name" onClick={tapBrand}>
+          <h1 className="brand-name" onClick={tapBrand}>
             Маршрут
-          </span>
+          </h1>
           {world.cycles.length > 1 ? (
             <select value={cycle.id} onChange={(e) => setCycleId(e.target.value)} aria-label="Цикл">
               {world.cycles.map((c) => (

@@ -44,6 +44,8 @@ export function TownCanvas({ view, sky, selected, onSelect, now, sheet }: Props)
   // Лист с карточкой появляется только по нажатию на постройку и закрывается крестиком или нажатием мимо.
   // Карта растягивается средствами страницы, а не браузера: так это работает и на айфоне.
   const [full, setFull] = useState(false)
+  // Подсказка «двигай пальцем» нужна, пока карту не тронули.
+  const [moved, setMoved] = useState(false)
   useEffect(() => {
     if (!full) return
     const before = document.body.style.overflow
@@ -180,7 +182,7 @@ export function TownCanvas({ view, sky, selected, onSelect, now, sheet }: Props)
   }, [shown])
 
   return (
-    <div className={`town3d${full ? ' is-full' : ''}`} ref={host}>
+    <div className={`town3d${full ? ' is-full' : ''}`} ref={host} onPointerDown={(e) => !moved && (e.target as HTMLElement).tagName === 'CANVAS' && setMoved(true)}>
       <button
         className="town3d-full"
         onClick={() => setFull(!full)}
@@ -198,10 +200,12 @@ export function TownCanvas({ view, sky, selected, onSelect, now, sheet }: Props)
           </span>
         ))}
       </div>
-      <p className="town3d-hint">
-        <span className="hint-touch">Двигай пальцем, приближай щипком.</span>
-        <span className="hint-mouse">Карту двигает мышь. Масштаб — Ctrl + колесо.</span>
-      </p>
+      {!moved && (
+        <p className="town3d-hint">
+          <span className="hint-touch">Двигай пальцем, приближай щипком.</span>
+          <span className="hint-mouse">Карту двигает мышь. Масштаб — Ctrl + колесо.</span>
+        </p>
+      )}
       {status && <p className="town3d-status">{status}</p>}
       {sheet && (
         <div className="town3d-sheet" key={selected ?? ''} ref={sheetBox} role="region" aria-label="Выбранное на карте" aria-live="polite">

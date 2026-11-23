@@ -177,7 +177,7 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
   return (
     <div className="scene" ref={ref}>
       <svg
-        className={snow > 0 ? `${skyClass(sky)} snowy` : skyClass(sky)}
+        className={[skyClass(sky), snow > 0 ? 'snowy' : '', narrow ? 'is-narrow' : ''].filter(Boolean).join(' ')}
         style={{ ['--snow-cover' as string]: snow }}
         viewBox={`0 0 ${W} ${H}`}
         role="group"
@@ -294,8 +294,11 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
           const b = pos.get(afterDay + 1)
           if (!a || !b) return null
           const m = mid(a, b)
+          // Привал на повороте тропы между неделями: над палаткой стоят точки дней, подпись уходит под неё.
+          const turn = Math.abs(a.y - b.y) > 40
+          const x = Math.min(W - 64, Math.max(64, m.x))
           return (
-            <text key={pause.from} className="map-note" x={m.x} y={m.y - 36} textAnchor="middle">
+            <text key={pause.from} className="map-note" x={x} y={turn ? m.y + 26 : m.y - 36} textAnchor="middle">
               привал · {pause.days} дн.
             </text>
           )
@@ -321,7 +324,7 @@ export function MapScene({ cycle, level, selected, onSelect, gear, sky }: Props)
 
         <g className={level === 3 ? 'nodes nodes-lost' : 'nodes'}>
           {cycle.days.map((d) => (
-            <Node key={d.n} d={d} p={pos.get(d.n)!} r={r} selected={selected === d.n} onSelect={onSelect} />
+            <Node key={d.n} d={d} p={pos.get(d.n)!} r={r} hit={narrow ? 26 : r + 9} selected={selected === d.n} onSelect={onSelect} />
           ))}
         </g>
 
@@ -335,12 +338,15 @@ function Node({
   d,
   p,
   r,
+  hit,
   selected,
   onSelect,
 }: {
   d: DayView
   p: Pt
   r: number
+  /** Радиус невидимой области нажатия: на телефоне точка мельче пальца. */
+  hit: number
   selected: boolean
   onSelect: (day: number) => void
 }) {
@@ -362,7 +368,7 @@ function Node({
       }}
     >
       <title>{label}</title>
-      <circle r={r + 9} fill="transparent" />
+      <circle r={hit} fill="transparent" />
       {selected && <circle className="node-ring" r={r + 5} />}
       {d.state === 'current' && <circle className="node-pulse" r={r + 5} />}
       {d.state === 'extension' && <circle className="node-outer" r={r + 3.5} />}

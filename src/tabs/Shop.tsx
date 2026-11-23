@@ -152,7 +152,7 @@ function Rewards({ shop }: { shop: ShopApi }) {
                   <span className="price">
                     <GemIcon /> {reward.gems}
                   </span>
-                  <button className={short > 0 ? 'btn' : 'btn btn-primary'} disabled={short > 0} onClick={() => shop.redeem(reward.id)} aria-label={`Выкупить: ${reward.name}`}>
+                  <button className="btn" disabled={short > 0} onClick={() => shop.redeem(reward.id)} aria-label={`Выкупить: ${reward.name}`}>
                     Выкупить
                   </button>
                   {short > 0 && <span className="muted small">не хватает {short}</span>}
@@ -249,7 +249,7 @@ function ItemRow({ item, shop }: { item: ShopItem; shop: ShopApi }) {
           </span>
         )}
         {!owned && (
-          <button className="btn btn-primary" onClick={() => shop.buy(item.id)} aria-label={`Купить: ${item.name}`}>
+          <button className="btn" onClick={() => shop.buy(item.id)} aria-label={`Купить: ${item.name}`}>
             Купить
           </button>
         )}
